@@ -1,0 +1,69 @@
+name: CI
+
+on:
+  # Pull requests only: a commit that reached the default branch was already verified by the PR run,
+  # so a push would just spend the same build again. Run this manually when needed.
+  # Both default-branch names are listed because a derived project may use either one; a base branch
+  # that is missing here silently skips CI, which also stops the Dependabot auto-merge from firing.
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Build and test
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up JDK
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Install browser test dependencies
+        run: npx --yes playwright install-deps chromium
+
+      - name: Refresh npm lock file
+        if: github.actor == 'dependabot[bot]'
+        run: ./gradlew kotlinUpgradePackageLock
+
+      - name: Build and test
+        run: ./gradlew build --stacktrace
+
+      # Validates the demo bundle, the docs site and the Dokka reference that the Pages workflow
+      # deploys.
+      - name: Assemble Pages site
+        run: ./gradlew pagesSite
+
+      - name: Test the demo page
+        run: ./gradlew :demo:e2eTest
+
+      - name: Upload refreshed npm lock file
+        if: github.actor == 'dependabot[bot]'
+        uses: actions/upload-artifact@v7
+        with:
+          name: npm-lock
+          path: kotlin-js-store/package-lock.json
+
+      - name: Upload test reports
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-reports
+          path: |
+            "**/build/reports/tests/**"
+            demo/build/e2e-results/**
+          if-no-files-found: ignore

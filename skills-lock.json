@@ -1,0 +1,29 @@
+{
+  "version": 2,
+  "skills": {
+    "kotlin-multiplatform-libraries-expert": {
+      "source": "JetBrains/klibs-io",
+      "sourceType": "github",
+      "skillPath": "skills/kmp-libraries-expert/SKILL.md",
+      "computedHash": "e9b6681343399f55e959732f5a9f46551b4dc7b7891511814378c7728c710298"
+    },
+    "ktjs-type-mapping": {
+      "source": "shijianjs/dev-agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/ktjs-type-mapping/SKILL.md",
+      "computedHash": "ee1a9e5cd93e0fe08083ea5f657bc71e0d45c585612ed265c2167b24e8e59c55"
+    },
+    "long-task-tracking": {
+      "source": "shijianjs/dev-agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/long-task-tracking/SKILL.md",
+      "computedHash": "42e36ce45f84b1f5288377153b745145f04bdf07d412d59f41c81cdddd75d7ac"
+    },
+    "ui-code-style": {
+      "source": "shijianjs/dev-agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/ui-code-style/SKILL.md",
+      "computedHash": "93355f0e8dcc498bbb8da7826748daf63f20105c590b048ab3441e9571fad89d"
+    }
+  }
+}
