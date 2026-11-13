@@ -236,8 +236,13 @@ tasks.register("printPublishedVersions") {
 
 // Assembles the GitHub Pages site: the documentation at the root and the API reference under /api/.
 // The docs site's `baseUrl` in Config.kt has to mirror this layout.
+//
+// `kotlinNpmInstall` is explicit: the docs module only links a library and unpacks the kit's bundle
+// from a klib, so nothing else in this graph reaches the npm workspace, and `docusaurusBuild` needs
+// `node_modules/@docusaurus/core` to exist. (A site that also builds a browser bundle gets it for
+// free, because the webpack step installs npm; this one does not build one.)
 tasks.register<Sync>("pagesSite") {
-    dependsOn(":docs:docusaurusBuild", "dokkaGeneratePublicationHtml")
+    dependsOn("kotlinNpmInstall", ":docs:docusaurusBuild", "dokkaGeneratePublicationHtml")
     into(layout.buildDirectory.dir("pages"))
     from(layout.buildDirectory.dir("js/docusaurus/docs/build"))
     from(layout.buildDirectory.dir("dokka/html")) {
