@@ -39,14 +39,13 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "ktjs-wrapper-template"
+rootProject.name = "ktjs-dom-kit"
 
-// One Gradle project per published wrapper module. The sample module wraps a single npm package;
-// a derived project adds one include per package (or per group of packages that release together).
-include(":ktjs-wrapper-template-core")
-
-// The demo page, published under /demo/ of the Pages site. Not a published module.
-include(":demo")
+// One Gradle project per published library. `ktjs-dom-kit` is the first one: generic DOM helpers
+// with no npm package behind them. Libraries added later follow the same rule — a directory named
+// after the Maven artifact, listed here, and nothing else to change: publishing, Dokka and the
+// version report pick up every `ktjs-*` project automatically.
+include(":ktjs-dom-kit")
 
 // The documentation site: Kotlin configuration plus Markdown, assembled by the ktjs-docusaurus
 // Gradle plugin into a static site that `pagesSite` publishes at the Pages root.

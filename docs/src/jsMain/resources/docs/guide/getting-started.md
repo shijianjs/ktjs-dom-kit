@@ -4,47 +4,101 @@ sidebar_position: 1
 
 # Getting started
 
-## Requirements
+## Add the dependency
 
-- JDK 21 or newer; the Gradle wrapper is checked in (9.4.1).
-- Node and npm are downloaded and driven by the Kotlin Gradle plugin — there is no `npm install` step
-  to remember, and `kotlin.js.yarn=false` keeps npm as the package manager.
-- Chromium is downloaded by Playwright the first time a browser test runs.
-
-## Build, test, publish
-
-```bash
-./gradlew build                    # compile, Detekt, browser tests
-./gradlew :ktjs-wrapper-template-core:jsBrowserTest
-./gradlew :demo:e2eTest            # Playwright against the bundled demo page
-./gradlew :docs:docusaurusBuild    # the documentation site
-./gradlew pagesSite                # documentation at /, demo at /demo/, Dokka at /api/
+```kotlin
+kotlin {
+    js {
+        browser()
+    }
+    sourceSets {
+        jsMain.dependencies {
+            implementation("io.github.shijianjs:ktjs-dom-kit:0.1.0")
+        }
+    }
+}
 ```
 
-`build` does not run the demo's end-to-end suite or assemble the Pages site: both need a browser and
-are part of CI as separate steps.
+`kotlin-browser` and `kotlin-csstype` come with it as `api` dependencies: the public surface is spelled
+in their types (`web.html.HTMLElement`, `csstype.Properties`), so a project that already uses
+`kotlin-wrappers` needs no second set of DOM types.
 
-## Develop
+## A first element
 
-```bash
-./gradlew :docs:docusaurusStart    # dev server for this site
-./gradlew :demo:jsBrowserRun       # dev server for the demo page
+A component is a class extending `CustomElementAdapter`, a tag name, and one `defineIfMissing` call:
+
+```kotlin
+class KtjsChip : CustomElementAdapter() {
+    private val label = HtmlTagName.span.createElement {
+        inlineStyle.display = Display.block
+    }
+
+    /** `text`: the chip's caption. */
+    @JsName("text")
+    var text: String by attr { change -> label.textContent = change.newValue }
+
+    init {
+        // The constructor may not touch `this`, but the shadow root is its own tree.
+        val shadow = attachStyledShadow(SHEET)
+        shadow.appendChild(label)
+    }
+
+    override fun connectedCallback() {
+        // Markup that was already parsed never reached the property setter above.
+        applyInitialAttributes()
+    }
+
+    companion object : CustomElementReference<KtjsChip>(KtjsChip::class.js) {
+        val NAME: TagName<KtjsChip> = TagName("ktjs-chip")
+
+        private val SHEET: CSSStyleSheet = cssSheet {
+            ":host" {
+                display = Display.block
+                padding = Padding(0.5.rem)
+            }
+        }
+    }
+}
+
+fun registerKtjsChip() = defineIfMissing(KtjsChip.NAME, KtjsChip.Companion)
 ```
 
-Docusaurus watches the site directory, so Markdown edits reload; Kotlin changes need
-`./gradlew :docs:docusaurusSite` first, because the site imports the compiled module.
+`defineIfMissing` strips the compiler-generated forwarding bridges from the class before it registers
+the tag, which is what lets the element body call `appendChild` / `querySelectorAll` under their normal
+names. Skipping it leaves an element whose first DOM call recurses until the stack overflows — see
+[Custom elements](../dom-kit/custom-elements.md) for what is going on.
 
-## Where things live
+The element now takes markup and attributes like any other:
+
+```html
+<ktjs-chip text="0.1.0"></ktjs-chip>
+<script type="module" src="./ktjs-chip.mjs"></script>
+```
+
+## Working in this repository
+
+The build is a Gradle multi-project build; the library module is `ktjs-dom-kit` and the site is `docs`.
+
+```bash
+./gradlew build                       # compile, Detekt, browser tests
+./gradlew :ktjs-dom-kit:jsBrowserTest
+./gradlew :docs:docusaurusBuild       # the documentation site
+./gradlew pagesSite                   # documentation at /, Dokka at /api/
+./gradlew :docs:docusaurusStart       # dev server
+```
+
+`build` does not assemble the Pages site: that is what the Pages workflow runs.
 
 | Path | Contents |
 | --- | --- |
 | `package.json` | the only place npm versions are declared (Dependabot maintains it) |
-| `wrapper-revisions.properties` | per-module `-kt.N` revision |
-| `ktjs-wrapper-template-core/src/jsMain/kotlin` | the wrapper declarations |
-| `ktjs-wrapper-template-core/src/jsTest/kotlin` | browser tests for them |
-| `demo/src/jsMain` | the demo page and its Kotlin entry point |
-| `docs/src/jsMain/kotlin` | the site configuration and sidebar |
-| `docs/src/jsMain/resources` | Markdown pages, MDX landing page, CSS, translations |
+| `ktjs-dom-kit/src/jsMain/kotlin` | the library declarations |
+| `ktjs-dom-kit/src/jsTest/kotlin` | browser tests for them |
+| `docs/src/jsMain/kotlin` | the site configuration and sidebars |
+| `docs/src/jsMain/resources` | Markdown pages, the MDX landing page, CSS, translations |
+
+Chromium is downloaded by Playwright the first time a browser test runs; the tests themselves need JDK
+21 and nothing else, because the Kotlin Gradle plugin installs npm for the workspace.
 
 ## The lock file
 

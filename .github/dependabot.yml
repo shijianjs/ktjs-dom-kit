@@ -34,7 +34,9 @@ updates:
       # One PR per upstream ecosystem. Add a pattern per scope/package family as modules grow.
       upstream:
         patterns:
-          - "@vaadin/button"
+          - "@emotion/serialize"
+          - "loadjs"
+          - "stylis"
 
   - package-ecosystem: github-actions
     directory: "/"

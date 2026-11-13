@@ -1,15 +1,15 @@
 {
   "title": {
-    "message": "ktjs-wrapper-template",
+    "message": "ktjs-dom-kit",
     "description": "The title in the navbar"
   },
-  "item.label.Docs": {
-    "message": "文档",
-    "description": "Navbar item with label Docs"
+  "item.label.Guide": {
+    "message": "指南",
+    "description": "Navbar item with label Guide"
   },
-  "item.label.Demo": {
-    "message": "演示",
-    "description": "Navbar item with label Demo"
+  "item.label.DOM kit": {
+    "message": "DOM 工具箱",
+    "description": "Navbar item with label DOM kit"
   },
   "item.label.API": {
     "message": "API",

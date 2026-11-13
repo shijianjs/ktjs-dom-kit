@@ -17,25 +17,31 @@
 
 ## 项目概况与模块结构
 
-`ktjs-wrapper-template` 为 [`@vaadin/button`](https://www.npmjs.com/package/@vaadin/button) 提供 Kotlin/JS
-wrapper。**本仓库自己就是模板，也是一个能立刻跑的项目**：没有占位符，没有初始化脚本，复制改名即可用
-（`git clone` / GitHub 的 Use this template）。`README.md` 与站点的「派生新项目」页是改名清单。
+`ktjs-dom-kit` 是 Kotlin/JS 的 DOM 辅助库，同时是「不值得单独开仓库的小库」的落脚点：一个库一个 Gradle
+模块、以 Maven 构件命名，构建按 `ktjs-` 前缀自动收集发布、Dokka 与版本报表。派生自
+[`shijianjs/ktjs-wrapper-template`](https://github.com/shijianjs/ktjs-wrapper-template)，通用约定保持同步。
 
-- `ktjs-wrapper-template-core`：发布模块，也是示例模块（一个 npm 包、一个 Gradle 模块、一个 Kotlin 包）。
-  `version = {上游 npm 版本}-kt.{修订号}`。
-- `demo`：演示页，发布在 Pages 的 `/demo/`，不发布到 Maven、也不进入 Dokka。
+- `ktjs-dom-kit`：发布模块，也是本仓库的第一个库。它不包装 npm 包，版本是手写的语义版本 `0.1.0`（见
+  `semanticModules`）。内容：`CustomElementAdapter`、`attr` 委托、shadow root 辅助、`cssSheet { … }`、
+  `loadjs` 封装。包按关注点分：`dom.element`、`dom.webcomponent`、`dom.attribute`（编解码器在
+  `dom.attribute.types`）、`dom.css`（写样式表的语法糖在 `dom.css.dsl`）、`dom.loadjs`。
+- **它曾经在 ktjs-docusaurus 仓库里**（2026-11-13 搬过来）。现在那个站点通过 Maven 坐标依赖它，不是
+  project 依赖：两边各自发布，所以「站点的文档用站点框架写」不构成环。改动 API 后要发版，并在
+  ktjs-docusaurus 的 `gradle.properties` 里把 `ktjs-dom-kit.version` 抬上去。
 - `docs`：文档站，也是 Pages 的主体。它同样是 Kotlin/JS 模块——站点配置与侧边栏是 Kotlin、页面是
   Markdown，由 [ktjs-docusaurus](https://github.com/shijianjs/ktjs-docusaurus) 的 Gradle 插件组装并调用
-  Docusaurus CLI。`pagesSite` 把它放在 Pages **根目录**，demo 在 `/demo/`、API 在 `/api/`：`baseUrl`
-  （`/ktjs-wrapper-template/`）和导航里那两个跳转都由 `Config.kt` 顶部的常量推出来，改布局要一起改。
-  不发布、也不进 Dokka。版本在 `gradle.properties`：`ktjs-docusaurus.version` 是 wrapper klib 的，
+  Docusaurus CLI。`pagesSite` 把它放在 Pages **根目录**、API 在 `/api/`：`baseUrl`（`/ktjs-dom-kit/`）
+  和导航里的那个跳转都由 `Config.kt` 顶部的常量推出来，改布局要一起改。不发布、也不进 Dokka。版本在
+  `gradle.properties`：`ktjs-docusaurus.version` 是 wrapper klib 的，
   `ktjs-docusaurus-gradle-plugin.version` 是插件的，`ktjs-docusaurus-kit.version` 是工具箱的（那个项目每个
   模块各有 `-kt.N` 修订号）；写 SNAPSHOT 时从 `mavenLocal` 解析。首页的 `<ktjs-hero>` / `<ktjs-features>` /
   `<ktjs-next-steps>` 来自工具箱：浏览器那一半不是独立 Maven 产物，而是 kit klib 里的
   `ktjs-client/ktjs-docusaurus-kit-browser.js`，`docs/build.gradle.kts` 用 `extractKitBundle` 从 klib
   解出来交给插件放到 `static/ktjs-client/`，再由 `ClientModule.kt` 在 hydrate 之后按 locale 的
   `baseUrl` 加载。Node 会读配置文件，所以这个 bundle 绝不能进 `docs` 的 Kotlin 依赖图。
-  Logo 只有一份（`docs/src/jsMain/resources/static/img/`），demo 用 `brandAssets` 任务拷进自己的资源。
+- **没有 demo 模块**：这个仓库装的是库而不是某个 npm 包的封装，示例代码写在文档页里，浏览器验证靠模块自己的
+  `jsTest`。以后某个库确实需要可视化演示时再按模板的方式加 `demo`，同时补 `pagesSite`、CI 与 Pages 工作流。
+- Logo 只有一份（`docs/src/jsMain/resources/static/img/ktjs-dom-kit-logo.png`）。
 
 Kotlin 包名统一以账号的 GitHub Pages 域名倒写为前缀：`io.github.<owner>.ktjs.<name>`。不要用裸根包
 （`vaadin`、`echarts`、`iconify` 之类），否则项目间以及与其他库容易在同一 classpath 上撞包。新增模块时
@@ -117,18 +123,22 @@ wrapper 的目标是让上游 npm 包暴露的公开 API 在 Kotlin/JS 侧都能
 `dynamic` 只留给「上游自己也没写类型、实现也无法推断」的情况；上游写了 `any` / `unknown` 才用 `JsAny`，
 且要在 KDoc 里注明「上游类型是 `unknown`」。退化到这两者之前，先按 `ktjs-type-mapping` 技能第 12 节过一遍。
 
-### 新增模块
+### 新增库
 
-模板没有骨架目录，`ktjs-wrapper-template-core` 就是骨架：复制整个模块目录，再把它改成新的名字与包。
+先判断这个库值不值得单独开仓库：API 只有十几个声明、也不需要自己的演示页，就放这里；Docusaurus 那种量级的
+封装才用自己的仓库。放这里的流程（`ktjs-dom-kit` 就是骨架：复制整个模块目录再改名）：
 
-1. 复制 `ktjs-wrapper-template-core` 为 `ktjs-wrapper-template-<name>`，改 `build.gradle.kts` 里的
-   `npmVersions.getValue("<包名>")` 与 `description`，以及 `src/*/kotlin` 下的包路径与 `package` 行。
-2. `settings.gradle.kts` 加 `include(":ktjs-wrapper-template-<name>")`。
-3. `package.json` 的 `dependencies` 加 npm 包版本；`wrapper-revisions.properties` 加 `ktjs-wrapper-template-<name>=1`。
-4. `demo/build.gradle.kts` 的 `jsMain.dependencies` 加 `implementation(project(":ktjs-wrapper-template-<name>"))`，
-   并在 demo 里实际使用它。
-5. 同步检查 Dependabot 分组（`.github/dependabot.yml` 的 `upstream` patterns）、README 模块表与站点页面；
-   Dokka 按 `publishedPrefix` 自动收集，无需改。
+1. 复制 `ktjs-dom-kit` 为 `ktjs-<name>`，改 `build.gradle.kts` 里的 `version` / `description` 与
+   `src/*/kotlin` 下的包路径与 `package` 行（包名前缀 `io.github.shijianjs.ktjs.<name>`）。
+2. `settings.gradle.kts` 加 `include(":ktjs-<name>")`。
+3. 包装 npm 包的库：`package.json` 的 `dependencies` 加 npm 包版本，版本改成
+   `{npmVersions.getValue("<包名>")}-kt.$revision` 并把该模块从 `semanticModules` 里去掉、
+   `wrapper-revisions.properties` 加 `ktjs-<name>=1`。不包装 npm 包的库：把模块名加进
+   `semanticModules`，版本继续写在模块脚本里。
+4. `docs` 里加自己的一节文档：`docs/src/jsMain/resources/docs/<name>/`（中文在 `i18n/zh-Hans/…/<name>/`），
+   并在 `Config.kt` 的 `sidebars()` 里加一个 sidebar、navbar 里加一个 `docSidebar` 条目。
+5. 同步检查 Dependabot 分组（`.github/dependabot.yml` 的 `upstream` patterns）、README 模块表、根 `AGENTS.md`
+   的模块说明；Dokka、发布与 `printPublishedVersions` 都按 `ktjs-` 前缀自动收集，无需改。
 
 模块名、`wrapper-revisions.properties` 的 key、目录名三者必须完全一致，否则配置阶段会失败。
 
@@ -370,12 +380,16 @@ bundle，而消费方打包时本来就会摇树，保留 public API 没有额�
 非 external 的实现代码。注意 executable 消费方不受影响——依赖 klib 的代码会被打进它的单文件 bundle。
 ## 版本约定
 
-每个子模块独立版本，格式为 `{上游 npm 版本}-kt.{修订号}`。上游 npm 版本只在根目录 `package.json` 的
-`dependencies` 中声明；每个模块的修订号在根目录 `wrapper-revisions.properties` 中维护。根
-`build.gradle.kts` 解析这两份数据，分别放入 `extra["npmVersions"]` 与 `extra["wrapperRevisions"]`，
+每个子模块独立版本。包装 npm 包的模块格式为 `{上游 npm 版本}-kt.{修订号}`：上游 npm 版本只在根目录
+`package.json` 的 `dependencies` 中声明，每个模块的修订号在根目录 `wrapper-revisions.properties` 中维护。
+根 `build.gradle.kts` 解析这两份数据，分别放入 `extra["npmVersions"]` 与 `extra["wrapperRevisions"]`，
 各子模块读取后声明 `npm(...)` 并推导版本。禁止在模块脚本里硬编码 npm 版本或 `kt.N`。
 
-- 只发布带 `-kt.N` 后缀的版本，不存在不带后缀的版本。
+不包装 npm 包的库（目前是 `ktjs-dom-kit`）在根脚本的 `semanticModules` 里登记，版本是模块脚本里手写的语义
+版本，同样带 `-SNAPSHOT` / `-Pktjs.release=true` 这套后缀规则；它们不需要 `wrapper-revisions.properties`
+条目。
+
+- 只发布带 `-kt.N` 后缀的版本，不存在不带后缀的版本（语义版本模块除外）。
 - **工作树里的版本一律再带 `-SNAPSHOT`**：推导出的 `X-kt.N` 是「下一个要发的版本」，Central 上还没有，
   所以开发构建不冒用这个名字（本地发布也不会遮蔽真实版本，消费方能一眼分辨）。`-Pktjs.release=true`
   去掉后缀，`release.yml` 的两处 Gradle 调用都带着它；本地要发真版本时自己加。
@@ -387,7 +401,8 @@ bundle，而消费方打包时本来就会摇树，保留 public API 没有额�
   基础版本自动跟随（如 `3.0.4-kt.3` → `3.0.5-kt.3`），该模块作为新版本发布。
 - 模块间的 `api(project(...))` 会解析到依赖模块当前的版本。一次提交同时变更多个模块时，必须在同一条发布
   命令里上传所有缺失版本；不要分多次只发布其中一个，否则 POM 可能指向尚未上传的依赖版本。
-- 新增发布模块时，在 `wrapper-revisions.properties` 里从 `1` 开始加一行；缺少条目会在配置阶段直接失败。
+- 新增包装 npm 包的模块时，在 `wrapper-revisions.properties` 里从 `1` 开始加一行；缺少条目会在配置阶段直接
+  失败（`semanticModules` 里的模块跳过这条检查）。
 - 消费方不必为了上游补丁等 wrapper 发版：在根构建脚本里用 `NpmExtension.override(...)` 覆盖 klib 记录的
   npm 版本即可（根 `overrides` 对 workspace 内所有包生效）。不要用第二个 `npm(...)` 声明去改版本：它只改
   声明它的模块的 `package.json`，其他模块仍固定 wrapper 的版本，npm 可能装出两份。
@@ -427,7 +442,7 @@ bundle，而消费方打包时本来就会摇树，保留 public API 没有额�
   不该卡住合并。
 - `.github/dependabot.yml` 覆盖 `gradle`、`npm`（根目录 `package.json`）和 `github-actions` 三个生态。
   npm 版本由 Dependabot 改 `package.json`，Gradle 自动读取，不再手工改 `npm(...)`。`upstream` 分组里列
-  着本仓库包装的包（目前是 `@vaadin/button`），派生项目按自己的包替换。
+  着本仓库用到的 npm 包（目前是 `@emotion/serialize`、`stylis`、`loadjs`），加新库时按它的包替换/追加。
 - Gradle wrapper 固定在 `9.4.1`，并在 Dependabot 里忽略 `gradle-wrapper`：IntelliJ IDEA 2026.2.3
   同步 Gradle 9.8.x 项目时会报 `ExternalSystemPartialResolutionException`（消息为空），回退到 9.4.1
   即恢复正常。等 IDEA 修复后再删除这条 ignore 并升级。
@@ -459,7 +474,7 @@ group 固定为 `io.github.shijianjs`。`subprojects` 的 group 必须单独设�
 
 ```bash
 gh workflow run release.yml -f release=release-1 \
-  -f modules=ktjs-wrapper-template-core
+  -f modules=ktjs-dom-kit
 ```
 
 - `release`：`release-<数字>`，tag 由工作流创建；工作流不会移动已有 tag。
@@ -493,10 +508,10 @@ gh workflow run release.yml -f release=release-1 \
 ```bash
 ORG_GRADLE_PROJECT_signingInMemoryKey="$(< ~/central-signing-key.txt)" \
 ORG_GRADLE_PROJECT_signingInMemoryKeyPassword=... \
-./gradlew :ktjs-wrapper-template-core:publishAllPublicationsToHubStagingRepository
+./gradlew :ktjs-dom-kit:publishAllPublicationsToHubStagingRepository
 
-python3 scripts/hub-release.py --project shijianjs/ktjs-wrapper-template --release release-1 \
-  --module ktjs-wrapper-template-core=<version> --repository . \
+python3 scripts/hub-release.py --project shijianjs/ktjs-dom-kit --release release-1 \
+  --module ktjs-dom-kit=<version> --repository . \
   --archives build/hub-release/archives --registrations build/hub-release
 ```
 
@@ -521,27 +536,21 @@ klibs.io 从 Maven Central 与 GitHub 自动抓取，无需提交元数据文件
 `kotlin-tooling-metadata.json`；POM 的 `url` 或 `scm.url` 是有效的 GitHub 仓库链接。改仓库地址时要同步
 修改根 `build.gradle.kts` 的 POM 配置。
 
-## 演示页面与 GitHub Pages
+## 文档站与 GitHub Pages
 
-- `demo` 只消费公共 API，不发布、也不进入 Dokka。根 `build.gradle.kts` 的发布与 Dokka 配置按
-  `ktjs-wrapper-template-` 前缀过滤子模块，新增非发布模块时沿用该约定。
-- 端到端测试是 `demo` 的 JVM 目标里的 Playwright JUnit 5 套件（`demo/src/jvmTest/kotlin/demo/e2e`）：
-  Playwright 驱动打包后的 `demo/build/dist/js/productionExecutable`，`DemoServer` 用 Hutool 的
-  `SimpleServer` 在测试 JVM 内提供静态文件。运行 `./gradlew :demo:e2eTest`；它不在 `check` 里，CI 在
-  `pagesSite` 之后单独执行。`jvmTest` 本身被禁用，避免 `build` / `check` 依赖浏览器。Playwright 与
-  Chromium 复用第一个 wrapper 模块的 `kotlinInstallPlaywrightBrowsers`，因此
-  `com.microsoft.playwright:playwright` 的版本必须与 KGP 安装的 npm `playwright` 一致（当前都是
-  1.61.0），升级 KGP 后若浏览器版本不匹配，重新跑安装任务。
-- `./gradlew pagesSite` 把文档站、demo 与 `build/dokka/html` 组装到 `build/pages`：文档站在根目录，
-  演示页在 `demo/`，API 文档在 `api/`。演示页内部链接使用相对路径，所以挪到子目录不影响它；文档站要跳
-  出去的两个地址是绝对的（相对路径会落到 locale 前缀下）。
-- Dokka 2.2.0 同时应用到根项目和所有 wrapper 子模块；聚合入口是根项目的 `dependencies { dokka(...) }`，
+- `docs` 只消费公共 API，不发布、也不进入 Dokka。根 `build.gradle.kts` 的发布与 Dokka 配置按 `ktjs-`
+  前缀过滤子模块，新增非发布模块时沿用该约定。
+- 浏览器验证不靠 demo：库自己的 `jsTest` 就是 Playwright/Chromium 套件（`ktjs-dom-kit/src/jsTest`）。
+  以后加 demo 时按模板的做法：JVM 目标里的 Playwright JUnit 5 套件 + `e2eTest` 任务，不进 `check`。
+- `./gradlew pagesSite` 把文档站与 `build/dokka/html` 组装到 `build/pages`：文档站在根目录，API 文档在
+  `api/`。文档站要跳出去的地址是绝对的（相对路径会落到 locale 前缀下）。
+- Dokka 2.3.0 同时应用到根项目和所有发布模块；聚合入口是根项目的 `dependencies { dokka(...) }`，
   任务为 `dokkaGeneratePublicationHtml`（2.x 已移除旧的 `dokkaHtmlMultiModule`）。
 - `.github/workflows/pages.yml` 只有 `workflow_dispatch`：站点更新在内容值得上线后手动执行
   `gh workflow run pages.yml`（或 Actions 页面点 Run workflow）。它每次都重新跑 `pagesSite`，所以线上
-  内容始终对应触发时 `master` 的提交。仓库 Settings → Pages 的 Source 必须选 **GitHub Actions**。
+  内容始终对应触发时 `main` 的提交。仓库 Settings → Pages 的 Source 必须选 **GitHub Actions**。
 - 本地预览：执行 `./gradlew pagesSite` 后给 `build/pages` 起任意静态服务器。直接开 `file://` 会因相对
-  路径与 CORS 导致资源加载异常。
+  路径与 CORS 导致资源加载异常。要看 dev server 用 `./gradlew :docs:docusaurusStart`。
 
 ## 文档约定
 
@@ -553,9 +562,9 @@ klibs.io 从 Maven Central 与 GitHub 自动抓取，无需提交元数据文件
 
 ## 模板同步与升级
 
-本文件同时是 [`shijianjs/ktjs-wrapper-template`](https://github.com/shijianjs/ktjs-wrapper-template) 的
-`AGENTS.md`：那份是本仓库的（示例模块 `ktjs-wrapper-template-core` 包 `@vaadin/button`），派生项目把项目名、
-包名、模块名换掉，通用约定原样保留。
+本仓库派生自 [`shijianjs/ktjs-wrapper-template`](https://github.com/shijianjs/ktjs-wrapper-template)，那份
+`AGENTS.md` 是所有 wrapper 项目的通用约定（示例模块包 `@vaadin/button`）。这里保留通用部分，项目专属的模块
+结构、文档站布局、多库策略写在上面各节。
 
 - 在派生项目里总结出对所有 wrapper 项目都成立的约定（构建、测试、发布、DOM/UI 约定、上游 API 建模等）
   时，主动把它同步回模板仓库：先读模板现状，已有等价内容就跳过，缺失或过时就用通用措辞补上或修正；

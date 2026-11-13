@@ -1,47 +1,43 @@
 ---
-title: ktjs-wrapper-template
-description: 一个立刻能跑的 Kotlin/JS wrapper 项目
+title: ktjs-dom-kit
+description: Kotlin/JS 的 DOM 辅助库，也是小封装的落脚点
 hide_table_of_contents: true
 ---
 
-import logo from '@site/static/img/ktjs-wrapper-template-logo.png';
+import logo from '@site/static/img/ktjs-dom-kit-logo.png';
 
-{/* `<ktjs-…>` 分区来自 ktjs-docusaurus 的工具箱：Gradle 插件把它的 bundle 放到 `static/ktjs-client/`，
-    `ClientModule.kt` 在页面 hydrate 之后加载它。`href` 写成相对路径，两种 locale 前缀下都能用；
-    `logo` 用 import 取，这样 URL 会带上本站实际的 `baseUrl`。 */}
+<ktjs-hero logo-src={logo} title="ktjs-dom-kit" tagline="Kotlin/JS 的 DOM 辅助库，不绑 UI 框架">
 
-<ktjs-hero logo-src={logo} title="ktjs-wrapper-template" tagline="一个可以照抄的 Kotlin/JS wrapper 项目">
+<ktjs-action kind="primary" href="guide/getting-started">快速开始</ktjs-action>
 
-<ktjs-action kind="primary" href="intro">开始阅读</ktjs-action>
-
-<ktjs-action kind="secondary" href="https://github.com/shijianjs/ktjs-wrapper-template" icon="simple-icons:github">GitHub</ktjs-action>
+<ktjs-action kind="secondary" href="https://github.com/shijianjs/ktjs-dom-kit" icon="simple-icons:github">GitHub</ktjs-action>
 
 </ktjs-hero>
 
-<ktjs-features section-title="为什么从这里开始" tinted>
+<ktjs-features section-title="它给你什么" tinted>
 
-<ktjs-feature icon="lucide:play" title="拿来就能跑">克隆下来就是一个能构建、能测试、能部署的项目——第一次 `./gradlew build` 之前没有任何占位符要填。</ktjs-feature>
+<ktjs-feature icon="lucide:box" title="用 Kotlin 写自定义元素">组件就是继承 `CustomElementAdapter` 的类，用 `defineIfMissing` 注册——没有 JS 类字面量，也不用给生命周期钩子起别名。</ktjs-feature>
 
-<ktjs-feature icon="lucide:package" title="一个包一个模块">一个 wrapper 模块把一个 npm 包映射成一个 Kotlin 包。加第二个包就是复制一个目录，不用重新设计结构。</ktjs-feature>
+<ktjs-feature icon="lucide:tag" title="属性就是状态">`attr` 委托直接读写 HTML attribute，标记、属性与渲染出的节点不可能对不上。</ktjs-feature>
 
-<ktjs-feature icon="lucide:shield-check" title="类型而不是 dynamic">上游 `.d.ts` 写成 `external` 声明，编译期就能查；公开面用 `kotlin-browser` 的 `web.*` 类型，能和其他 wrapper 组合。</ktjs-feature>
+<ktjs-feature icon="lucide:paintbrush" title="类型化样式表">`cssSheet { … }` 用 csstype 的值拼出 `CSSStyleSheet`，剩下的字符串只有类型表达不了的那些。</ktjs-feature>
 
-<ktjs-feature icon="lucide:flask-conical" title="在浏览器里测">模块的测试跑在 Chromium 里、打的是真实自定义元素，demo 还有自己的 Playwright 套件，两者都接进了 CI。</ktjs-feature>
+<ktjs-feature icon="lucide:layers" title="没有 UI 运行时">节点建好就一直用，只做局部修改。没有 `render()`、没有 diff，底层也没有 Lit 或 React。</ktjs-feature>
 
-<ktjs-feature icon="lucide:book-open" title="文档也是 Kotlin">本站就是由 ktjs-docusaurus 构建的 Kotlin/JS 模块：类型化的配置与侧边栏、Markdown 页面、中英双语。</ktjs-feature>
+<ktjs-feature icon="lucide:flask-conical" title="在真实浏览器里测">用例跑在 Chromium 里，对着真元素、真属性变化——`MutationObserver` 不值得造假。</ktjs-feature>
 
-<ktjs-feature icon="lucide:rocket" title="Pages 与发布已接好">`pagesSite` 组装文档、demo 与 API 文档；`release.yml` 负责签名并经由 Maven Central hub 发布模块。</ktjs-feature>
+<ktjs-feature icon="lucide:package" title="小封装的落脚点">API 只有十几个声明的封装，在这里拿一个模块，不必再开一套仓库、CI 和发布流程。</ktjs-feature>
 
 </ktjs-features>
 
 <ktjs-next-steps section-title="接下来">
 
-<ktjs-step href="intro" title="简介">仓库里有什么，为什么不用任何初始化就能用。</ktjs-step>
+<ktjs-step href="intro" title="简介">这个库是什么，这个仓库里还有哪些东西。</ktjs-step>
 
-<ktjs-step href="guide/getting-started" title="快速开始">环境要求、构建任务与两个开发服务器。</ktjs-step>
+<ktjs-step href="guide/getting-started" title="快速开始">加依赖、写第一个元素。</ktjs-step>
 
-<ktjs-step href="guide/deriving-a-project" title="派生新项目">把它改成你自己的 wrapper 的改名清单。</ktjs-step>
+<ktjs-step href="dom-kit/overview" title="DOM 工具箱">按包过一遍库里的能力。</ktjs-step>
 
-<ktjs-step href="https://shijianjs.github.io/ktjs-wrapper-template/api/" title="API 文档">发布模块的 Dokka 产物。</ktjs-step>
+<ktjs-step href="https://shijianjs.github.io/ktjs-dom-kit/api/" title="API 参考">发布模块的 Dokka 产物。</ktjs-step>
 
 </ktjs-next-steps>

@@ -22,21 +22,30 @@ val versionSuffix =
     if (providers.gradleProperty("ktjs.release").map(String::toBoolean).getOrElse(false)) "" else "-SNAPSHOT"
 extra["versionSuffix"] = versionSuffix
 
-// Every publishable module shares the prefix, which is also how publishing, Dokka and the version
-// report find them. Keep it in sync with the module directories and settings.gradle.kts.
-val publishedPrefix = "ktjs-wrapper-template-"
+// Every published library carries this prefix, which is also how publishing, Dokka and the version
+// report find them. Keep it in sync with the module directories and settings.gradle.kts. The prefix
+// deliberately has no trailing dash: it is what future libraries in this repository are named after,
+// whatever they wrap.
+val publishedPrefix = "ktjs-"
 
-// Dokka aggregates every published module into one API reference. `demo` is not part of the
+// Libraries that wrap no npm package have no upstream version to follow, so they carry a
+// hand-written semantic version in their own build script instead of `{npm version}-kt.{revision}`.
+// Everything else derives its version from package.json and wrapper-revisions.properties.
+val semanticModules = setOf("ktjs-dom-kit")
+
+fun isPublished(module: String): Boolean = module.startsWith(publishedPrefix)
+
+// Dokka aggregates every published module into one API reference. `docs` is not part of the
 // published API surface, so it is excluded by the prefix filter.
 dependencies {
     subprojects
-        .filter { it.name.startsWith(publishedPrefix) }
+        .filter { isPublished(it.name) }
         .forEach { dokka(project(it.path)) }
 }
 
 dokka {
     dokkaPublications.html {
-        moduleName.set("ktjs-wrapper-template")
+        moduleName.set("ktjs-dom-kit")
         outputDirectory.set(layout.buildDirectory.dir("dokka/html"))
     }
 }
@@ -50,14 +59,15 @@ val publishedGroup = "io.github.shijianjs"
 @Suppress("UNCHECKED_CAST")
 val npmVersions: Map<String, String> = run {
     val manifest = JsonSlurper().parse(file("package.json")) as Map<*, *>
-    (manifest["dependencies"] as Map<String, Any?>).mapValues { it.value.toString() }
+    @Suppress("UNCHECKED_CAST")
+    val dependencies = manifest["dependencies"] as Map<String, Any?>
+    dependencies.mapValues { it.value.toString() }
 }
 extra["npmVersions"] = npmVersions
 
-// Wrapper revisions are per module: a release only creates new versions for the modules whose
-// revision was bumped, so unchanged modules are not re-uploaded (file/size quota and version
-// noise). Release Count is per Central deployment, not per module: publishing every pending
-// module in one Gradle invocation makes the plugin upload a single deployment.
+// npm-backed modules follow the upstream release: the base version comes from package.json and the
+// per-module revision from wrapper-revisions.properties. A release bumps and publishes only the
+// modules that changed, so unchanged ones keep a version that already exists on Central.
 @Suppress("UNCHECKED_CAST")
 val wrapperRevisions: Map<String, Int> = run {
     val properties = java.util.Properties()
@@ -78,6 +88,36 @@ plugins.withType<NodeJsRootPlugin> {
 // The public API must use kotlin-browser's web.* types. Kotlin/JS's own org.w3c.dom.* and
 // kotlinx.browser.* compile and run against the same objects, but the compiler treats them as
 // unrelated types, which breaks callers that use kotlin-browser. detekt.yml forbids the imports.
+// Kotlin/JS links every library module with IR dead-code elimination on by default, keeping only
+// what is reachable from that module's own `@JsExport` roots. A library module has no such roots,
+// so its `.mjs` output would be empty and any cross-module reference would resolve to `undefined`.
+// Turning it off keeps the public API of each module in its output. It is applied to every KMP
+// module — the docs site included — because each module is linked separately.
+subprojects {
+    plugins.withId("org.jetbrains.kotlin.multiplatform") {
+        extensions.configure<org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension> {
+            compilerOptions {
+                freeCompilerArgs.add("-Xir-dce=false")
+            }
+
+            // Custom elements need a real `class X extends HTMLElement`. At the default ES5 target
+            // Kotlin emits `function X() { HTMLElement.call(this) }`, and a DOM constructor may only
+            // be invoked with `new` — the browser throws "Please use the 'new' operator". ES2015 is
+            // the first target that can express a class.
+            //
+            // It has to be set on the js target's compiler options; `-target es2015` through
+            // `freeCompilerArgs` on the extension has no effect.
+            targets
+                .withType(org.jetbrains.kotlin.gradle.targets.js.dsl.KotlinJsTargetDsl::class.java)
+                .configureEach {
+                    compilerOptions {
+                        target = "es2015"
+                    }
+                }
+        }
+    }
+}
+
 subprojects {
     apply(plugin = "dev.detekt")
 
@@ -87,8 +127,8 @@ subprojects {
         source.setFrom(files("src"))
     }
 
-    // Only wrapper modules are published and documented; `demo` is the GitHub Pages site.
-    if (name.startsWith(publishedPrefix)) {
+    // Only published modules are documented; `docs` is the GitHub Pages site.
+    if (isPublished(name)) {
         apply(plugin = "org.jetbrains.dokka")
     }
 }
@@ -100,10 +140,12 @@ subprojects {
 // GitHub repository) and requires the kotlin-tooling-metadata.json produced by the Kotlin
 // Multiplatform plugin. Keep both intact when changing this block.
 subprojects {
-    if (!name.startsWith(publishedPrefix)) return@subprojects
+    if (!isPublished(name)) return@subprojects
 
-    check(wrapperRevisions.containsKey(name)) {
-        "Missing '$name' in wrapper-revisions.properties"
+    if (name !in semanticModules) {
+        check(wrapperRevisions.containsKey(name)) {
+            "Missing '$name' in wrapper-revisions.properties"
+        }
     }
 
     val module = this
@@ -136,16 +178,16 @@ subprojects {
             name.set(module.name)
             description.set(
                 module.provider {
-                    module.description ?: "Kotlin/JS wrapper for ktjs-wrapper-template."
+                    module.description ?: "Kotlin/JS library published from ktjs-dom-kit."
                 }
             )
-            url.set("https://github.com/shijianjs/ktjs-wrapper-template")
+            url.set("https://github.com/shijianjs/ktjs-dom-kit")
             inceptionYear.set("2026")
 
             licenses {
                 license {
                     name.set("MIT License")
-                    url.set("https://github.com/shijianjs/ktjs-wrapper-template/blob/master/LICENSE")
+                    url.set("https://github.com/shijianjs/ktjs-dom-kit/blob/main/LICENSE")
                 }
             }
 
@@ -158,9 +200,9 @@ subprojects {
             }
 
             scm {
-                url.set("https://github.com/shijianjs/ktjs-wrapper-template")
-                connection.set("scm:git:git://github.com/shijianjs/ktjs-wrapper-template.git")
-                developerConnection.set("scm:git:ssh://git@github.com/shijianjs/ktjs-wrapper-template.git")
+                url.set("https://github.com/shijianjs/ktjs-dom-kit")
+                connection.set("scm:git:git://github.com/shijianjs/ktjs-dom-kit.git")
+                developerConnection.set("scm:git:ssh://git@github.com/shijianjs/ktjs-dom-kit.git")
             }
         }
     }
@@ -183,7 +225,7 @@ subprojects {
 // would upload before running publishToMavenCentral, so version derivation stays in the module
 // scripts rather than being duplicated in shell.
 tasks.register("printPublishedVersions") {
-    val publishedModules = subprojects.filter { it.name.startsWith(publishedPrefix) }
+    val publishedModules = subprojects.filter { isPublished(it.name) }
     doLast {
         publishedModules
             .associate { it.name to it.version.toString() }
@@ -192,16 +234,12 @@ tasks.register("printPublishedVersions") {
     }
 }
 
-// Assembles the GitHub Pages site: the documentation at the root, the demo under /demo/ and the API
-// reference under /api/. The docs site's `baseUrl` and the two links it builds from it (in Config.kt)
-// have to mirror this layout.
+// Assembles the GitHub Pages site: the documentation at the root and the API reference under /api/.
+// The docs site's `baseUrl` in Config.kt has to mirror this layout.
 tasks.register<Sync>("pagesSite") {
-    dependsOn(":demo:jsBrowserDistribution", ":docs:docusaurusBuild", "dokkaGeneratePublicationHtml")
+    dependsOn(":docs:docusaurusBuild", "dokkaGeneratePublicationHtml")
     into(layout.buildDirectory.dir("pages"))
     from(layout.buildDirectory.dir("js/docusaurus/docs/build"))
-    from(project(":demo").layout.buildDirectory.dir("dist/js/productionExecutable")) {
-        into("demo")
-    }
     from(layout.buildDirectory.dir("dokka/html")) {
         into("api")
     }
