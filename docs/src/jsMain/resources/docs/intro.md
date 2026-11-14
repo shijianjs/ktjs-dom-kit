@@ -42,3 +42,15 @@ stay in their own repositories.
 
 - [Getting started](guide/getting-started.md) — add the dependency and write the first element.
 - [DOM kit](dom-kit/overview.md) — what the library contains, package by package.
+
+## How the pieces fit together
+
+```mermaid
+flowchart TB
+  U["your Kotlin/JS project"] -->|"implementation(...)"| L["ktjs-dom-kit"]
+  L --> A["CustomElementAdapter"]
+  L --> T["attr delegate"]
+  L --> S["shadow-root helpers"]
+  L --> C["cssSheet { … }"]
+  L --> J["loadjs wrapper"]
+```

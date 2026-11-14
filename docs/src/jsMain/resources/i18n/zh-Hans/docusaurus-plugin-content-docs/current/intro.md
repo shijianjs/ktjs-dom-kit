@@ -37,3 +37,15 @@ implementation("io.github.shijianjs:ktjs-dom-kit:0.1.0")
 
 - [快速开始](guide/getting-started.md)：加依赖、写第一个元素。
 - [DOM 工具箱](dom-kit/overview.md)：库里有什么，按包讲。
+
+## 各部分如何协作
+
+```mermaid
+flowchart TB
+  U["你的 Kotlin/JS 项目"] -->|"implementation(...)"| L["ktjs-dom-kit"]
+  L --> A["CustomElementAdapter"]
+  L --> T["attr 委托"]
+  L --> S["shadow root 辅助"]
+  L --> C["cssSheet { … }"]
+  L --> J["loadjs 封装"]
+```
