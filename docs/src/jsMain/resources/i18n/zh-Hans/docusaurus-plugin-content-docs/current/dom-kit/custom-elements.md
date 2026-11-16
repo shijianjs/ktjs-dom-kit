@@ -64,11 +64,14 @@ querySelector(selectors) { return this.querySelector(selectors); }
 `focus`、`addEventListener`……——就会递归到栈溢出。`getAttribute` / `setAttribute` / `hasAttribute` /
 `textContent` 不需要处理：它们是外部 `Element` 类的抽象成员，根本不会生成桥。
 
-上游对应 [kotlin-wrappers#2932](https://github.com/JetBrains/kotlin-wrappers/issues/2932)，编译器侧的
-解释也在那里：桥是为在外部**接口**上声明为 `= definedExternally` 的成员生成的（外部**类**的成员如
-`getAttribute` 是抽象的，在 `ABSTRACT` 判断处就返回了），桥的名字与它自己的目标同名，于是里面的调用解析
-回它自己。JVM 后端对这个模式有防护（`isErroneousSpecialBridge`，KT-82651），JS 后端没有，所以在它修好
-之前这个绕法只能留在本地。
+wrapper 侧报在 [kotlin-wrappers#2932](https://github.com/JetBrains/kotlin-wrappers/issues/2932)，
+编译器侧是 [KT-91505](https://youtrack.jetbrains.com/issue/KT-91505)：桥是为在外部**接口**上声明为
+`= definedExternally` 的成员生成的（外部**类**的成员如 `getAttribute` 是抽象的，在 `ABSTRACT` 判断处就
+返回了），桥的名字与它自己的目标同名，于是里面的调用解析回它自己。JVM 后端对这个模式有防护
+（`isErroneousSpecialBridge`，KT-82651），JS 后端在 Kotlin **2.5.20-Beta1**（构建 `2.5.20-dev-4666`）
+拿到了同样的防护。本仓库编译用的 2.4.21 正是受影响版本之一（另两个是 2.2.20 与 2.5.0-RC），所以这个
+绕法还得留着。升级工具链后编译器不再生成这些桥，删除变成空操作，那时可以把 `stripBridgesFrom` 连同
+`defineIfMissing` 里对它的调用和这个公开 API 一起撤掉，元素类的代码不用改。
 
 `stripBridgesFrom(klass)` 从类的原型链上一层层删掉这些名字，删到 `HTMLElement.prototype` 之前为止——那里
 才是真正的 DOM 方法。删一个本来就没被桥接的名字是空操作，所以名单可以比某个类实际需要的更宽。它刻意走完整

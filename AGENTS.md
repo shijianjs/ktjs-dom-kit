@@ -185,6 +185,13 @@ Gradle 9 / JDK 25。升级时注意 2.0 的插件 ID 是 `dev.detekt`，规则�
   声明要一份吃下所有形态，靠参数类型（`Any?`）透传。
 - ESM-only 的 Node 包（`exports` 里没有 `require`/`default` 条件）要导入具体子路径，例如
   `@scope/package/lib/index.js`，不要写包名；子路径对 CommonJS 与 ESM 链接都可用。
+- **自定义元素的自递归桥（KT-91505）**：Kotlin/JS 会给外部**接口**上 `= definedExternally` 的成员生成一个
+  与目标同名的转发成员，转发体里的调用解析回它自己，于是 `querySelector` / `append` 之类的第一次调用就
+  递归到栈溢出。wrapper 侧报在 `kotlin-wrappers#2932`，编译器侧是
+  [KT-91505](https://youtrack.jetbrains.com/issue/KT-91505)，**Kotlin 2.5.20-Beta1（`2.5.20-dev-4666`）
+  已修复**；受影响版本是 2.2.20、2.4.21、2.5.0-RC，本仓库编译用的 2.4.21 还在其中。所以
+  `stripBridgesFrom` 与 `CustomElementAdapter` 的删桥必须留到升级 Kotlin 之后；那时桥不再生成、删除是
+  空操作，可以连同 `defineIfMissing` 里的调用一起撤掉，元素类代码不用改。
 - 浏览器测试使用新版测试 DSL：`@OptIn(ExperimentalJsTestDsl::class) browser { test { chromium() } }`，
   由 Playwright 驱动并按需安装浏览器。Karma 已废弃，不要新增 `testTask { useKarma { ... } }`。
 - Playwright 默认从官方 CDN（`cdn.playwright.dev`）下载 Chrome / FFmpeg，国内经常 0 速度。本机可把下载源

@@ -60,6 +60,11 @@ import web.mutation.MutationObserverInit
  *
  * `getAttribute` / `setAttribute` / `hasAttribute` / `textContent` need no stripping: they are
  * abstract members of the external `Element` class, so no bridge is generated for them.
+ *
+ * This is a workaround for [KT-91505](https://youtrack.jetbrains.com/issue/KT-91505) (wrappers-side
+ * report: kotlin-wrappers#2932), fixed by the compiler in 2.5.20-Beta1. 2.2.20, 2.4.21 and 2.5.0-RC
+ * are the affected releases and this repository builds with 2.4.21, so the call stays; after an
+ * upgrade it only deletes names the compiler no longer emits.
  */
 open class CustomElementAdapter : HTMLElement() {
 
