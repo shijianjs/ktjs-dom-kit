@@ -215,12 +215,6 @@ class DemoPageTest(private val browser: Browser) {
         )
         openMenu(page, "lang")
         assertEquals(listOf(1, 1), shadowIconCounts(), "the second open lost an entry icon")
-        page.screenshot(
-            Page.ScreenshotOptions().setPath(
-                java.nio.file.Files.createDirectories(java.nio.file.Path.of("build", "e2e-results"))
-                    .resolve("menu-reopen.png").toAbsolutePath(),
-            ),
-        )
         assertNoErrors()
     }
 
