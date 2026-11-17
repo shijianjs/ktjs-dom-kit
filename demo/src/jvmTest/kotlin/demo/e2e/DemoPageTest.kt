@@ -35,12 +35,32 @@ class DemoPageTest(private val browser: Browser) {
         // The shell builds its menus in mount(), one task after the element itself upgrades;
         // measuring or clicking before they exist makes a test depend on timing, not on behaviour.
         page.locator("ktjs-demo-shell vaadin-menu-bar-item[data-menu='theme']").first().waitFor()
+        waitForIconsRendered(page)
         page.setDefaultTimeout(7_000.0)
         return page
     }
 
     private fun assertNoErrors() {
         assertEquals(emptyList<String>(), consoleErrors)
+    }
+
+    /**
+     * Waits until every icon of the shell has rendered.
+     *
+     * Iconify loads asynchronously and an icon that has not rendered yet has no width, so measuring the
+     * navbar before that gives a narrower action row than the one the user sees. The locator has to be
+     * used instead of `querySelectorAll`: menu-bar buttons live in the menu's own shadow tree, which a
+     * plain document query cannot see into.
+     */
+    private fun waitForIconsRendered(page: Page) {
+        val icons = page.locator("ktjs-demo-shell iconify-icon")
+        val deadline = System.currentTimeMillis() + 7_000
+        while (System.currentTimeMillis() < deadline) {
+            val states = icons.evaluateAll("icons => icons.map((icon) => icon.status)") as List<*>
+            if (states.isNotEmpty() && states.all { it == "rendered" }) return
+            Thread.sleep(50)
+        }
+        error("some icons never rendered: ${icons.evaluateAll("icons => icons.map((icon) => icon.status)")}")
     }
 
     /** Opens the menu bar of [menu] (`docs`, `language` or `theme`) by clicking its button. */
@@ -99,6 +119,21 @@ class DemoPageTest(private val browser: Browser) {
         val titleBox = page.locator("ktjs-demo-shell [slot='navbar'] .shell__title").boundingBox()!!
         assertTrue(logoBox.x + logoBox.width <= titleBox.x + 1.0, "the mark sits left of the title")
         assertTrue(logoBox.height <= 30.0, "the mark stays navbar-sized, got ${logoBox.height}px")
+        assertNoErrors()
+    }
+
+    /**
+     * The action row is the last thing in the bar, so it needs an inset of its own: without it the
+     * theme menu sits flush against the window edge (and the scrollbar).
+     */
+    @Test
+    fun `the action row keeps a margin from the window edge`() {
+        val page = open("")
+
+        val actions = page.locator("ktjs-demo-shell [slot='navbar'] .shell__actions").boundingBox()!!
+        val windowWidth = (page.evaluate("() => window.innerWidth") as Number).toDouble()
+        val gap = windowWidth - (actions.x + actions.width)
+        assertTrue(gap >= 8.0, "the last menu is ${gap}px from the window edge, expected at least 8px")
         assertNoErrors()
     }
 

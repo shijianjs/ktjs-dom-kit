@@ -145,6 +145,10 @@ val SHELL_SHEET: CSSStyleSheet = cssSheet {
 
     SHELL_TOPBAR {
         width = 100.pct
+        // The bar spans the window, but its content must not touch the right edge: the last menu would
+        // otherwise sit flush against the scrollbar. The drawer toggle already carries its own inset on
+        // the left, so only the end side gets padding here.
+        paddingRight = 12.px
     }
 
     // The left cluster may be narrower than the title plus the full breadcrumb trail; letting it
