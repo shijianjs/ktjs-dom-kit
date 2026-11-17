@@ -1,22 +1,36 @@
 package io.github.shijianjs.ktjs.demo
 
+import io.github.shijianjs.ktjs.dom.css.colorStop
 import io.github.shijianjs.ktjs.dom.css.cssSheet
+import io.github.shijianjs.ktjs.dom.css.dsl.supports
+import io.github.shijianjs.ktjs.dom.css.dsl.webkitBackgroundClip
+import io.github.shijianjs.ktjs.dom.css.dsl.webkitBackgroundClipName
+import io.github.shijianjs.ktjs.dom.css.or
+import io.github.shijianjs.ktjs.dom.css.supportsDeclaration
 import io.github.shijianjs.ktjs.vaadin.lumoutility.LumoUtility
 import web.cssom.AlignItems
 import web.cssom.Auto
+import web.cssom.BackgroundClip
 import web.cssom.BoxSizing
 import web.cssom.CSSStyleSheet
+import web.cssom.Color
 import web.cssom.CustomPropertyName
 import web.cssom.Display
+import web.cssom.FontStyle
 import web.cssom.JustifyContent
 import web.cssom.Length
 import web.cssom.Margin
 import web.cssom.Padding
+import web.cssom.PropertyName
 import web.cssom.WhiteSpace
+import web.cssom.deg
 import web.cssom.em
+import web.cssom.integer
+import web.cssom.linearGradient
 import web.cssom.number
 import web.cssom.pct
 import web.cssom.px
+import web.cssom.`var`
 import web.cssom.vh
 
 /**
@@ -142,6 +156,31 @@ val SHELL_SHEET: CSSStyleSheet = cssSheet {
         // One line: the navbar has room for the actions only if the title stops shrinking.
         whiteSpace = WhiteSpace.nowrap
         flexShrink = number(0.0)
+        // The wordmark reads like vuejs.org's: slanted, and painted with a gradient of the theme's
+        // primary colour into teal instead of a solid fill.
+        fontStyle = FontStyle.italic
+        fontWeight = integer(700)
+    }
+
+    // `background-clip: text` is the only way to paint text with a gradient, and it needs the
+    // `-webkit-` spelling to be portable; without support the rule above keeps the solid colour, so
+    // the title is never invisible.
+    supports(
+        supportsDeclaration(webkitBackgroundClipName, BackgroundClip.text) or
+            supportsDeclaration(PropertyName.backgroundClip, BackgroundClip.text),
+    ) {
+        SHELL_TITLE {
+            backgroundImage = linearGradient(
+                100.deg,
+                colorStop(`var`(CustomPropertyName<Color>("--lumo-primary-color"))),
+                colorStop(Color("#2ec4b6")),
+            )
+            webkitBackgroundClip(BackgroundClip.text)
+            backgroundClip = BackgroundClip.text
+            color = Color.transparent
+            // The clip only paints inside the padding box, so a descender ("j") would be cut off.
+            paddingBottom = 0.12.em
+        }
     }
 
     SHELL_VERSION {
