@@ -1,5 +1,6 @@
 package io.github.shijianjs.ktjs.dom.demo.page.overview
 
+import io.github.shijianjs.ktjs.dom.element.createElement
 import io.github.shijianjs.ktjs.demo.i18n.Binder
 import io.github.shijianjs.ktjs.demo.i18n.Lang
 import io.github.shijianjs.ktjs.demo.i18n.Langs
@@ -7,7 +8,6 @@ import io.github.shijianjs.ktjs.demo.nav.Page
 import io.github.shijianjs.ktjs.demo.i18n.Translations
 import io.github.shijianjs.ktjs.demo.page.anchor
 import io.github.shijianjs.ktjs.demo.page.codeText
-import io.github.shijianjs.ktjs.demo.element
 import io.github.shijianjs.ktjs.demo.page.newPage
 import io.github.shijianjs.ktjs.demo.page.paragraph
 import io.github.shijianjs.ktjs.demo.page.row
@@ -106,9 +106,8 @@ internal class OverviewPage : Page {
         val purpose = sectionBlock()
         texts.bind(purpose.title, { it.purposeHeading })
 
-        val bullets = element(HtmlTagName.ul)
-        val bulletItems = List(4) { element(HtmlTagName.li) }
-        bulletItems.forEach { bullets.append(it) }
+        val bulletItems = List(4) { HtmlTagName.li.createElement() }
+        val bullets = HtmlTagName.ul.createElement { bulletItems.forEach(::append) }
         bulletItems.forEachIndexed { index, item ->
             texts.bind(item) { it.bullets.getOrNull(index).orEmpty() }
         }

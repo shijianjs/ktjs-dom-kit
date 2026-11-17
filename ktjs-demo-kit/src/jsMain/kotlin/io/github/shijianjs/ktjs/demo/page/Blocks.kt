@@ -1,9 +1,7 @@
 package io.github.shijianjs.ktjs.demo.page
 
 import io.github.shijianjs.ktjs.demo.Palette
-import io.github.shijianjs.ktjs.demo.element
 import io.github.shijianjs.ktjs.demo.setHidden
-import io.github.shijianjs.ktjs.demo.withClass
 import io.github.shijianjs.ktjs.demo.withTheme
 import io.github.shijianjs.ktjs.dom.element.createElement
 import io.github.shijianjs.ktjs.vaadin.card.CardElement
@@ -33,48 +31,40 @@ import web.window._blank
  * class a single page introduces stays in that page.
  */
 
-/** Creates a plain `<div>`; used only where a component has no suitable box of its own. */
-fun div(vararg children: Node): HTMLElement = element(HtmlTagName.div, null, *children)
-
 /** Creates a `<p>` with [text]. */
-fun paragraph(text: String = ""): HTMLElement = element(HtmlTagName.p).apply { textContent = text }
-
-/** Creates a `<span>` with [text]. */
-fun span(text: String = ""): HTMLElement = element(HtmlTagName.span).apply { textContent = text }
+fun paragraph(text: String = ""): HTMLElement = HtmlTagName.p.createElement { textContent = text }
 
 /** Creates a heading of [level] (1-4 coerced). */
-fun heading(level: Int, text: String = ""): HTMLElement {
+fun heading(level: Int, text: String = ""): HTMLHeadingElement {
     val tag = when (level.coerceIn(1, 4)) {
         1 -> HtmlTagName.h1
         2 -> HtmlTagName.h2
         3 -> HtmlTagName.h3
         else -> HtmlTagName.h4
     }
-    val created: HTMLHeadingElement = tag.createElement()
-    created.textContent = text
-    return created
+    return tag.createElement { textContent = text }
 }
 
 /** Creates an `<a>` pointing at [href]; external links open in a new tab. */
-fun anchor(text: String, href: String, external: Boolean = false): HTMLAnchorElement {
-    val created = element(HtmlTagName.a)
-    created.textContent = text
-    created.href = href
-    if (external) {
-        created.target = WindowTarget.Companion._blank
-        created.rel = "noopener noreferrer"
+fun anchor(text: String, href: String, external: Boolean = false): HTMLAnchorElement =
+    HtmlTagName.a.createElement {
+        this.textContent = text
+        this.href = href
+        if (external) {
+            target = WindowTarget.Companion._blank
+            rel = "noopener noreferrer"
+        }
     }
-    return created
-}
 
 /** Creates an inline `<code>` fragment. */
-fun codeText(text: String): HTMLElement = element(HtmlTagName.code, CODE).apply { textContent = text }
+fun codeText(text: String): HTMLElement = HtmlTagName.code.createElement {
+    classList.add(CODE)
+    textContent = text
+}
 
 /** Creates a `<ul>` with one `<li>` per entry. */
-fun bulletList(items: List<String>): HTMLElement {
-    val list = element(HtmlTagName.ul)
-    items.forEach { item -> list.append(element(HtmlTagName.li).apply { textContent = item }) }
-    return list
+fun bulletList(items: List<String>): HTMLElement = HtmlTagName.ul.createElement {
+    items.forEach { item -> append(HtmlTagName.li.createElement { textContent = item }) }
 }
 
 /** A horizontal group: the Vaadin layout supplies the gap, the site sheet centres the items. */
@@ -95,7 +85,14 @@ fun col(vararg children: Node): VerticalLayoutElement {
 /** One example box: a Vaadin card, with an optional caption above the content. */
 fun exampleBox(caption: String? = null, vararg children: Node): CardElement {
     val card = createCard()
-    if (caption != null) card.append(element(HtmlTagName.p, EXAMPLE_CAPTION).apply { textContent = caption })
+    if (caption != null) {
+        card.append(
+            HtmlTagName.p.createElement {
+                classList.add(EXAMPLE_CAPTION)
+                textContent = caption
+            },
+        )
+    }
     if (children.isNotEmpty()) card.append(*children)
     return card
 }
@@ -117,8 +114,8 @@ class SectionBlock(
 
 /** Creates an empty section; the caller fills [SectionBlock.body]. */
 fun sectionBlock(): SectionBlock {
-    val title = element(HtmlTagName.h2, SECTION_TITLE)
-    val hint = element(HtmlTagName.p, SECTION_HINT)
+    val title = HtmlTagName.h2.createElement { classList.add(SECTION_TITLE) }
+    val hint = HtmlTagName.p.createElement { classList.add(SECTION_HINT) }
     val body = createVerticalLayout { withTheme("spacing") }
     // Title, hint and body sit tight; the sheet supplies their margins, the body keeps the component's
     // spacing between its paragraphs and examples.
@@ -130,7 +127,10 @@ fun sectionBlock(): SectionBlock {
 
 /** Text that is updated in place to show the current state of an example. */
 class Readout(initial: String = "") {
-    val root: HTMLElement = element(HtmlTagName.p, READOUT).apply { textContent = initial }
+    val root: HTMLElement = HtmlTagName.p.createElement {
+        classList.add(READOUT)
+        textContent = initial
+    }
 
     fun set(text: String) {
         root.textContent = text

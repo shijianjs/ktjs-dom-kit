@@ -1,12 +1,12 @@
 package io.github.shijianjs.ktjs.dom.demo.page.elements
 
+import io.github.shijianjs.ktjs.dom.element.createElement
 import io.github.shijianjs.ktjs.demo.i18n.Binder
 import io.github.shijianjs.ktjs.demo.i18n.Lang
 import io.github.shijianjs.ktjs.demo.i18n.Langs
 import io.github.shijianjs.ktjs.demo.nav.Page
 import io.github.shijianjs.ktjs.demo.i18n.Translations
 import io.github.shijianjs.ktjs.demo.page.codeText
-import io.github.shijianjs.ktjs.demo.element
 import io.github.shijianjs.ktjs.demo.page.exampleBox
 import io.github.shijianjs.ktjs.demo.page.heading
 import io.github.shijianjs.ktjs.demo.page.newPage
@@ -78,7 +78,7 @@ internal class ElementsPage : Page {
 
     private val texts = Binder(elementsTexts)
 
-    private val list: HTMLElement = element(HtmlTagName.ul)
+    private val list: HTMLElement = HtmlTagName.ul.createElement()
 
     private var entries = 0
 
@@ -119,6 +119,6 @@ internal class ElementsPage : Page {
 
     private fun appendEntry() {
         entries += 1
-        list.append(element(HtmlTagName.li).apply { textContent = "entry $entries" })
+        list.append(HtmlTagName.li.createElement { textContent = "entry $entries" })
     }
 }

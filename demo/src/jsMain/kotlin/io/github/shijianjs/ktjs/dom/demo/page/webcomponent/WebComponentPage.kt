@@ -1,12 +1,12 @@
 package io.github.shijianjs.ktjs.dom.demo.page.webcomponent
 
+import io.github.shijianjs.ktjs.dom.element.createElement
 import io.github.shijianjs.ktjs.demo.i18n.Binder
 import io.github.shijianjs.ktjs.demo.i18n.Lang
 import io.github.shijianjs.ktjs.demo.i18n.Langs
 import io.github.shijianjs.ktjs.demo.nav.Page
 import io.github.shijianjs.ktjs.demo.i18n.Translations
 import io.github.shijianjs.ktjs.demo.page.codeText
-import io.github.shijianjs.ktjs.demo.element
 import io.github.shijianjs.ktjs.demo.page.exampleBox
 import io.github.shijianjs.ktjs.demo.page.newPage
 import io.github.shijianjs.ktjs.demo.page.paragraph
@@ -73,7 +73,7 @@ internal class WebComponentPage : Page {
 
     private val texts = Binder(webComponentTexts)
 
-    private val instanceHost = element(HtmlTagName.div)
+    private val instanceHost = HtmlTagName.div.createElement()
 
     private val counters: MutableList<DemoCounter> = mutableListOf()
 
