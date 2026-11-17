@@ -78,10 +78,13 @@ class DemoShell : CustomElementAdapter() {
 
     private val actions: HorizontalLayoutElement = createHorizontalLayout { withTheme("spacing") }
 
-    private val drawer: VerticalLayoutElement = createVerticalLayout {
-        withTheme("padding", "spacing")
-        setAttribute("slot", "drawer")
-    }
+    /**
+     * The whole left column is one `vaadin-side-nav`, the component Vaadin builds for a drawer:
+     * groups are parent items (no `path`, so a click only expands them) and pages are their
+     * `slot="children"` items. The brand rides in the component's `label` slot, so the drawer has no
+     * hand-built stack of boxes at all.
+     */
+    private val sideNav = createSideNav()
 
     private val content: VerticalLayoutElement = createVerticalLayout { withTheme("padding", "spacing") }
 
@@ -89,9 +92,10 @@ class DemoShell : CustomElementAdapter() {
 
     private val brandVersion: HTMLElement = HtmlTagName.span.createElement { classList.add(SHELL_BRAND_VERSION) }
 
-    private val brand: VerticalLayoutElement = createVerticalLayout { classList.add(SHELL_BRAND) }
-
-    private val groupHost: VerticalLayoutElement = createVerticalLayout { withTheme("spacing") }
+    private val brand: VerticalLayoutElement = createVerticalLayout {
+        classList.add(SHELL_BRAND)
+        setAttribute("slot", "label")
+    }
 
     private lateinit var catalog: Catalog
 
@@ -107,7 +111,7 @@ class DemoShell : CustomElementAdapter() {
 
     private val navItems: MutableMap<String, SideNavItemElement> = mutableMapOf()
 
-    private val groupTitles: MutableMap<String, HTMLElement> = mutableMapOf()
+    private val groupLabels: MutableMap<String, HTMLElement> = mutableMapOf()
 
     private val languageButtons: MutableMap<Lang, ButtonElement> = mutableMapOf()
 
@@ -125,12 +129,13 @@ class DemoShell : CustomElementAdapter() {
         appLayout.primarySection = AppLayoutPrimarySections.navbar
 
         brand.append(brandName, brandVersion)
-        drawer.append(brand, groupHost)
+        sideNav.append(brand)
+        sideNav.setAttribute("slot", "drawer")
 
         breadcrumbs.append(crumbGroup, crumbPage)
         navbar.append(drawerToggle, breadcrumbs, actions)
 
-        appLayout.append(navbar, drawer, content)
+        appLayout.append(navbar, sideNav, content)
         attachStyledShadow(RESET, SHELL_SHEET).append(appLayout)
     }
 
@@ -182,24 +187,30 @@ class DemoShell : CustomElementAdapter() {
     private fun buildGroups() {
         val current = textsFor(language.current)
         catalog.groups.forEach { group ->
-            val title = HtmlTagName.div.createElement { classList.add(SHELL_GROUP_TITLE) }
-            title.textContent = current.groupTitles[group.id] ?: group.id
+            // A group is a parent item without a path: Vaadin renders it as a collapsible section, and
+            // a click toggles the children instead of navigating. It starts expanded so every page
+            // stays one click away, the same as the old always-visible group heading.
+            val groupItem = createSideNavItem { expanded = true }
+            val groupLabel = HtmlTagName.span.createElement()
+            groupLabel.textContent = current.groupTitles[group.id] ?: group.id
+            groupItem.append(groupLabel)
 
-            val list = createSideNav()
             catalog.entriesOf(group).forEach { entry ->
+                // No `path`: the component matches `location.pathname`, which cannot see a `#/…` hash,
+                // and a `#/…` path would make *every* item look current. The row is therefore a plain
+                // item that the frame turns into a link and highlights itself.
                 val item = createSideNavItem { textContent = titleOf(entry, language.current) }
                 item.dataset["route"] = entry.id
+                item.setAttribute("slot", "children")
                 item.setAttribute("role", "link")
                 item.tabIndex = 0
                 item.clickEvent.addHandler { navigate(entry.id) }
                 navItems[entry.id] = item
-                list.append(item)
+                groupItem.append(item)
             }
 
-            val groupBox = createVerticalLayout { classList.add(SHELL_GROUP) }
-            groupBox.append(title, list)
-            groupTitles[group.id] = title
-            groupHost.append(groupBox)
+            groupLabels[group.id] = groupLabel
+            sideNav.append(groupItem)
         }
     }
 
@@ -256,7 +267,12 @@ class DemoShell : CustomElementAdapter() {
 
         if (shownRoute != entry.id) {
             shownRoute = entry.id
-            navItems.forEach { (id, item) -> item.classList.toggle(NAV_CURRENT, id == entry.id) }
+            // Vaadin paints the item carrying its `current` state attribute; hash routes are invisible
+            // to the component's own URL matching (it compares `location.pathname`), so the frame sets
+            // that state on every route change and the component does the highlighting.
+            navItems.forEach { (id, item) ->
+                if (id == entry.id) item.setAttribute("current", "") else item.removeAttribute("current")
+            }
             document.title = "${titleOf(entry, language.current)} · ${textsFor(language.current).siteTitle}"
         }
         setBreadcrumb(entry)
@@ -281,7 +297,7 @@ class DemoShell : CustomElementAdapter() {
         brandName.textContent = current.siteTitle
 
         catalog.groups.forEach { group ->
-            groupTitles[group.id]?.textContent = current.groupTitles[group.id] ?: group.id
+            groupLabels[group.id]?.textContent = current.groupTitles[group.id] ?: group.id
         }
         catalog.entries.forEach { entry ->
             navItems[entry.id]?.textContent = titleOf(entry, language.current)

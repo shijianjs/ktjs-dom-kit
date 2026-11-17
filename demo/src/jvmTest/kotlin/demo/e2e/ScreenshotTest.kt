@@ -101,6 +101,12 @@ class ScreenshotTest(private val browser: Browser) {
         assertNoHorizontalOverflow(page)
         assertOneScreen(page)
         assertDrawerHasNoScrollbar(page)
+        // The side nav paints the item carrying its `current` state attribute; exactly one must carry it.
+        assertEquals(
+            1,
+            page.locator("ktjs-demo-shell vaadin-side-nav vaadin-side-nav-item[current]").count(),
+            "exactly one navigation item is current",
+        )
         shoot(page, "light-overview")
         page.close()
     }
@@ -124,7 +130,8 @@ class ScreenshotTest(private val browser: Browser) {
         page.waitForSelector("ktjs-demo-page .page__title:text-is('ktjs-dom-kit 概览')")
         assertEquals(
             "开始",
-            page.locator("ktjs-demo-shell .shell__group-title").first().textContent(),
+            page.locator("ktjs-demo-shell vaadin-side-nav vaadin-side-nav-item").first()
+                .evaluate("node => node.firstElementChild.textContent") as String,
             "group headings switch language too",
         )
         assertNoHorizontalOverflow(page)
@@ -136,14 +143,11 @@ class ScreenshotTest(private val browser: Browser) {
     fun `sidebar headings are labels and the counter uses a Lumo button`() {
         val page = open("#/custom-elements")
 
+        // Groups are parents of the one side-nav menu, so a heading is a nav item rather than a bespoke
+        // div or a browser-default button.
         assertEquals(
-            0,
-            page.locator("ktjs-demo-shell button.shell__group-title").count(),
-            "sidebar group headings must not be buttons",
-        )
-        assertEquals(
-            "div",
-            page.locator("ktjs-demo-shell .shell__group-title").first()
+            "vaadin-side-nav-item",
+            page.locator("ktjs-demo-shell vaadin-side-nav vaadin-side-nav-item").first()
                 .evaluate("node => node.tagName.toLowerCase()") as String,
         )
         assertEquals(

@@ -39,16 +39,11 @@ internal val SHELL_BRAND_NAME: ClassName = ClassName("shell__brand-name")
 
 internal val SHELL_BRAND_VERSION: ClassName = ClassName("shell__brand-version")
 
-/** The brand stack and one navigation group inside the drawer. */
+/** The brand stack that rides in the side nav's `label` slot. */
 internal val SHELL_BRAND: ClassName = ClassName("shell__brand")
-
-internal val SHELL_GROUP: ClassName = ClassName("shell__group")
-
-internal val SHELL_GROUP_TITLE: ClassName = ClassName("shell__group-title")
 
 internal val SHELL_TOPBAR: ClassName = ClassName("shell__topbar")
 
 
 internal val SHELL_LINK: ClassName = ClassName("shell__link")
 
-internal val NAV_CURRENT: ClassName = ClassName("nav-current")

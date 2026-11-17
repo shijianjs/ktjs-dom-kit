@@ -148,7 +148,9 @@ fun sectionBlock(): SectionBlock {
     val title = element(HtmlTagName.h2, SECTION_TITLE)
     val hint = element(HtmlTagName.p, SECTION_HINT)
     val body = createVerticalLayout { withTheme("spacing") }
-    val root = createVerticalLayout { withTheme("spacing") }
+    // Title, hint and body sit tight; the sheet supplies their margins, the body keeps the component's
+    // spacing between its paragraphs and examples.
+    val root = createVerticalLayout()
     root.classList.add(SECTION)
     root.append(title, hint, body)
     return SectionBlock(root, title, hint, body)

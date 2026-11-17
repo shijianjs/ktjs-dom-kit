@@ -2,19 +2,15 @@ package io.github.shijianjs.ktjs.demo
 
 import io.github.shijianjs.ktjs.dom.css.cssSheet
 import web.cssom.AlignItems
-import web.cssom.Border
 import web.cssom.BoxSizing
 import web.cssom.CSSStyleSheet
 import web.cssom.CustomPropertyName
 import web.cssom.Display
 import web.cssom.FlexDirection
-import web.cssom.FlexWrap
 import web.cssom.JustifyContent
 import web.cssom.Length
-import web.cssom.LineStyle
 import web.cssom.Margin
 import web.cssom.Padding
-import web.cssom.TextAlign
 import web.cssom.WhiteSpace
 import web.cssom.number
 import web.cssom.pct
@@ -71,13 +67,13 @@ val PAGE_SHEET: CSSStyleSheet = cssSheet {
     PAGE_BODY { display = Display.block }
 
     SECTION_TITLE {
-        margin = 0.px
+        margin = Margin(0.px, 0.px, 6.px)
         fontSize = 18.px
         color = Palette.text
     }
 
     SECTION_HINT {
-        margin = 0.px
+        margin = Margin(0.px, 0.px, 10.px)
         color = Palette.muted
         fontSize = 13.px
         lineHeight = number(1.5)
@@ -138,24 +134,9 @@ val SHELL_SHEET: CSSStyleSheet = cssSheet {
         color = Palette.muted
     }
 
-    SHELL_GROUP {
-        display = Display.flex
-        flexDirection = FlexDirection.column
-        rowGap = 2.px
-    }
-
-    SHELL_GROUP_TITLE {
-        padding = Padding(2.px, 0.px)
-        fontSize = 11.px
-        color = Palette.muted
-        textAlign = TextAlign.left
-    }
-
     SHELL_TOPBAR {
         width = 100.pct
         justifyContent = JustifyContent.spaceBetween
-        flexWrap = FlexWrap.nowrap
-        borderBottom = Border(1.px, LineStyle.solid, Palette.border)
     }
 
 
@@ -165,5 +146,4 @@ val SHELL_SHEET: CSSStyleSheet = cssSheet {
         whiteSpace = WhiteSpace.nowrap
     }
 
-    NAV_CURRENT { color = Palette.accent }
 }
