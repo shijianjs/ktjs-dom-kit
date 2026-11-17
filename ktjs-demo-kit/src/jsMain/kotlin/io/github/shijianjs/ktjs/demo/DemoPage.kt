@@ -4,6 +4,8 @@ import io.github.shijianjs.ktjs.dom.element.createElement
 import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementAdapter
 import io.github.shijianjs.ktjs.dom.webcomponent.attachStyledShadow
 import io.github.shijianjs.ktjs.dom.webcomponent.defineIfMissing
+import io.github.shijianjs.ktjs.vaadin.verticallayout.VerticalLayoutElement
+import io.github.shijianjs.ktjs.vaadin.verticallayout.createVerticalLayout
 import web.components.CustomElementReference
 import web.dom.Node
 import web.dom.TagName
@@ -31,8 +33,15 @@ class DemoPage : CustomElementAdapter() {
 
     private val linksElement: HTMLElement = HtmlTagName.div.createElement { classList.add(PAGE_LINKS) }
 
-    /** The block a page appends its sections to. */
-    val body: HTMLElement = HtmlTagName.div.createElement { classList.add(PAGE_BODY) }
+    /**
+     * The block a page appends its sections to.
+     *
+     * It is a `vaadin-vertical-layout` with `theme="spacing"`, not a plain `div`: a page appends several
+     * section blocks, each of which is itself a vertical layout, and boxes that stack without a gap end
+     * up touching (a card's bottom edge right against the next section's title). The gap belongs to the
+     * container, so a page does not have to put a margin on every section it creates.
+     */
+    val body: VerticalLayoutElement = createVerticalLayout { withTheme("spacing") }
 
     init {
         attachStyledShadow(RESET, PAGE_SHEET).append(titleElement, summaryElement, linksElement, body)

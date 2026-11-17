@@ -13,6 +13,7 @@ import web.cssom.Length
 import web.cssom.Margin
 import web.cssom.Padding
 import web.cssom.WhiteSpace
+import web.cssom.em
 import web.cssom.number
 import web.cssom.pct
 import web.cssom.px
@@ -65,7 +66,6 @@ val PAGE_SHEET: CSSStyleSheet = cssSheet {
         fontSize = 13.px
     }
 
-    PAGE_BODY { display = Display.block }
 
     SECTION_TITLE {
         margin = Margin(0.px, 0.px, 6.px)
@@ -116,6 +116,12 @@ val SHELL_SHEET: CSSStyleSheet = cssSheet {
         // The app layout's own knobs: a fixed drawer width and the denser Lumo body size.
         set(CustomPropertyName<Length>("--vaadin-app-layout-drawer-width"), 264.px)
         set(CustomPropertyName<Length>("--lumo-font-size-m"), 14.px)
+        // Lumo's radii, one step larger than the defaults (`s 0.25em`, base 0.25em, `l 0.5em`): every
+        // card, button, field and overlay inside the shell inherits them, so the whole site rounds
+        // together instead of each component being adjusted separately. `m` derives from the base.
+        set(CustomPropertyName<Length>("--lumo-border-radius-s"), 0.5.em)
+        set(CustomPropertyName<Length>("--lumo-border-radius"), 0.5.em)
+        set(CustomPropertyName<Length>("--lumo-border-radius-l"), 1.em)
     }
 
 

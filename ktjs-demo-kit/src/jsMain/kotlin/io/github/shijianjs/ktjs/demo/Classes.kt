@@ -19,8 +19,6 @@ internal val PAGE_LINKS: ClassName = ClassName("page__links")
 /** One entry of the page's link row; added by the frame, so a page only supplies the anchors. */
 internal val PAGE_LINK: ClassName = ClassName("page__link")
 
-internal val PAGE_BODY: ClassName = ClassName("page__body")
-
 internal val SECTION: ClassName = ClassName("section")
 
 internal val SECTION_TITLE: ClassName = ClassName("section__title")
