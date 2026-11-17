@@ -29,14 +29,13 @@ class Group(val id: String, val icon: String? = null)
  * One page of the site.
  *
  * [create] builds the page once; the shell caches the result per route, so component state survives
- * a trip to another page and back. [apiUrl] is the Dokka page of the wrapper behind this page, when
- * the site has one. [icon] is an Iconify name drawn before the page title in the sidebar.
+ * a trip to another page and back. [icon] is an Iconify name drawn before the page title in the
+ * sidebar.
  */
 class Entry(
     val id: String,
     val group: Group,
     val icon: String? = null,
-    val apiUrl: (Lang) -> String? = { null },
     val create: () -> Page,
 )
 

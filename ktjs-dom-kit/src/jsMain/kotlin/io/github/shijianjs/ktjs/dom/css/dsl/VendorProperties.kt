@@ -14,8 +14,13 @@ import web.cssom.PropertyName
 val webkitBackgroundClipName: PropertyName<BackgroundClip> = unsafeCast("-webkit-background-clip")
 
 /**
- * `-webkit-background-clip` in a rules object; `@emotion/serialize` hyphenates camelCase keys and
- * leaves a key that already starts with `-` alone, so this serializes exactly as written:
+ * `-webkit-background-clip` in a rules object.
+ *
+ * The key has to be the **camelCase** spelling: `@emotion/serialize` hyphenates camelCase keys itself
+ * (`WebkitBackgroundClip` → `-webkit-background-clip`), and in development it rejects a key that is
+ * already kebab-case — logging "Using kebab-case for css properties in objects is not supported" and
+ * dropping the declaration. `webkitBackgroundClipName` above is the opposite case: that string is
+ * handed to CSS `@supports`, which wants the real property name.
  *
  * ```kotlin
  * cssSheet {
@@ -32,5 +37,5 @@ val webkitBackgroundClipName: PropertyName<BackgroundClip> = unsafeCast("-webkit
  * `putRaw(name, value)` at call sites would put the strings back that `cssSheet` exists to remove.
  */
 fun PropertiesBuilder.webkitBackgroundClip(value: BackgroundClip) {
-    asDynamic()["$webkitBackgroundClipName"] = value
+    asDynamic()["WebkitBackgroundClip"] = value
 }

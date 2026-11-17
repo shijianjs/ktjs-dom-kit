@@ -169,7 +169,7 @@ into the call sites. Add the missing piece to this module's `css` package in the
 | --- | --- | --- |
 | `radial-gradient(…)` | `css/Gradients.kt` | `radialGradient(RadialGradientShape.Circle, colorStop(glow), stop(Color.transparent, 70.pct))` |
 | a colour stop with no position | `css/Gradients.kt` | `colorStop(color)` — cssom's `stop` always takes a position |
-| `-webkit-background-clip` (property and name) | `css/dsl/VendorProperties.kt` | `webkitBackgroundClip(BackgroundClip.text)`, and `webkitBackgroundClipName` for the `@supports` condition |
+| `-webkit-background-clip` (property and name) | `css/dsl/VendorProperties.kt` | `webkitBackgroundClip(BackgroundClip.text)` (camelCase key, emotion hyphenates it), and `webkitBackgroundClipName` for the `@supports` condition |
 | `pointer-events: none` | `css/Values.kt` | `pointerEventsNone` (the generated `PointerEvents` lists only the SVG values) |
 | typed `@supports` conditions | `css/Supports.kt` | `SupportsQuery` + `supportsDeclaration(PropertyName<T>, T)` + `and`/`or`/`not`, modelled after `web.cssom.MediaQuery` |
 | an `@supports` block (the only at-rule helper that was missing) | `css/dsl/AtRules.kt` | `supports(query) { … }`, with the keyword from `AtRules.supports` |
@@ -226,6 +226,15 @@ property in Chrome, so both are in the text and only one comes back out of CSSOM
 `transition: border-color 0.2s ease` disappears when read back from CSSOM, while the text path keeps
 it. Equivalence is what matters — assert semantic fragments (see `CssSheetTest` in this module's
 `jsTest`).
+
+### Vendor properties are written in camelCase keys
+
+`webkitBackgroundClip(…)` puts the key **`WebkitBackgroundClip`** into the rules object, not
+`-webkit-background-clip`: `@emotion/serialize` hyphenates camelCase keys itself. A key that is already
+kebab-case is **rejected in development** (`Using kebab-case for css properties in objects is not supported.
+Did you mean WebkitBackgroundClip?`) and the declaration is dropped, so the rule silently loses its
+prefixed part. The opposite spelling is needed only for the `@supports` query, which is CSS text:
+`webkitBackgroundClipName` stays `-webkit-background-clip`.
 
 ### One sheet serves every instance
 

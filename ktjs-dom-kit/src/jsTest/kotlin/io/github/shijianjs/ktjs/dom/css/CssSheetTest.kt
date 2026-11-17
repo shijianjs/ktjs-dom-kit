@@ -189,8 +189,8 @@ class CssSheetTest {
 
         assertTrue(text.contains("pointer-events:none;"), text)
         assertTrue(text.contains("background:radial-gradient(circle,var(--glow,#000000),transparent 70%);"), text)
-        // The vendor declaration is kept as written: `@emotion/serialize` hyphenates camelCase keys and
-        // leaves a key that already starts with `-` alone.
+        // `webkitBackgroundClip` writes the camelCase `WebkitBackgroundClip` key, which
+        // `@emotion/serialize` hyphenates to `-webkit-…`; a kebab-case key is rejected in development.
         assertTrue(text.contains("-webkit-background-clip:text;"), text)
         assertTrue(text.contains("background-clip:text;"), text)
     }

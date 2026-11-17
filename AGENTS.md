@@ -41,6 +41,12 @@
   `baseUrl` 加载。Node 会读配置文件，所以这个 bundle 绝不能进 `docs` 的 Kotlin 依赖图。
 - **有这个仓库自己的 demo**：`ktjs-demo-kit`（外壳、路由、i18n 容器、主题）+ `demo`（本站五个页面）。示例既
   是集成测试也是浏览器验收：`./gradlew :demo:e2eTest`（Playwright，含截图与几何断言）。
+  - 默认跑的是 production bundle；要验收 development bundle（`jsBrowserDevelopmentRun` 用的那种、不做 DCE），
+    先 `./gradlew :demo:jsBrowserDevelopmentDistribution`，再
+    `./gradlew :demo:e2eTest -Ddemo.dist=<repo>/demo/build/dist/js/developmentExecutable`（`e2eTest` 的
+    `demo.dist` 系统属性可覆盖）。**只验收 production 会漏掉只在 dev 模式出现的错误**。
+  - 套件里的静态服务器用 `ServerSocket(0)` 取 OS 临时端口：Hutool 的 `SimpleServer(0)` 会在 1024–65535 里
+    随机挑，偶尔落到 Chromium 拒绝的端口（6665–6669 → `ERR_UNSAFE_PORT`），与代码无关地让整轮测试失败。
 - Logo 只有一份（`docs/src/jsMain/resources/static/img/ktjs-dom-kit-logo.png`）：README、文档站与 demo 都用它。
   demo 构建期由 `scaleLogo` 缩到 128px 放进产物，**不要**在仓库里再放第二张 logo。
 
@@ -195,6 +201,17 @@ Gradle 9 / JDK 25。升级时注意 2.0 的插件 ID 是 `dev.detekt`，规则�
   空操作，可以连同 `defineIfMissing` 里的调用一起撤掉，元素类代码不用改。
 - 浏览器测试使用新版测试 DSL：`@OptIn(ExperimentalJsTestDsl::class) browser { test { chromium() } }`，
   由 Playwright 驱动并按需安装浏览器。Karma 已废弃，不要新增 `testTask { useKarma { ... } }`。
+- **跨模块构造器的默认参数不要用函数字面量**（2026-11 在 Kotlin 2.4.21 实测）：development 与 production
+  编译给同一个构造器算出**不同的混淆名**，库那侧（只编译一次）导出 `new_…_Entry_imfsn8_k$`，development
+  executable 里却调用 `Entry.new_…_Entry_28n0j_k$`，于是 `jsBrowserDevelopmentRun`
+  报 `Uncaught TypeError: …new_…_k$ is not a function`（production bundle 反而是对的，所以 e2e 绿的、
+  只有本地 dev 跑崩）。规矩：公开构造器的默认值只用常量（`null` / `0` / `""`）；函数类型参数要么必填，
+  要么默认 `null`、由调用方 `?.invoke`。`ktjs-demo-kit` 的 `Entry` 原先有一个
+  `apiUrl: (Lang) -> String? = { null }`，删掉后两端混淆名一致。
+- **`cssSheet` 里的 vendor 属性写成 camelCase key**：`webkitBackgroundClip(…)` 写入的是
+  `WebkitBackgroundClip`，由 `@emotion/serialize` 自己补 `-webkit-`。写成 `-webkit-background-clip`
+  会在开发构建里被 emotion 拒绝（`Using kebab-case for css properties in objects is not supported`）并把
+  该声明丢掉；`webkitBackgroundClipName` 是给 CSS `@supports` 用的真实属性名，两者不能混。
 - Playwright 默认从官方 CDN（`cdn.playwright.dev`）下载 Chrome / FFmpeg，国内经常 0 速度。本机可把下载源
   指到国内镜像：设环境变量 `PLAYWRIGHT_DOWNLOAD_HOST=https://npmmirror.com/mirrors/playwright/`
   （**就用这个地址**；`https://cdn.npmmirror.com/binaries/playwright` 看似可用、实测会直接报错，别用）。

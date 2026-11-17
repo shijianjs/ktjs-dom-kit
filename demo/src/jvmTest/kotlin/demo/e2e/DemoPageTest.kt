@@ -1,8 +1,10 @@
 package demo.e2e
 
 import com.microsoft.playwright.Browser
+import com.microsoft.playwright.Locator
 import com.microsoft.playwright.Page
 import com.microsoft.playwright.junit.UsePlaywright
+import com.microsoft.playwright.options.WaitForSelectorState
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -77,6 +79,12 @@ class DemoPageTest(private val browser: Browser) {
     private fun pick(page: Page, action: String) {
         openMenu(page, action.substringBefore(':'))
         page.locator("vaadin-menu-bar-item[data-action='$action']").first().click()
+        // Clicking only starts the overlay's closing animation. While it is still on screen the action
+        // row measures ~18px narrower (one icon slot), so geometry read straight after the click is
+        // an in-flight value rather than the layout the user ends up looking at.
+        page.locator("vaadin-menu-bar-item[data-action]").first().waitFor(
+            Locator.WaitForOptions().setState(WaitForSelectorState.HIDDEN),
+        )
     }
 
     /**

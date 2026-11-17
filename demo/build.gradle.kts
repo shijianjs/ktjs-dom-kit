@@ -118,7 +118,15 @@ tasks.register<Test>("e2eTest") {
 
     testClassesDirs = jvmE2eCompilation.output.classesDirs
     classpath = files(jvmE2eCompilation.output.allOutputs, jvmE2eCompilation.runtimeDependencyFiles)
-    systemProperty("demo.dist", layout.buildDirectory.dir("dist/js/productionExecutable").get().asFile.absolutePath)
+    // Points at the production bundle by default; `-Ddemo.dist=…` lets a run target the development
+    // bundle instead (`build/dist/js/developmentExecutable`), which is the closest thing to
+    // `jsBrowserDevelopmentRun` a headless suite can check.
+    systemProperty(
+        "demo.dist",
+        providers.systemProperty("demo.dist").getOrElse(
+            layout.buildDirectory.dir("dist/js/productionExecutable").get().asFile.absolutePath,
+        ),
+    )
     systemProperty("e2e.output", layout.buildDirectory.dir("e2e-results").get().asFile.absolutePath)
     systemProperty("junit.jupiter.execution.timeout.default", "30 s")
 

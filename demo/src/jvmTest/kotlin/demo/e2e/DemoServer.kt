@@ -2,6 +2,7 @@ package demo.e2e
 
 import cn.hutool.http.server.SimpleServer
 import java.io.File
+import java.net.ServerSocket
 import java.nio.file.Path
 
 /**
@@ -14,8 +15,15 @@ object DemoServer {
             ?: Path.of("build", "dist", "js", "productionExecutable").toString(),
     ).canonicalFile
 
+    /**
+     * An ephemeral port from the OS. `SimpleServer(0)` does **not** mean that: Hutool picks a random
+     * port anywhere in 1024–65535, and Chromium refuses a few of those outright
+     * (`ERR_UNSAFE_PORT`, e.g. 6665–6669), which made runs fail unrelated to the code under test.
+     */
+    private fun freePort(): Int = ServerSocket(0).use { it.localPort }
+
     private val server: SimpleServer by lazy {
-        val started = SimpleServer(0).setRoot(root)
+        val started = SimpleServer(freePort()).setRoot(root)
         started.start()
         Runtime.getRuntime().addShutdownHook(Thread { started.rawServer.stop(0) })
         started
