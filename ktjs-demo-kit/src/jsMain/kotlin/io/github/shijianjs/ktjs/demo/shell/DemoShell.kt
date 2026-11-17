@@ -1,5 +1,20 @@
-package io.github.shijianjs.ktjs.demo
+package io.github.shijianjs.ktjs.demo.shell
 
+import io.github.shijianjs.ktjs.demo.Palette
+import io.github.shijianjs.ktjs.demo.RESET
+import io.github.shijianjs.ktjs.demo.Theme
+import io.github.shijianjs.ktjs.demo.ThemeMode
+import io.github.shijianjs.ktjs.demo.setHidden
+import io.github.shijianjs.ktjs.demo.withTheme
+import io.github.shijianjs.ktjs.demo.i18n.Lang
+import io.github.shijianjs.ktjs.demo.i18n.LanguageState
+import io.github.shijianjs.ktjs.demo.i18n.SiteTexts
+import io.github.shijianjs.ktjs.demo.i18n.Translations
+import io.github.shijianjs.ktjs.demo.i18n.code
+import io.github.shijianjs.ktjs.demo.nav.Catalog
+import io.github.shijianjs.ktjs.demo.nav.Entry
+import io.github.shijianjs.ktjs.demo.nav.Page
+import io.github.shijianjs.ktjs.demo.nav.Router
 import io.github.shijianjs.ktjs.dom.element.createElement
 import io.github.shijianjs.ktjs.dom.element.inlineStyle
 import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementAdapter

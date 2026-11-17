@@ -1,5 +1,10 @@
-package io.github.shijianjs.ktjs.demo
+package io.github.shijianjs.ktjs.demo.page
 
+import io.github.shijianjs.ktjs.demo.Palette
+import io.github.shijianjs.ktjs.demo.element
+import io.github.shijianjs.ktjs.demo.setHidden
+import io.github.shijianjs.ktjs.demo.withClass
+import io.github.shijianjs.ktjs.demo.withTheme
 import io.github.shijianjs.ktjs.dom.element.createElement
 import io.github.shijianjs.ktjs.vaadin.card.CardElement
 import io.github.shijianjs.ktjs.vaadin.card.createCard
@@ -7,16 +12,11 @@ import io.github.shijianjs.ktjs.vaadin.horizontallayout.HorizontalLayoutElement
 import io.github.shijianjs.ktjs.vaadin.horizontallayout.createHorizontalLayout
 import io.github.shijianjs.ktjs.vaadin.verticallayout.VerticalLayoutElement
 import io.github.shijianjs.ktjs.vaadin.verticallayout.createVerticalLayout
-import web.cssom.ClassName
 import web.dom.Node
-import web.dom.TagName
 import web.html.HTMLAnchorElement
 import web.html.HTMLHeadingElement
 import web.html.HTMLElement
-import web.html.Hidden
 import web.html.HtmlTagName
-import web.html.`false`
-import web.html.`true`
 import web.window.WindowTarget
 import web.window._blank
 
@@ -32,13 +32,6 @@ import web.window._blank
  * A class constant is declared here only when this file and a sheet in another file both use it; a
  * class a single page introduces stays in that page.
  */
-
-/** Creates an element of [tag], optionally with [className], and appends [children]. */
-fun <T : HTMLElement> element(tag: TagName<T>, className: ClassName? = null, vararg children: Node): T =
-    tag.createElement {
-        if (className != null) classList.add(className)
-        if (children.isNotEmpty()) append(*children)
-    }
 
 /** Creates a plain `<div>`; used only where a component has no suitable box of its own. */
 fun div(vararg children: Node): HTMLElement = element(HtmlTagName.div, null, *children)
@@ -82,27 +75,6 @@ fun bulletList(items: List<String>): HTMLElement {
     val list = element(HtmlTagName.ul)
     items.forEach { item -> list.append(element(HtmlTagName.li).apply { textContent = item }) }
     return list
-}
-
-/** Adds [className] and returns the element, so calls can chain. */
-fun <T : HTMLElement> T.withClass(className: ClassName): T {
-    classList.add(className)
-    return this
-}
-
-/** Sets Vaadin's `theme` attribute from [variants]; no variants removes it. */
-fun <T : HTMLElement> T.withTheme(vararg variants: String): T {
-    if (variants.isEmpty()) {
-        removeAttribute("theme")
-    } else {
-        setAttribute("theme", variants.joinToString(" "))
-    }
-    return this
-}
-
-/** Shows or hides the element with the native `hidden` property. */
-fun HTMLElement.setHidden(hidden: Boolean) {
-    this.hidden = if (hidden) Hidden.Companion.`true` else Hidden.Companion.`false`
 }
 
 /** A horizontal group: the Vaadin layout supplies the gap, the site sheet centres the items. */

@@ -1,9 +1,9 @@
 package io.github.shijianjs.ktjs.dom.demo
 
-import io.github.shijianjs.ktjs.demo.Langs
-import io.github.shijianjs.ktjs.demo.SiteTexts
-import io.github.shijianjs.ktjs.demo.Translations
-import io.github.shijianjs.ktjs.demo.texts
+import io.github.shijianjs.ktjs.demo.i18n.Langs
+import io.github.shijianjs.ktjs.demo.i18n.SiteTexts
+import io.github.shijianjs.ktjs.demo.i18n.Translations
+import io.github.shijianjs.ktjs.demo.i18n.texts
 
 /**
  * Every string the shell and the navigation show, in English.

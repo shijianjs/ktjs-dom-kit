@@ -1,5 +1,6 @@
-package io.github.shijianjs.ktjs.demo
+package io.github.shijianjs.ktjs.demo.shell
 
+import io.github.shijianjs.ktjs.demo.Palette
 import io.github.shijianjs.ktjs.dom.css.colorStop
 import io.github.shijianjs.ktjs.dom.css.cssSheet
 import io.github.shijianjs.ktjs.dom.css.dsl.supports
@@ -11,7 +12,6 @@ import io.github.shijianjs.ktjs.vaadin.lumoutility.LumoUtility
 import web.cssom.AlignItems
 import web.cssom.Auto
 import web.cssom.BackgroundClip
-import web.cssom.BoxSizing
 import web.cssom.CSSStyleSheet
 import web.cssom.Color
 import web.cssom.CustomPropertyName
@@ -19,7 +19,6 @@ import web.cssom.Display
 import web.cssom.JustifyContent
 import web.cssom.Length
 import web.cssom.Margin
-import web.cssom.Padding
 import web.cssom.PropertyName
 import web.cssom.WhiteSpace
 import web.cssom.deg
@@ -33,92 +32,11 @@ import web.cssom.`var`
 import web.cssom.vh
 
 /**
- * The sheets a demo site shares.
+ * The shell: app layout sizing, navbar, drawer column and content column.
  *
- * [RESET] is adopted by **every** shadow root: `:host { display: block }` (a custom element is inline
- * by default) and `box-sizing`, which is not inherited and therefore has to be redeclared inside each
- * tree — that is the reason a reset is shared at all.
- *
- * [PAGE_SHEET] styles typography and the few pieces a page owns. Boxes and gaps come from Vaadin's
- * `card` / `vertical-layout` / `horizontal-layout` components, which carry their own `padding` /
- * `spacing` theme variants — that is what the component library is for.
- *
- * [SHELL_SHEET] only sizes the app layout and its slots: navbar full width on top, drawer column under
- * it, content scrolling inside the layout. Colours are Lumo custom properties (see [Palette]), so the
- * light/dark switch at the document level repaints every tree without a `[data-theme]` selector.
+ * Colours are Lumo custom properties (see [Palette]), so the light/dark switch at the document level
+ * repaints every tree without a `[data-theme]` selector.
  */
-val RESET: CSSStyleSheet = cssSheet {
-    ":host" { display = Display.block }
-
-    "*, *::before, *::after" { boxSizing = BoxSizing.borderBox }
-}
-
-/** Typography of one page and the boxes a page owns. */
-val PAGE_SHEET: CSSStyleSheet = cssSheet {
-    PAGE_TITLE {
-        margin = Margin(0.px, 0.px, 6.px)
-        fontSize = 26.px
-        color = Palette.text
-    }
-
-    PAGE_SUMMARY {
-        margin = Margin(0.px, 0.px, 10.px)
-        color = Palette.muted
-        fontSize = 14.px
-        lineHeight = number(1.55)
-    }
-
-    PAGE_LINKS {
-        margin = Margin(0.px, 0.px, 4.px)
-        fontSize = 13.px
-    }
-
-    PAGE_LINK {
-        marginRight = 16.px
-        color = Palette.accent
-        fontSize = 13.px
-    }
-
-
-    SECTION_TITLE {
-        margin = Margin(0.px, 0.px, 6.px)
-        fontSize = 18.px
-        color = Palette.text
-    }
-
-    SECTION_HINT {
-        margin = Margin(0.px, 0.px, 10.px)
-        color = Palette.muted
-        fontSize = 13.px
-        lineHeight = number(1.5)
-    }
-
-    EXAMPLE_CAPTION {
-        margin = Margin(0.px, 0.px, 8.px, 0.px)
-        color = Palette.muted
-        fontSize = 12.px
-    }
-
-    ROW { alignItems = AlignItems.center }
-
-    READOUT {
-        margin = 0.px
-        color = Palette.muted
-        fontSize = 13.px
-    }
-
-    // A card is the page's box: it fills the column, the surface itself stays the component's.
-    "vaadin-card" { width = 100.pct }
-
-    CODE {
-        backgroundColor = Palette.surfaceRaised
-        borderRadius = 6.px
-        padding = Padding(2.px, 6.px)
-        fontSize = 12.px
-    }
-}
-
-/** The shell: app layout sizing, navbar, drawer column and content column. */
 val SHELL_SHEET: CSSStyleSheet = cssSheet {
     ":host" {
         display = Display.block
@@ -129,14 +47,19 @@ val SHELL_SHEET: CSSStyleSheet = cssSheet {
         // The app layout's own knobs: a fixed drawer width and the denser Lumo body size.
         set(CustomPropertyName<Length>("--vaadin-app-layout-drawer-width"), 264.px)
         set(CustomPropertyName<Length>("--lumo-font-size-m"), 14.px)
-        // Lumo's radii, one step larger than the defaults (`s 0.25em`, base 0.25em, `l 0.5em`): every
-        // card, button, field and overlay inside the shell inherits them, so the whole site rounds
-        // together instead of each component being adjusted separately. `m` derives from the base.
-        set(CustomPropertyName<Length>("--lumo-border-radius-s"), 0.5.em)
+        // Lumo's radii, scaled up (`s` 0.25em stays the default, `m` 0.5em, `l` 1em): every card,
+        // button, field and overlay inside the shell inherits them, so the whole site rounds together
+        // instead of each component being adjusted separately.
+        //
+        // `m` is written out even though Lumo defines it as `var(--lumo-border-radius, 0.25em)`: some
+        // components redeclare `--lumo-border-radius-m` on their own `:host`, so inheriting only the
+        // base left those corners at the old value. `s` is deliberately kept smaller than `m` — three
+        // distinct steps, not two aliases of one value.
+        set(CustomPropertyName<Length>("--lumo-border-radius-s"), 0.25.em)
         set(CustomPropertyName<Length>("--lumo-border-radius"), 0.5.em)
+        set(CustomPropertyName<Length>("--lumo-border-radius-m"), 0.5.em)
         set(CustomPropertyName<Length>("--lumo-border-radius-l"), 1.em)
     }
-
 
     // `utility.css` is a document-level sheet of `@vaadin/vaadin-lumo-styles`, so its rules cannot
     // cross into this shadow tree. The classes are still the ones Lumo defines — the selectors below
@@ -217,5 +140,4 @@ val SHELL_SHEET: CSSStyleSheet = cssSheet {
     SHELL_NAV_ICON {
         fontSize = 18.px
     }
-
 }

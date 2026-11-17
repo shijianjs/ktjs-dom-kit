@@ -1,8 +1,8 @@
 package io.github.shijianjs.ktjs.dom.demo
 
-import io.github.shijianjs.ktjs.demo.DemoShell
-import io.github.shijianjs.ktjs.demo.LanguageState
-import io.github.shijianjs.ktjs.demo.ShellConfig
+import io.github.shijianjs.ktjs.demo.shell.DemoShell
+import io.github.shijianjs.ktjs.demo.i18n.LanguageState
+import io.github.shijianjs.ktjs.demo.shell.ShellConfig
 import io.github.shijianjs.ktjs.demo.Theme
 import web.dom.ElementId
 import web.dom.document

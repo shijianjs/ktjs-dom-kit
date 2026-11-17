@@ -39,7 +39,7 @@ fragment（`#/elements`）里，所以静态托管上的深链可用，刷新也
 - 菜单子项落在 `menu-bar` 自己的 shadow 树里，外壳的 sheet 够不到，所以那部分内容的尺寸与选中强调
   只能内联；
 - Lumo 的 `utility.css` 是**文档级**样式表，规则穿不进 shadow 树。外壳仍然用包装里的类名，但把用到的
-  两条声明（`items-center`、`justify-between`）写进自己的 sheet —— 见 `Sheets.kt` 里的注释。
+  两条声明（`items-center`、`justify-between`）写进自己的 sheet（`shell/ShellSheet.kt`）。
 
 ### 语言与站点标记
 

@@ -196,6 +196,51 @@ class DemoPageTest(private val browser: Browser) {
      * `scaleLogo` build step. A `<link>` that points at a file the build never copies would leave the
      * browser showing its default globe, so the test also fetches it and checks the bytes arrive.
      */
+    /**
+     * The shell raises Lumo's corner radii one step, and the three steps stay distinct: `s` is the
+     * stock 0.25em, `m` (and the base it derives from) is 0.5em, `l` is 1em. `m` is declared explicitly
+     * because a few components redeclare it on their own `:host`; inheriting only the base left those
+     * corners at the old value. The assertion reads the values a real component ends up with, not the
+     * tokens alone: 14px body size ⇒ 3.5 / 7 / 14.
+     */
+    @Test
+    fun `the shell rounds one step larger than Lumo's defaults`() {
+        val page = open("#/elements")
+
+        val tokens = page.locator("ktjs-demo-shell").first().evaluate(
+            """
+            (shell) => {
+              const style = getComputedStyle(shell);
+              return ['--lumo-border-radius-s', '--lumo-border-radius', '--lumo-border-radius-m',
+                      '--lumo-border-radius-l'].map((name) => style.getPropertyValue(name).trim());
+            }
+            """.trimIndent(),
+        ) as List<*>
+        assertEquals(listOf("0.25em", "0.5em", "0.5em", "1em"), tokens)
+
+        val cardRadius = page.locator("vaadin-card").first()
+            .evaluate("node => getComputedStyle(node).borderRadius") as String
+        val buttonRadius = page.locator("vaadin-button").first()
+            .evaluate("node => getComputedStyle(node).borderRadius") as String
+        assertEquals("7px", cardRadius, "a card did not take the doubled middle radius")
+        assertEquals("7px", buttonRadius, "a button did not take the doubled middle radius")
+
+        // `s` must stay visibly smaller than `m`, otherwise the three steps collapse into two values.
+        val widths = listOf("s", "", "l").map { step ->
+            val name = if (step.isEmpty()) "--lumo-border-radius" else "--lumo-border-radius-$step"
+            page.locator("ktjs-demo-shell").first()
+                .evaluate(
+                    "(shell, name) => parseFloat(getComputedStyle(shell).getPropertyValue(name)) * 14",
+                    name,
+                ) as Number
+        }
+        assertTrue(
+            widths[0].toDouble() < widths[1].toDouble() && widths[1].toDouble() < widths[2].toDouble(),
+            "the radius steps are not ordered: $widths",
+        )
+        assertNoErrors()
+    }
+
     @Test
     fun `the browser tab shows the site logo`() {
         val page = open("")

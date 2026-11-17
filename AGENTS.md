@@ -41,6 +41,12 @@
   `baseUrl` 加载。Node 会读配置文件，所以这个 bundle 绝不能进 `docs` 的 Kotlin 依赖图。
 - **有这个仓库自己的 demo**：`ktjs-demo-kit`（外壳、路由、i18n 容器、主题）+ `demo`（本站五个页面）。示例既
   是集成测试也是浏览器验收：`./gradlew :demo:e2eTest`（Playwright，含截图与几何断言）。
+  - 包按归属切（`io.github.shijianjs.ktjs.demo`）：根包只放跨 owner 的东西（`Palette`、`RESET`、`Theme`、
+    `Elements.kt` 里那几个通用元素 helper）；`i18n/`（`Lang`、`LanguageState`、`Translations`、`SiteTexts`、
+    `Binder`）、`nav/`（`Catalog` 的 `Page`/`Group`/`Entry` 与 `Router`）、`page/`（`DemoPage`、`Blocks`、
+    `PageSheet`、`PageClasses`）、`shell/`（`DemoShell`、`ShellSheet`、`ShellClasses`）。
+  - **样式表与 `ClassName` 常量跟着 owner 走**：不要再合成一份 `Sheets.kt` / `Classes.kt`，也不要建 `style/`；
+    只有「每棵树都要 adopt」的 reset 与「整站一起变」的调色板可以跨包。
   - 默认跑的是 production bundle；要验收 development bundle（`jsBrowserDevelopmentRun` 用的那种、不做 DCE），
     先 `./gradlew :demo:jsBrowserDevelopmentDistribution`，再
     `./gradlew :demo:e2eTest -Ddemo.dist=<repo>/demo/build/dist/js/developmentExecutable`（`e2eTest` 的

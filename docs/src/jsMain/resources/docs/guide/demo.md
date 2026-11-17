@@ -47,7 +47,7 @@ The shell is one `vaadin-app-layout`:
   emphasised inline, because a class declared in the shell's sheet cannot reach it;
 - Lumo's `utility.css` is a document-level stylesheet, so its classes cannot reach into a shadow tree.
   The shell still uses the wrapper's class names, but repeats the two declarations it needs
-  (`items-center`, `justify-between`) in its own sheet — see the comments in `Sheets.kt`.
+  (`items-center`, `justify-between`) in its own sheet (shell/ShellSheet.kt).
 
 ### Languages and the site mark
 

@@ -1,5 +1,6 @@
-package io.github.shijianjs.ktjs.demo
+package io.github.shijianjs.ktjs.demo.nav
 
+import io.github.shijianjs.ktjs.demo.i18n.Lang
 import web.html.HTMLElement
 
 /**

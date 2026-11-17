@@ -1,8 +1,8 @@
 package io.github.shijianjs.ktjs.dom.demo
 
-import io.github.shijianjs.ktjs.demo.Catalog
-import io.github.shijianjs.ktjs.demo.Entry
-import io.github.shijianjs.ktjs.demo.Group
+import io.github.shijianjs.ktjs.demo.nav.Catalog
+import io.github.shijianjs.ktjs.demo.nav.Entry
+import io.github.shijianjs.ktjs.demo.nav.Group
 import io.github.shijianjs.ktjs.dom.demo.page.attribute.AttributePage
 import io.github.shijianjs.ktjs.dom.demo.page.elements.ElementsPage
 import io.github.shijianjs.ktjs.dom.demo.page.overview.OverviewPage

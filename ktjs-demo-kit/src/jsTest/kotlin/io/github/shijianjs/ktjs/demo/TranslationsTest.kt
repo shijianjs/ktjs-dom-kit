@@ -1,4 +1,4 @@
-package io.github.shijianjs.ktjs.demo
+package io.github.shijianjs.ktjs.demo.i18n
 
 import kotlin.test.Test
 import kotlin.test.assertEquals

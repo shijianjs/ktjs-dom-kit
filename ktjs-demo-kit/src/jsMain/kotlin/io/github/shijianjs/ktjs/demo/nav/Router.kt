@@ -1,4 +1,4 @@
-package io.github.shijianjs.ktjs.demo
+package io.github.shijianjs.ktjs.demo.nav
 
 import web.events.Event
 import web.events.EventType

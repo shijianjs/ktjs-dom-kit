@@ -1,4 +1,4 @@
-package io.github.shijianjs.ktjs.demo
+package io.github.shijianjs.ktjs.demo.i18n
 
 /**
  * Every string the shell and the navigation show, in one language.
