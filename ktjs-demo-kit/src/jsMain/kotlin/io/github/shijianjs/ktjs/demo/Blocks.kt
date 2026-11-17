@@ -1,6 +1,12 @@
 package io.github.shijianjs.ktjs.demo
 
 import io.github.shijianjs.ktjs.dom.element.createElement
+import io.github.shijianjs.ktjs.vaadin.card.CardElement
+import io.github.shijianjs.ktjs.vaadin.card.createCard
+import io.github.shijianjs.ktjs.vaadin.horizontallayout.HorizontalLayoutElement
+import io.github.shijianjs.ktjs.vaadin.horizontallayout.createHorizontalLayout
+import io.github.shijianjs.ktjs.vaadin.verticallayout.VerticalLayoutElement
+import io.github.shijianjs.ktjs.vaadin.verticallayout.createVerticalLayout
 import web.cssom.ClassName
 import web.dom.Node
 import web.dom.TagName
@@ -17,12 +23,14 @@ import web.window._blank
 /**
  * The blocks a page is built from.
  *
- * Every node is created through dom-kit's typed `createElement`, so no tag name is ever written as a
- * string and no markup is parsed. The nodes live inside the page element's shadow tree; their look
- * comes from [PAGE_SHEET]'s classes, not from inline declarations.
+ * Boxes and groups are Vaadin's layout components (`vaadin-vertical-layout`,
+ * `vaadin-horizontal-layout`, `vaadin-card`) with their `padding` / `spacing` theme variants: gaps,
+ * padding and the card surface are the component library's business, so this site only styles
+ * typography and the few colours that come from [Palette]. Nodes are created through dom-kit's typed
+ * `createElement`, so no tag name is ever written as a string and no markup is parsed.
  *
- * Helpers that own a look use the shared [ClassName] constants from `Classes.kt`; a class a page
- * introduces for itself is added with [withClass].
+ * A class constant is declared here only when this file and a sheet in another file both use it; a
+ * class a single page introduces stays in that page.
  */
 
 /** Creates an element of [tag], optionally with [className], and appends [children]. */
@@ -32,7 +40,7 @@ fun <T : HTMLElement> element(tag: TagName<T>, className: ClassName? = null, var
         if (children.isNotEmpty()) append(*children)
     }
 
-/** Creates a plain `<div>`. */
+/** Creates a plain `<div>`; used only where a component has no suitable box of its own. */
 fun div(vararg children: Node): HTMLElement = element(HtmlTagName.div, null, *children)
 
 /** Creates a `<p>` with [text]. */
@@ -97,25 +105,36 @@ fun HTMLElement.setHidden(hidden: Boolean) {
     this.hidden = if (hidden) Hidden.Companion.`true` else Hidden.Companion.`false`
 }
 
-/** A horizontal group. */
-fun row(vararg children: Node): HTMLElement = element(HtmlTagName.div, ROW, *children)
-
-/** A vertical group. */
-fun col(vararg children: Node): HTMLElement = element(HtmlTagName.div, COL, *children)
-
-/** A responsive grid. */
-fun grid(vararg children: Node): HTMLElement = element(HtmlTagName.div, GRID, *children)
-
-/** One bordered example box. */
-fun exampleBox(caption: String? = null, vararg children: Node): HTMLElement {
-    val box = element(HtmlTagName.div, EXAMPLE)
-    if (caption != null) box.append(element(HtmlTagName.p, EXAMPLE_CAPTION).apply { textContent = caption })
-    box.append(*children)
-    return box
+/** A horizontal group: the Vaadin layout supplies the gap, the site sheet centres the items. */
+fun row(vararg children: Node): HorizontalLayoutElement {
+    val layout = createHorizontalLayout { withTheme("spacing") }
+    layout.classList.add(ROW)
+    if (children.isNotEmpty()) layout.append(*children)
+    return layout
 }
 
-/** One titled section: title, optional hint, and the body the examples go into. */
-class SectionBlock(val root: HTMLElement, val title: HTMLElement, val hint: HTMLElement, val body: HTMLElement) {
+/** A vertical group: the Vaadin layout supplies the gap. */
+fun col(vararg children: Node): VerticalLayoutElement {
+    val layout = createVerticalLayout { withTheme("spacing") }
+    if (children.isNotEmpty()) layout.append(*children)
+    return layout
+}
+
+/** One example box: a Vaadin card, with an optional caption above the content. */
+fun exampleBox(caption: String? = null, vararg children: Node): CardElement {
+    val card = createCard()
+    if (caption != null) card.append(element(HtmlTagName.p, EXAMPLE_CAPTION).apply { textContent = caption })
+    if (children.isNotEmpty()) card.append(*children)
+    return card
+}
+
+/** One titled section: title, optional hint, and the body its examples go into. */
+class SectionBlock(
+    val root: VerticalLayoutElement,
+    val title: HTMLElement,
+    val hint: HTMLElement,
+    val body: VerticalLayoutElement,
+) {
     /** Writes [title] and [hint]; an empty [hintText] hides the hint line. */
     fun setText(title: String, hintText: String = "") {
         this.title.textContent = title
@@ -128,8 +147,10 @@ class SectionBlock(val root: HTMLElement, val title: HTMLElement, val hint: HTML
 fun sectionBlock(): SectionBlock {
     val title = element(HtmlTagName.h2, SECTION_TITLE)
     val hint = element(HtmlTagName.p, SECTION_HINT)
-    val body = element(HtmlTagName.div, SECTION_BODY)
-    val root = element(HtmlTagName.div, SECTION, title, hint, body)
+    val body = createVerticalLayout { withTheme("spacing") }
+    val root = createVerticalLayout { withTheme("spacing") }
+    root.classList.add(SECTION)
+    root.append(title, hint, body)
     return SectionBlock(root, title, hint, body)
 }
 

@@ -28,7 +28,7 @@ class DemoPageTest(private val browser: Browser) {
             if (message.type() == "error") consoleErrors += message.text()
         }
         page.navigate(DemoServer.baseUrl + path.trimStart('#').let { if (path.startsWith("#")) "#$it" else it })
-        page.waitForSelector("ktjs-demo-shell .shell__nav")
+        page.waitForSelector("ktjs-demo-shell vaadin-app-layout")
         page.setDefaultTimeout(7_000.0)
         return page
     }
@@ -57,7 +57,7 @@ class DemoPageTest(private val browser: Browser) {
         val page = open("#/custom-elements")
 
         assertTrue(page.title().contains("Custom elements"), "title was: ${page.title()}")
-        val breadcrumb = page.locator("ktjs-demo-shell .shell__breadcrumb").textContent().orEmpty()
+        val breadcrumb = page.locator("ktjs-demo-shell vaadin-breadcrumbs").textContent().orEmpty()
         assertTrue(breadcrumb.contains("Custom elements"), "breadcrumb was: $breadcrumb")
         assertTrue(page.locator("ktjs-demo-page .page__title").textContent().orEmpty().isNotEmpty())
         assertEquals("#/custom-elements", page.evaluate("location.hash") as String)
@@ -68,7 +68,7 @@ class DemoPageTest(private val browser: Browser) {
     fun `navigation swaps exactly one page`() {
         val page = open("")
 
-        assertTrue(page.locator("ktjs-demo-shell .shell__nav vaadin-side-nav-item").count() >= 4)
+        assertTrue(page.locator("ktjs-demo-shell [slot='drawer'] vaadin-side-nav-item").count() >= 4)
         page.locator("[data-route='stylesheets']").first().click()
         page.waitForSelector("ktjs-demo-page .page__title:text-is('Stylesheets')")
         assertEquals(1, page.locator("ktjs-demo-page").count(), "the content area hosts one page")
@@ -84,7 +84,7 @@ class DemoPageTest(private val browser: Browser) {
         counter.locator("vaadin-button").click()
         assertEquals("2", counter.locator(".counter__value").textContent())
 
-        page.locator("ktjs-demo-shell .shell__actions vaadin-button:text-is('中文')").click()
+        page.locator("ktjs-demo-shell [slot='navbar'] vaadin-button:text-is('中文')").click()
         page.waitForSelector("ktjs-demo-page .page__title:text-is('自定义元素')")
         assertEquals(
             "2",
@@ -98,13 +98,13 @@ class DemoPageTest(private val browser: Browser) {
     fun `theme switch flips the document theme`() {
         val page = open("")
 
-        page.locator("ktjs-demo-shell .shell__actions vaadin-button:text-is('Dark')").click()
+        page.locator("ktjs-demo-shell [slot='navbar'] vaadin-button:text-is('Dark')").click()
         assertEquals(
             "dark",
             page.evaluate("document.documentElement.getAttribute('theme')") as String,
         )
 
-        page.locator("ktjs-demo-shell .shell__actions vaadin-button:text-is('Light')").click()
+        page.locator("ktjs-demo-shell [slot='navbar'] vaadin-button:text-is('Light')").click()
         assertEquals(
             null,
             page.evaluate("document.documentElement.getAttribute('theme')") as String?,

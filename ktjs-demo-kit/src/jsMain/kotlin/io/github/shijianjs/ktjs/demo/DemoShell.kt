@@ -4,12 +4,22 @@ import io.github.shijianjs.ktjs.dom.element.createElement
 import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementAdapter
 import io.github.shijianjs.ktjs.dom.webcomponent.attachStyledShadow
 import io.github.shijianjs.ktjs.dom.webcomponent.defineIfMissing
+import io.github.shijianjs.ktjs.vaadin.applayout.AppLayoutPrimarySections
+import io.github.shijianjs.ktjs.vaadin.applayout.createAppLayout
+import io.github.shijianjs.ktjs.vaadin.applayout.createDrawerToggle
+import io.github.shijianjs.ktjs.vaadin.breadcrumbs.BreadcrumbsItemElement
+import io.github.shijianjs.ktjs.vaadin.breadcrumbs.createBreadcrumbs
+import io.github.shijianjs.ktjs.vaadin.breadcrumbs.createBreadcrumbsItem
 import io.github.shijianjs.ktjs.vaadin.button.ButtonElement
 import io.github.shijianjs.ktjs.vaadin.button.createButton
+import io.github.shijianjs.ktjs.vaadin.horizontallayout.HorizontalLayoutElement
+import io.github.shijianjs.ktjs.vaadin.horizontallayout.createHorizontalLayout
 import io.github.shijianjs.ktjs.vaadin.lumostyles.registerLumoIcons
 import io.github.shijianjs.ktjs.vaadin.sidenav.SideNavItemElement
 import io.github.shijianjs.ktjs.vaadin.sidenav.createSideNav
 import io.github.shijianjs.ktjs.vaadin.sidenav.createSideNavItem
+import io.github.shijianjs.ktjs.vaadin.verticallayout.VerticalLayoutElement
+import io.github.shijianjs.ktjs.vaadin.verticallayout.createVerticalLayout
 import web.components.CustomElementReference
 import web.dom.TagName
 import web.dom.clickEvent
@@ -32,33 +42,56 @@ class Chrome(
 )
 
 /**
- * `<ktjs-demo-shell>`: the whole site frame — a sidebar built once from the catalog, a top bar with
- * the breadcrumb, the API link, the language switch and the light/dark switch, and the content area
- * that hosts the current page.
+ * `<ktjs-demo-shell>`: the site frame, built from Vaadin's app layout.
  *
- * The shell never rebuilds structure. Navigation swaps the single child of the content area and keeps
- * the built pages cached, so state inside a page (typed input, selected rows, opened panels) survives
- * a trip to another page and back. A language switch resolves one [SiteTexts] per language and walks
- * the mounted pages through [Page.applyTranslation] — it does not drop the cache.
+ * The layout owns the geometry that a hand-rolled shell always gets wrong: the navbar spans the whole
+ * width on top, the drawer sits under it and scrolls on its own, and the content column scrolls inside
+ * the layout — so the page never grows a second scrollbar next to the navigation, and no panel has to
+ * fake a sticky position. The drawer width and both bar backgrounds are app-layout custom properties
+ * set once in [SHELL_SHEET].
+ *
+ * Navigation swaps the single child of the content column and keeps the built pages cached, so state
+ * inside a page (typed input, selected rows, opened panels) survives a trip to another page and back.
+ * A language switch resolves one [SiteTexts] per language and walks the mounted pages through
+ * [Page.applyTranslation] — it does not drop the cache.
  *
  * Configuration is handed over in [mount] rather than through a constructor argument, because the
  * browser creates custom elements itself; the element is configured while detached, before it is
  * appended.
  */
 class DemoShell : CustomElementAdapter() {
+    private val appLayout = createAppLayout()
+
+    private val drawerToggle = createDrawerToggle { ariaLabelProperty = "Toggle navigation" }
+
+    private val navbar: HorizontalLayoutElement = createHorizontalLayout {
+        withTheme("spacing")
+        classList.add(SHELL_TOPBAR)
+        setAttribute("slot", "navbar")
+    }
+
+    private val breadcrumbs = createBreadcrumbs()
+
+    private val crumbGroup: BreadcrumbsItemElement = createBreadcrumbsItem()
+
+    private val crumbPage: BreadcrumbsItemElement = createBreadcrumbsItem()
+
+    private val actions: HorizontalLayoutElement = createHorizontalLayout { withTheme("spacing") }
+
+    private val drawer: VerticalLayoutElement = createVerticalLayout {
+        withTheme("padding", "spacing")
+        setAttribute("slot", "drawer")
+    }
+
+    private val content: VerticalLayoutElement = createVerticalLayout { withTheme("padding", "spacing") }
+
     private val brandName: HTMLElement = HtmlTagName.span.createElement { classList.add(SHELL_BRAND_NAME) }
 
     private val brandVersion: HTMLElement = HtmlTagName.span.createElement { classList.add(SHELL_BRAND_VERSION) }
 
-    private val groupHost: HTMLElement = div()
+    private val brand: VerticalLayoutElement = createVerticalLayout { classList.add(SHELL_BRAND) }
 
-    private val navElement: HTMLElement = HtmlTagName.aside.createElement { classList.add(SHELL_NAV) }
-
-    private val breadcrumb: HTMLElement = HtmlTagName.span.createElement { classList.add(SHELL_BREADCRUMB) }
-
-    private val actions: HTMLElement = div().apply { classList.add(SHELL_ACTIONS) }
-
-    private val contentHost: HTMLElement = div().apply { classList.add(SHELL_CONTENT) }
+    private val groupHost: VerticalLayoutElement = createVerticalLayout { withTheme("spacing") }
 
     private lateinit var catalog: Catalog
 
@@ -89,21 +122,20 @@ class DemoShell : CustomElementAdapter() {
     private val darkButton: ButtonElement = createButton()
 
     init {
-        val brand = div().apply { classList.add(SHELL_BRAND) }
+        appLayout.primarySection = AppLayoutPrimarySections.navbar
+
         brand.append(brandName, brandVersion)
-        navElement.append(brand, groupHost)
+        drawer.append(brand, groupHost)
 
-        val topbar = HtmlTagName.header.createElement { classList.add(SHELL_TOPBAR) }
-        topbar.append(breadcrumb, actions)
+        breadcrumbs.append(crumbGroup, crumbPage)
+        navbar.append(drawerToggle, breadcrumbs, actions)
 
-        val main = div().apply { classList.add(SHELL_MAIN) }
-        main.append(topbar, contentHost)
-
-        attachStyledShadow(RESET, SHELL_SHEET).append(navElement, main)
+        appLayout.append(navbar, drawer, content)
+        attachStyledShadow(RESET, SHELL_SHEET).append(appLayout)
     }
 
     /**
-     * Builds the sidebar, the top bar and the router, then shows the route already in the URL.
+     * Builds the drawer, the navbar and the router, then shows the route already in the URL.
      *
      * [texts] resolves the shell's strings for a language: the application owns one [SiteTexts]
      * instance per language and hands this function over, so the shell itself carries no copy.
@@ -133,6 +165,7 @@ class DemoShell : CustomElementAdapter() {
 
         val defaultRoute = catalog.entries.firstOrNull()?.id ?: "overview"
         router = Router(defaultRoute) { show(it) }
+        appLayout.drawerOpened = true
         applyLanguage()
         router.start()
     }
@@ -163,7 +196,7 @@ class DemoShell : CustomElementAdapter() {
                 list.append(item)
             }
 
-            val groupBox = div().apply { classList.add(SHELL_GROUP) }
+            val groupBox = createVerticalLayout { classList.add(SHELL_GROUP) }
             groupBox.append(title, list)
             groupTitles[group.id] = title
             groupHost.append(groupBox)
@@ -228,15 +261,19 @@ class DemoShell : CustomElementAdapter() {
         }
         setBreadcrumb(entry)
 
-        if (contentHost.firstElementChild !== page.node) {
-            contentHost.replaceChildren(page.node)
+        if (content.firstElementChild !== page.node) {
+            content.replaceChildren(page.node)
         }
     }
 
     private fun setBreadcrumb(entry: Entry) {
         val current = textsFor(language.current)
-        val groupTitle = current.groupTitles[entry.group.id] ?: entry.group.id
-        breadcrumb.textContent = "$groupTitle / ${titleOf(entry, language.current)}"
+        crumbGroup.textContent = current.groupTitles[entry.group.id] ?: entry.group.id
+        // The group is a real destination: the first page of that group. The page itself is the
+        // current item, rendered without a path so breadcrumbs marks it `aria-current="page"`.
+        catalog.entriesOf(entry.group).firstOrNull()?.let { crumbGroup.path = "#/${it.id}" }
+        crumbPage.textContent = titleOf(entry, language.current)
+        crumbPage.removeAttribute("path")
     }
 
     private fun applyLanguage() {

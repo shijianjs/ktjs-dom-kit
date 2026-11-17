@@ -28,7 +28,7 @@ class ScreenshotTest(private val browser: Browser) {
     private fun open(path: String): Page {
         val page = browser.newPage(Browser.NewPageOptions().setViewportSize(1600, 900))
         page.navigate(DemoServer.baseUrl + path)
-        page.waitForSelector("ktjs-demo-shell .shell__nav")
+        page.waitForSelector("ktjs-demo-shell vaadin-app-layout")
         page.setDefaultTimeout(7_000.0)
         return page
     }
@@ -58,12 +58,49 @@ class ScreenshotTest(private val browser: Browser) {
             """.trimIndent(),
         ) as Number).toDouble()
 
+    /**
+     * The window itself never scrolls: the app layout owns the height, the content column and the
+     * drawer scroll inside it. This is what keeps a second, always-visible scrollbar out of the
+     * navigation — the bug the old sticky sidebar produced on every browser.
+     */
+    private fun assertOneScreen(page: Page) {
+        val metrics = page.evaluate(
+            """
+            () => {
+              const scrolling = document.scrollingElement;
+              return { pageScroll: scrolling.scrollHeight - scrolling.clientHeight, inner: innerHeight };
+            }
+            """.trimIndent(),
+        ) as Map<*, *>
+        val pageScroll = (metrics["pageScroll"] as Number).toInt()
+        assertTrue(pageScroll <= 1, "the window must not scroll; overflow was $pageScroll px")
+    }
+
+    /** A navigation column that fits its items shows no scrollbar, not an empty track. */
+    private fun assertDrawerHasNoScrollbar(page: Page) {
+        val state = page.locator("ktjs-demo-shell vaadin-app-layout").first().evaluate(
+            """
+            (layout) => {
+              const drawer = layout.shadowRoot.querySelector('[part="drawer"]');
+              return {
+                overflow: drawer.scrollHeight - drawer.clientHeight,
+                overflowY: getComputedStyle(drawer).overflowY,
+              };
+            }
+            """.trimIndent(),
+        ) as Map<*, *>
+        assertTrue((state["overflow"] as Number).toInt() <= 1, "the drawer scrolled by ${state["overflow"]} px")
+        assertEquals("auto", state["overflowY"], "the drawer must scroll on demand, not always")
+    }
+
     @Test
     fun `light theme paints a light page`() {
         val page = open("")
         val light = luminance(page, "ktjs-demo-shell")
         assertTrue(light > 0.7, "content background luminance was $light in the light theme")
         assertNoHorizontalOverflow(page)
+        assertOneScreen(page)
+        assertDrawerHasNoScrollbar(page)
         shoot(page, "light-overview")
         page.close()
     }
@@ -71,7 +108,7 @@ class ScreenshotTest(private val browser: Browser) {
     @Test
     fun `dark theme repaints the same page`() {
         val page = open("")
-        page.locator("ktjs-demo-shell .shell__actions vaadin-button:text-is('Dark')").click()
+        page.locator("ktjs-demo-shell [slot='navbar'] vaadin-button:text-is('Dark')").click()
         page.waitForTimeout(400.0)
         val dark = luminance(page, "ktjs-demo-shell")
         assertTrue(dark < 0.2, "content background luminance was $dark in the dark theme")
@@ -83,7 +120,7 @@ class ScreenshotTest(private val browser: Browser) {
     @Test
     fun `chinese switch repaints every string in place`() {
         val page = open("")
-        page.locator("ktjs-demo-shell .shell__actions vaadin-button:text-is('中文')").click()
+        page.locator("ktjs-demo-shell [slot='navbar'] vaadin-button:text-is('中文')").click()
         page.waitForSelector("ktjs-demo-page .page__title:text-is('ktjs-dom-kit 概览')")
         assertEquals(
             "开始",
@@ -117,7 +154,7 @@ class ScreenshotTest(private val browser: Browser) {
         )
 
         shoot(page, "light-custom-elements")
-        page.locator("ktjs-demo-shell .shell__actions vaadin-button:text-is('Dark')").click()
+        page.locator("ktjs-demo-shell [slot='navbar'] vaadin-button:text-is('Dark')").click()
         page.waitForTimeout(400.0)
         shoot(page, "dark-custom-elements")
         page.close()
