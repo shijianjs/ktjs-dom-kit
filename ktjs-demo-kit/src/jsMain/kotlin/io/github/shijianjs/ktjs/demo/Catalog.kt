@@ -17,8 +17,8 @@ interface Page {
     fun applyTranslation(lang: Lang)
 }
 
-/** One sidebar group; [id] is stable across languages, [title] is resolved on display. */
-class Group(val id: String, val title: Bilingual)
+/** One sidebar group; [id] is stable across languages, its title comes from [SiteTexts.groupTitles]. */
+class Group(val id: String)
 
 /**
  * One page of the site.
@@ -30,7 +30,6 @@ class Group(val id: String, val title: Bilingual)
 class Entry(
     val id: String,
     val group: Group,
-    val title: Bilingual,
     val apiUrl: (Lang) -> String? = { null },
     val create: () -> Page,
 )

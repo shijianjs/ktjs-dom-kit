@@ -20,49 +20,43 @@ import web.window._blank
  * Every node is created through dom-kit's typed `createElement`, so no tag name is ever written as a
  * string and no markup is parsed. The nodes live inside the page element's shadow tree; their look
  * comes from [PAGE_SHEET]'s classes, not from inline declarations.
+ *
+ * Helpers that own a look use the shared [ClassName] constants from `Classes.kt`; a class a page
+ * introduces for itself is added with [withClass].
  */
 
-/** Creates an element of [tag], optionally with a class, and appends [children]. */
-fun <T : HTMLElement> element(tag: TagName<T>, className: String? = null, vararg children: Node): T =
+/** Creates an element of [tag], optionally with [className], and appends [children]. */
+fun <T : HTMLElement> element(tag: TagName<T>, className: ClassName? = null, vararg children: Node): T =
     tag.createElement {
-        if (className != null) classList.add(ClassName(className))
+        if (className != null) classList.add(className)
         if (children.isNotEmpty()) append(*children)
     }
 
-/** Creates a `<div>`. */
-fun div(className: String? = null, vararg children: Node): HTMLElement =
-    element(HtmlTagName.div, className, *children)
-
-/** Creates a `<section>`. */
-fun section(className: String? = null, vararg children: Node): HTMLElement =
-    element(HtmlTagName.section, className, *children)
+/** Creates a plain `<div>`. */
+fun div(vararg children: Node): HTMLElement = element(HtmlTagName.div, null, *children)
 
 /** Creates a `<p>` with [text]. */
-fun paragraph(text: String = "", className: String? = null): HTMLElement =
-    element(HtmlTagName.p, className).apply { textContent = text }
+fun paragraph(text: String = ""): HTMLElement = element(HtmlTagName.p).apply { textContent = text }
 
 /** Creates a `<span>` with [text]. */
-fun span(text: String = "", className: String? = null): HTMLElement =
-    element(HtmlTagName.span, className).apply { textContent = text }
+fun span(text: String = ""): HTMLElement = element(HtmlTagName.span).apply { textContent = text }
 
 /** Creates a heading of [level] (1-4 coerced). */
-fun heading(level: Int, text: String = "", className: String? = null): HTMLElement {
+fun heading(level: Int, text: String = ""): HTMLElement {
     val tag = when (level.coerceIn(1, 4)) {
         1 -> HtmlTagName.h1
         2 -> HtmlTagName.h2
         3 -> HtmlTagName.h3
         else -> HtmlTagName.h4
     }
-    val created: HTMLHeadingElement = tag.createElement {
-        if (className != null) classList.add(ClassName(className))
-    }
+    val created: HTMLHeadingElement = tag.createElement()
     created.textContent = text
     return created
 }
 
 /** Creates an `<a>` pointing at [href]; external links open in a new tab. */
-fun anchor(text: String, href: String, className: String? = null, external: Boolean = false): HTMLAnchorElement {
-    val created = element(HtmlTagName.a, className)
+fun anchor(text: String, href: String, external: Boolean = false): HTMLAnchorElement {
+    val created = element(HtmlTagName.a)
     created.textContent = text
     created.href = href
     if (external) {
@@ -73,18 +67,18 @@ fun anchor(text: String, href: String, className: String? = null, external: Bool
 }
 
 /** Creates an inline `<code>` fragment. */
-fun codeText(text: String): HTMLElement = element(HtmlTagName.code, "code").apply { textContent = text }
+fun codeText(text: String): HTMLElement = element(HtmlTagName.code, CODE).apply { textContent = text }
 
 /** Creates a `<ul>` with one `<li>` per entry. */
-fun bulletList(items: List<String>, className: String? = null): HTMLElement {
-    val list = element(HtmlTagName.ul, className)
+fun bulletList(items: List<String>): HTMLElement {
+    val list = element(HtmlTagName.ul)
     items.forEach { item -> list.append(element(HtmlTagName.li).apply { textContent = item }) }
     return list
 }
 
 /** Adds [className] and returns the element, so calls can chain. */
-fun <T : HTMLElement> T.withClass(className: String): T {
-    classList.add(ClassName(className))
+fun <T : HTMLElement> T.withClass(className: ClassName): T {
+    classList.add(className)
     return this
 }
 
@@ -104,24 +98,25 @@ fun HTMLElement.setHidden(hidden: Boolean) {
 }
 
 /** A horizontal group. */
-fun row(vararg children: Node): HTMLElement = div("row", *children)
+fun row(vararg children: Node): HTMLElement = element(HtmlTagName.div, ROW, *children)
 
 /** A vertical group. */
-fun col(vararg children: Node): HTMLElement = div("col", *children)
+fun col(vararg children: Node): HTMLElement = element(HtmlTagName.div, COL, *children)
 
 /** A responsive grid. */
-fun grid(vararg children: Node): HTMLElement = div("grid", *children)
+fun grid(vararg children: Node): HTMLElement = element(HtmlTagName.div, GRID, *children)
 
 /** One bordered example box. */
 fun exampleBox(caption: String? = null, vararg children: Node): HTMLElement {
-    val box = div("example")
-    if (caption != null) box.append(paragraph(caption, "example__caption"))
+    val box = element(HtmlTagName.div, EXAMPLE)
+    if (caption != null) box.append(element(HtmlTagName.p, EXAMPLE_CAPTION).apply { textContent = caption })
     box.append(*children)
     return box
 }
 
 /** One titled section: title, optional hint, and the body the examples go into. */
 class SectionBlock(val root: HTMLElement, val title: HTMLElement, val hint: HTMLElement, val body: HTMLElement) {
+    /** Writes [title] and [hint]; an empty [hintText] hides the hint line. */
     fun setText(title: String, hintText: String = "") {
         this.title.textContent = title
         this.hint.textContent = hintText
@@ -131,16 +126,16 @@ class SectionBlock(val root: HTMLElement, val title: HTMLElement, val hint: HTML
 
 /** Creates an empty section; the caller fills [SectionBlock.body]. */
 fun sectionBlock(): SectionBlock {
-    val title = heading(2, className = "section__title")
-    val hint = paragraph(className = "section__hint")
-    val body = div("section__body")
-    val root = div("section", title, hint, body)
+    val title = element(HtmlTagName.h2, SECTION_TITLE)
+    val hint = element(HtmlTagName.p, SECTION_HINT)
+    val body = element(HtmlTagName.div, SECTION_BODY)
+    val root = element(HtmlTagName.div, SECTION, title, hint, body)
     return SectionBlock(root, title, hint, body)
 }
 
 /** Text that is updated in place to show the current state of an example. */
 class Readout(initial: String = "") {
-    val root: HTMLElement = paragraph(initial, "readout")
+    val root: HTMLElement = element(HtmlTagName.p, READOUT).apply { textContent = initial }
 
     fun set(text: String) {
         root.textContent = text

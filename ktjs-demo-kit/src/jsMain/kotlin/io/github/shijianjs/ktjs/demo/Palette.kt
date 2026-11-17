@@ -1,28 +1,38 @@
 package io.github.shijianjs.ktjs.demo
 
 import web.cssom.Color
+import web.cssom.CustomPropertyName
+import web.cssom.`var`
+import web.cssom.rgb
 
 /**
  * The colours every sheet of the site shares.
  *
  * They are the one visual thing that genuinely changes together, so they live here instead of being
- * repeated in each component's sheet. Values stay plain `Color`s: the dark theme is Lumo's
- * `html[theme~="dark"]`, and these are the neutral tones the demo's own chrome uses in both themes.
+ * repeated in each component's sheet. Each value is a Lumo custom property with a light fallback:
+ * Lumo defines them on `:root` and flips them under `html[theme~="dark"]`, and custom properties are
+ * inherited into every shadow tree — that is how one switch repaints the whole site without a single
+ * component carrying its own `[data-theme]` selector.
  */
 object Palette {
-    val background: Color = Color("#0f1115")
+    /** Page background. */
+    val background: Color = `var`(CustomPropertyName<Color>("--lumo-base-color"), rgb(255, 255, 255))
 
-    val surface: Color = Color("#171a21")
+    /** Card and sidebar surface: a 5 % tint of the contrast colour. */
+    val surface: Color = `var`(CustomPropertyName<Color>("--lumo-contrast-5pct"), rgb(246, 247, 251))
 
-    val surfaceRaised: Color = Color("#1e222b")
+    /** A raised block inside a card, e.g. a code fragment. */
+    val surfaceRaised: Color = `var`(CustomPropertyName<Color>("--lumo-contrast-10pct"), rgb(236, 239, 244))
 
-    val border: Color = Color("#2a2f3a")
+    /** Hairlines. */
+    val border: Color = `var`(CustomPropertyName<Color>("--lumo-contrast-20pct"), rgb(223, 228, 234))
 
-    val text: Color = Color("#e6e9ef")
+    /** Body text. */
+    val text: Color = `var`(CustomPropertyName<Color>("--lumo-body-text-color"), rgb(35, 39, 45))
 
-    val muted: Color = Color("#9aa3af")
+    /** Secondary text: hints, captions, breadcrumb. */
+    val muted: Color = `var`(CustomPropertyName<Color>("--lumo-secondary-text-color"), rgb(87, 98, 110))
 
-    val accent: Color = Color("#7aa2ff")
-
-    val accentText: Color = Color("#0b1020")
+    /** Links and the active route. */
+    val accent: Color = `var`(CustomPropertyName<Color>("--lumo-primary-text-color"), rgb(0, 92, 207))
 }

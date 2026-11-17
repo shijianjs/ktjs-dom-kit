@@ -80,8 +80,8 @@ class DemoPageTest(private val browser: Browser) {
         val page = open("#/custom-elements")
 
         val counter = page.locator("demo-counter").first()
-        counter.locator("button").click()
-        counter.locator("button").click()
+        counter.locator("vaadin-button").click()
+        counter.locator("vaadin-button").click()
         assertEquals("2", counter.locator(".counter__value").textContent())
 
         page.locator("ktjs-demo-shell .shell__actions vaadin-button:text-is('中文')").click()

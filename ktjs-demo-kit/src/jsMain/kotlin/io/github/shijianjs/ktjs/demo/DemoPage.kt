@@ -5,21 +5,12 @@ import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementAdapter
 import io.github.shijianjs.ktjs.dom.webcomponent.attachStyledShadow
 import io.github.shijianjs.ktjs.dom.webcomponent.defineIfMissing
 import web.components.CustomElementReference
-import web.cssom.ClassName
 import web.dom.Node
 import web.dom.TagName
 import web.html.HTMLHeadingElement
 import web.html.HTMLParagraphElement
 import web.html.HTMLElement
 import web.html.HtmlTagName
-
-private val PAGE_TITLE_CLASS: ClassName = ClassName("page__title")
-
-private val PAGE_SUMMARY_CLASS: ClassName = ClassName("page__summary")
-
-private val PAGE_LINKS_CLASS: ClassName = ClassName("page__links")
-
-private val PAGE_BODY_CLASS: ClassName = ClassName("page__body")
 
 /**
  * `<ktjs-demo-page>`: the frame one page is built inside — title, summary, the links row and the body
@@ -34,22 +25,14 @@ private val PAGE_BODY_CLASS: ClassName = ClassName("page__body")
  * strings. Nothing extends it.
  */
 class DemoPage : CustomElementAdapter() {
-    private val titleElement: HTMLHeadingElement = HtmlTagName.h1.createElement {
-        classList.add(PAGE_TITLE_CLASS)
-    }
+    private val titleElement: HTMLHeadingElement = HtmlTagName.h1.createElement { classList.add(PAGE_TITLE) }
 
-    private val summaryElement: HTMLParagraphElement = HtmlTagName.p.createElement {
-        classList.add(PAGE_SUMMARY_CLASS)
-    }
+    private val summaryElement: HTMLParagraphElement = HtmlTagName.p.createElement { classList.add(PAGE_SUMMARY) }
 
-    private val linksElement: HTMLElement = HtmlTagName.div.createElement {
-        classList.add(PAGE_LINKS_CLASS)
-    }
+    private val linksElement: HTMLElement = HtmlTagName.div.createElement { classList.add(PAGE_LINKS) }
 
     /** The block a page appends its sections to. */
-    val body: HTMLElement = HtmlTagName.div.createElement {
-        classList.add(PAGE_BODY_CLASS)
-    }
+    val body: HTMLElement = HtmlTagName.div.createElement { classList.add(PAGE_BODY) }
 
     init {
         attachStyledShadow(RESET, PAGE_SHEET).append(titleElement, summaryElement, linksElement, body)
@@ -63,7 +46,9 @@ class DemoPage : CustomElementAdapter() {
         summaryElement.textContent = text
     }
 
+    /** Adds one entry to the link row; the frame owns the layout and colour of that row. */
     fun addLink(node: Node) {
+        if (node is HTMLElement) node.classList.add(PAGE_LINK)
         linksElement.append(node)
     }
 

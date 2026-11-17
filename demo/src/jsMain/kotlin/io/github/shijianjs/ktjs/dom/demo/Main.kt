@@ -22,7 +22,8 @@ fun main() {
     theme.applyStored()
 
     DemoShell.define()
-    val shell = document.getElementById(ElementId("demo")) as? DemoShell ?: error("index.html has no <ktjs-demo-shell id=\"demo\">")
+    val shell = document.getElementById(ElementId("demo")) as? DemoShell
+        ?: error("index.html has no <ktjs-demo-shell id=\"demo\">")
 
-    shell.mount(siteCatalog(), language, theme, Chrome(SITE_TITLE, KIT_VERSION, API_URL))
+    shell.mount(siteCatalog(), language, theme, Chrome(KIT_VERSION, API_URL), ::siteTexts)
 }

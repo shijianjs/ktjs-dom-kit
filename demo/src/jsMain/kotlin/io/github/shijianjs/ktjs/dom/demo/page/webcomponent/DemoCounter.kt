@@ -8,71 +8,81 @@ import io.github.shijianjs.ktjs.dom.element.createElement
 import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementAdapter
 import io.github.shijianjs.ktjs.dom.webcomponent.attachStyledShadow
 import io.github.shijianjs.ktjs.dom.webcomponent.defineIfMissing
+import io.github.shijianjs.ktjs.vaadin.button.createButton
 import web.components.CustomElementReference
+import web.cssom.AlignItems
 import web.cssom.ClassName
 import web.cssom.CSSStyleSheet
 import web.cssom.Display
-import web.cssom.Padding
+import web.cssom.FontWeight
+import web.cssom.integer
 import web.cssom.px
 import web.dom.TagName
 import web.dom.clickEvent
 import web.events.addHandler
+import web.html.HTMLSpanElement
 import web.html.HtmlTagName
 
-private val COUNTER_SHEET: CSSStyleSheet = cssSheet {
-    ".counter" {
-        display = Display.flex
-        padding = Padding(10.px, 12.px, 10.px, 12.px)
-        backgroundColor = Palette.surface
-    }
+/** Class names this file's markup and sheet agree on; both live here, next to their rule. */
+private val COUNTER: ClassName = ClassName("counter")
 
-    ".counter__value" {
-        marginRight = 12.px
-        fontSize = 16.px
+private val VALUE: ClassName = ClassName("counter__value")
+
+private val INCREMENT: ClassName = ClassName("counter__increment")
+
+/** The counter's own sheet: it is adopted once and shared by every instance. */
+private val COUNTER_SHEET: CSSStyleSheet = cssSheet {
+    COUNTER {
+        display = Display.flex
+        alignItems = AlignItems.center
+        columnGap = 12.px
         color = Palette.text
     }
+
+    VALUE {
+        fontSize = 26.px
+        fontWeight = FontWeight.bold
+        minWidth = 32.px
+    }
+
+    INCREMENT { fontSize = 14.px }
 }
 
 /**
- * `<demo-counter>`: a component that owns DOM, keeps its own state and reads one attribute.
+ * `<demo-counter value="0">`: one instance of a custom element.
  *
- * Structure is built in the constructor and never rebuilt; [setCount] touches only the label it is
- * responsible for. Two instances of the tag are two independent counters sharing one class-level
- * sheet.
+ * Everything the element owns lives in its shadow tree — the sheet is adopted once for all instances,
+ * the value is an `attr`, and the click handler only touches the field it is responsible for. Two
+ * instances of this tag on one page share the sheet, not their state.
  */
 class DemoCounter : CustomElementAdapter() {
-    private val valueLabel = HtmlTagName.span.createElement {
-        classList.add(ClassName("counter__value"))
-        textContent = "0"
-    }
+    private val valueElement: HTMLSpanElement = HtmlTagName.span.createElement { classList.add(VALUE) }
 
-    private val stepButton = HtmlTagName.button.createElement {
+    private val incrementElement = createButton().apply {
+        classList.add(INCREMENT)
         textContent = "+"
     }
 
-    private var count = 0
-
     init {
-        stepButton.clickEvent.addHandler { setCount(count + step) }
+        val root = HtmlTagName.div.createElement { classList.add(COUNTER) }
+        root.append(valueElement, incrementElement)
+        attachStyledShadow(RESET, COUNTER_SHEET).append(root)
 
-        val box = HtmlTagName.div.createElement {
-            classList.add(ClassName("counter"))
-        }
-        box.append(valueLabel, stepButton)
-
-        attachStyledShadow(RESET, COUNTER_SHEET).append(box)
+        incrementElement.clickEvent.addHandler { value += 1 }
     }
 
     override fun connectedCallback() {
         applyInitialAttributes()
     }
 
-    /** How much one click adds; defaults to 1 and is read from the `step` attribute. */
-    var step: Int by attr(default = 1)
+    /** The current count, stored in the `value` attribute so it survives a reconnect. */
+    var value: Int by attr("value", default = 0) { change ->
+        valueElement.textContent = change.newValue.toString()
+    }
 
-    private fun setCount(next: Int) {
-        count = next
-        valueLabel.textContent = next.toString()
+    /** Text on the increment button; kept as an attribute so the page can translate it. */
+    var incrementLabel: String by attr("increment-label", default = "+") { change ->
+        incrementElement.textContent = change.newValue
     }
 
     companion object : CustomElementReference<DemoCounter>(DemoCounter::class.js) {
@@ -84,10 +94,8 @@ class DemoCounter : CustomElementAdapter() {
     }
 }
 
-/** Creates a defined `<demo-counter>`; [step] is written as the attribute when given. */
-fun newCounter(step: Int? = null): DemoCounter {
+/** Creates a defined `<demo-counter>`; callers set [DemoCounter.value] and [DemoCounter.incrementLabel]. */
+fun newCounter(): DemoCounter {
     DemoCounter.define()
-    return DemoCounter.NAME.createElement {
-        if (step != null) this.step = step
-    }
+    return DemoCounter.NAME.createElement()
 }

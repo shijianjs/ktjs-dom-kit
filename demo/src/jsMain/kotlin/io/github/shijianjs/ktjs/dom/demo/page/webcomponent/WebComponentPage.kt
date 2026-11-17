@@ -1,63 +1,120 @@
 package io.github.shijianjs.ktjs.dom.demo.page.webcomponent
 
-import io.github.shijianjs.ktjs.demo.bilingual
+import io.github.shijianjs.ktjs.demo.Lang
+import io.github.shijianjs.ktjs.demo.Page
 import io.github.shijianjs.ktjs.demo.codeText
 import io.github.shijianjs.ktjs.demo.element
 import io.github.shijianjs.ktjs.demo.exampleBox
+import io.github.shijianjs.ktjs.demo.newPage
 import io.github.shijianjs.ktjs.demo.paragraph
 import io.github.shijianjs.ktjs.demo.row
 import io.github.shijianjs.ktjs.demo.sectionBlock
-import io.github.shijianjs.ktjs.dom.demo.page.DemoTextPage
+import io.github.shijianjs.ktjs.dom.demo.page.Binder
+import io.github.shijianjs.ktjs.vaadin.button.createButton
+import web.dom.clickEvent
+import web.events.addHandler
 import web.html.HtmlTagName
 
+private class WebComponentTexts(
+    val title: String,
+    val summary: String,
+    val instancesHeading: String,
+    val instancesHint: String,
+    val addInstanceLabel: String,
+    val incrementLabel: String,
+    val instancesNote: String,
+    val definitionHeading: String,
+    val definitionHint: String,
+    val definitionNote: String,
+)
+
+private val webComponentEnglish: WebComponentTexts = WebComponentTexts(
+    title = "Custom elements",
+    summary = "A Kotlin class becomes a tag through one adapter: the shadow tree is built in the constructor, " +
+        "the tag is registered once, and the compiler's bridges are removed before defining it.",
+    instancesHeading = "One tag, many instances",
+    instancesHint = "Each instance has its own shadow tree; the sheet is parsed once and adopted by all.",
+    addInstanceLabel = "Add instance",
+    incrementLabel = "+",
+    instancesNote = "Two instances never share state, and neither shares its sheet by rebuilding it.",
+    definitionHeading = "What has to be in place",
+    definitionHint = "Two conditions decide whether the tag upgrades at all.",
+    definitionNote = "Without es2015 the compiler emits a function that cannot be constructed; without bridge " +
+        "stripping the first DOM call recurses into itself.",
+)
+
+private val webComponentChinese: WebComponentTexts = WebComponentTexts(
+    title = "自定义元素",
+    summary = "一个 Kotlin 类通过一个适配基类变成一个标签：构造函数里建好 shadow 树，标签只注册一次，注册前剥掉编译器桥。",
+    instancesHeading = "一个标签，多个实例",
+    instancesHint = "每个实例有自己的 shadow 树；样式表只解析一次，所有实例共用。",
+    addInstanceLabel = "新增实例",
+    incrementLabel = "+",
+    instancesNote = "两个实例从不共享状态，也不靠重建样式表来共享样式。",
+    definitionHeading = "必须满足的两件事",
+    definitionHint = "这两条决定标签到底会不会升级。",
+    definitionNote = "没有 es2015，编译器会发射无法 new 的函数；不剥桥，第一次调用 DOM 方法就会自递归。",
+)
+
+private fun webComponentTexts(lang: Lang): WebComponentTexts =
+    if (lang == Lang.EN) webComponentEnglish else webComponentChinese
+
 /**
- * `CustomElementAdapter` + `defineIfMissing`: a class that is the component, defined once.
- *
- * Two instances are shown side by side: they share the class-level sheet, and each keeps its own
- * count — state is per element, rules are per class.
+ * Shows custom elements as they are actually used: one tag, several instances, each with its own
+ * state and a shared parsed sheet.
  */
-internal class WebComponentPage : DemoTextPage(
-    bilingual("自定义元素", "Custom elements"),
-    bilingual(
-        "dom-kit 的基类把生命周期钩子声明成方法、注册前剥掉编译器桥，于是 Kotlin 类就是一个 Web Component。",
-        "dom-kit's base class declares the lifecycle hooks as methods and strips the compiler's bridges " +
-            "before defining the tag, so a Kotlin class simply is a Web Component.",
-    ),
-) {
+internal class WebComponentPage : Page {
+    private val page = newPage()
+
+    private val texts = Binder(::webComponentTexts)
+
+    private val instanceHost = element(HtmlTagName.div)
+
+    private val counters: MutableList<DemoCounter> = mutableListOf()
+
+    private var incrementLabel: String = webComponentEnglish.incrementLabel
+
+    override val node get() = page
+
     init {
         val instances = sectionBlock()
-        texts.bind(instances.title, bilingual("两个实例", "Two instances"))
-        texts.bind(
-            instances.hint,
-            bilingual(
-                "左边每次 +1，右边每次 +3（step 属性）；计数各自独立，样式表一份。",
-                "The left one adds 1 per click, the right one adds 3 (the step attribute); counts are " +
-                    "independent, the sheet is shared.",
-            ),
-        )
+        texts.bind(instances.title, { it.instancesHeading })
+        texts.bind(instances.hint, { it.instancesHint })
+
+        val addInstance = texts.bind(createButton(), { it.addInstanceLabel })
+        addInstance.clickEvent.addHandler { appendCounter() }
+
+        appendCounter()
         instances.body.append(
-            exampleBox(
-                null,
-                row(newCounter(), newCounter(step = 3)),
-                paragraph("Click either button: the label it owns changes, nothing else is touched."),
-            ),
+            exampleBox(null, addInstance, instanceHost, texts.bind(paragraph(), { it.instancesNote })),
         )
 
         val definition = sectionBlock()
-        texts.bind(definition.title, bilingual("定义与注册", "Defining and registering"))
+        texts.bind(definition.title, { it.definitionHeading })
+        texts.bind(definition.hint, { it.definitionHint })
         definition.body.append(
-            exampleBox(
-                null,
-                row(codeText("class DemoCounter : CustomElementAdapter() { … }")),
-                row(codeText("defineIfMissing(TagName(\"demo-counter\"), DemoCounter)")),
-                element(HtmlTagName.p).apply {
-                    textContent =
-                        "ES2015 output is required: at ES5 a Kotlin class compiles to a function that calls " +
-                            "HTMLElement as a function, and the tag never upgrades."
-                },
-            ),
+            row(codeText("js { compilerOptions { target = \"es2015\" } }")),
+            row(codeText("defineIfMissing(NAME, this) // strips the bridges first")),
+            texts.bind(paragraph(), { it.definitionNote }),
         )
 
         page.body.append(instances.root, definition.root)
+    }
+
+    override fun applyTranslation(lang: Lang) {
+        val current = webComponentTexts(lang)
+        page.setTitle(current.title)
+        page.setSummary(current.summary)
+        texts.apply(lang)
+
+        incrementLabel = current.incrementLabel
+        counters.forEach { it.incrementLabel = incrementLabel }
+    }
+
+    private fun appendCounter() {
+        val counter = newCounter()
+        counter.incrementLabel = incrementLabel
+        counters += counter
+        instanceHost.append(counter)
     }
 }
