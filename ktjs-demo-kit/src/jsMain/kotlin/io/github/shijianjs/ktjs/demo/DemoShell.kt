@@ -296,12 +296,22 @@ class DemoShell : CustomElementAdapter() {
      * The icon name is an Iconify id (`lucide:layers`), so the site carries no SVG of its own; the size
      * is [SHELL_NAV_ICON] via the frame's sheet and never a `width`/`height` attribute (the element
      * renders an `<svg width="1em">`, which those attributes would only stretch).
+     *
+     * `noobserver` is not about size, it is what keeps the glyph alive: `iconify-icon` drops its own
+     * `<svg>` as soon as an IntersectionObserver reports the element as not visible, yet leaves
+     * `status === "rendered"` behind. For a dropdown entry that happens every time the menu closes —
+     * the entry is teleported into the overlay and hidden. On the next open the observer reports
+     * "visible again", but the element reset `_visible` to `true` when it disconnected, so nothing
+     * sees a change and nothing re-renders: the icon is gone from the second open on. The same trap
+     * applies to sidebar icons inside a collapsed group. `noobserver` is iconify-icon's own opt-out;
+     * every icon in this shell lives as long as its owner, so it should stay rendered.
      */
     private fun navIcon(name: String): IconifyIconElement =
         createIconifyIcon(name) {
             setAttribute("slot", "prefix")
             classList.add(SHELL_NAV_ICON)
             setAttribute("aria-hidden", "true")
+            setAttribute("noobserver", "")
         }
 
     private fun buildActions() {
@@ -338,6 +348,8 @@ class DemoShell : CustomElementAdapter() {
                 fontSize = 18.px
                 marginRight = 8.px
             }
+            // Not for size — see the note above [navIcon].
+            setAttribute("noobserver", "")
         }
 
     /**

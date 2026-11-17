@@ -191,6 +191,39 @@ class DemoPageTest(private val browser: Browser) {
         assertNoErrors()
     }
 
+    /**
+     * A dropdown entry is teleported into the menu's overlay and hidden again when the menu closes.
+     * `iconify-icon` throws its own `<svg>` away on every "not visible" report while leaving
+     * `status === "rendered"` behind, so without `noobserver` the entries come back blank on the
+     * second open: the element is there, its shadow tree is empty.
+     */
+    @Test
+    fun `a menu keeps the icons of its entries when reopened`() {
+        val page = open("")
+
+        fun shadowIconCounts(): List<Int> =
+            (page.locator("vaadin-menu-bar-item[data-action]:visible").evaluateAll(
+                "items => items.map(item => item.querySelector('iconify-icon')?.shadowRoot?.childElementCount ?? -1)",
+            ) as List<*>).map { (it as Number).toInt() }
+
+        openMenu(page, "lang")
+        assertEquals(listOf(1, 1), shadowIconCounts(), "the first open lost an entry icon")
+
+        page.keyboard().press("Escape")
+        page.locator("vaadin-menu-bar-item[data-action]").first().waitFor(
+            Locator.WaitForOptions().setState(WaitForSelectorState.HIDDEN),
+        )
+        openMenu(page, "lang")
+        assertEquals(listOf(1, 1), shadowIconCounts(), "the second open lost an entry icon")
+        page.screenshot(
+            Page.ScreenshotOptions().setPath(
+                java.nio.file.Files.createDirectories(java.nio.file.Path.of("build", "e2e-results"))
+                    .resolve("menu-reopen.png").toAbsolutePath(),
+            ),
+        )
+        assertNoErrors()
+    }
+
     @Test
     fun `choosing a theme does not resize or move the action row`() {
         val page = open("")

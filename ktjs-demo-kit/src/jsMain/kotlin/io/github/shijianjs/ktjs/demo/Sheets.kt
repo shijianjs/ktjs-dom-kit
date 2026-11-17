@@ -16,7 +16,6 @@ import web.cssom.CSSStyleSheet
 import web.cssom.Color
 import web.cssom.CustomPropertyName
 import web.cssom.Display
-import web.cssom.FontStyle
 import web.cssom.JustifyContent
 import web.cssom.Length
 import web.cssom.Margin
@@ -156,9 +155,9 @@ val SHELL_SHEET: CSSStyleSheet = cssSheet {
         // One line: the navbar has room for the actions only if the title stops shrinking.
         whiteSpace = WhiteSpace.nowrap
         flexShrink = number(0.0)
-        // The wordmark reads like vuejs.org's: slanted, and painted with a gradient of the theme's
-        // primary colour into teal instead of a solid fill.
-        fontStyle = FontStyle.italic
+        // The wordmark reads like vuejs.org's: painted with a gradient of the theme's primary colour
+        // into teal instead of a solid fill. The gradient itself carries the "slant" (its axis is
+        // angled); the glyphs stay upright, so no italic.
         fontWeight = integer(700)
     }
 

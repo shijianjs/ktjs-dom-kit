@@ -47,6 +47,10 @@
     `demo.dist` 系统属性可覆盖）。**只验收 production 会漏掉只在 dev 模式出现的错误**。
   - 套件里的静态服务器用 `ServerSocket(0)` 取 OS 临时端口：Hutool 的 `SimpleServer(0)` 会在 1024–65535 里
     随机挑，偶尔落到 Chromium 拒绝的端口（6665–6669 → `ERR_UNSAFE_PORT`），与代码无关地让整轮测试失败。
+  - **下拉菜单里的图标要带 `noobserver`**：`iconify-icon` 一旦被 IntersectionObserver 判为不可见，就把自己
+    shadow 里的 `<svg>` 删掉，却保留 `status === "rendered"`；而它断连时又把 `_visible` 复位成 `true`，
+    于是菜单第二次打开时观察者报「还是可见」、不会重绘，图标永久变成 18px 空白。凡是由祖先切换显隐的图标
+    （下拉项、可折叠分组）都加 `noobserver`。回归用例：`a menu keeps the icons of its entries when reopened`。
 - Logo 只有一份（`docs/src/jsMain/resources/static/img/ktjs-dom-kit-logo.png`）：README、文档站与 demo 都用它。
   demo 构建期由 `scaleLogo` 缩到 128px 放进产物，**不要**在仓库里再放第二张 logo。
 
