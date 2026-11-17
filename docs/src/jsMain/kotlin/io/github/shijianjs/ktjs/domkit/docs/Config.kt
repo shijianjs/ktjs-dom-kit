@@ -261,6 +261,10 @@ fun sidebars(): SidebarsConfig = unsafeJso<Sidebars> {
             type = SidebarItemTypes.doc
             id = "guide/getting-started"
         },
+        unsafeJso {
+            type = SidebarItemTypes.doc
+            id = "guide/demo"
+        },
     )
     domKit = arrayOf<SidebarItem>(
         unsafeJso {

@@ -1,0 +1,56 @@
+package io.github.shijianjs.ktjs.demo
+
+import web.dom.document
+import web.storage.localStorage
+
+/**
+ * The active language of the site.
+ *
+ * One instance per site, created in `main` and handed to the shell. The state is persisted so a
+ * reload keeps the language, and `document.documentElement.lang` follows it — that is what
+ * screen readers and hyphenation read.
+ *
+ * Listeners are notified in place: switching is a walk over the mounted pages, never a rebuild.
+ */
+class LanguageState(
+    private val storageKey: String = "ktjs-demo-lang",
+    initial: Lang = Lang.EN,
+) {
+    var current: Lang = readStored() ?: initial
+        private set
+
+    private val listeners: MutableList<(Lang) -> Unit> = mutableListOf()
+
+    /** Applies the stored language to the document and notifies every listener once. */
+    fun init() {
+        applyDocumentLang()
+        listeners.forEach { it(current) }
+    }
+
+    /** Switches to [lang] and tells every listener; a no-op when it is already active. */
+    fun set(lang: Lang) {
+        if (lang == current) return
+        current = lang
+        store(lang)
+        applyDocumentLang()
+        listeners.forEach { it(lang) }
+    }
+
+    /** Registers [listener] for later switches. */
+    fun onChange(listener: (Lang) -> Unit) {
+        listeners += listener
+    }
+
+    private fun applyDocumentLang() {
+        document.documentElement?.setAttribute("lang", current.code)
+    }
+
+    private fun readStored(): Lang? =
+        runCatching { localStorage.getItem(storageKey) }.getOrNull()?.let { stored ->
+            Lang.entries.firstOrNull { it.code == stored }
+        }
+
+    private fun store(lang: Lang) {
+        runCatching { localStorage.setItem(storageKey, lang.code) }
+    }
+}

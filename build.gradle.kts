@@ -31,7 +31,7 @@ val publishedPrefix = "ktjs-"
 // Libraries that wrap no npm package have no upstream version to follow, so they carry a
 // hand-written semantic version in their own build script instead of `{npm version}-kt.{revision}`.
 // Everything else derives its version from package.json and wrapper-revisions.properties.
-val semanticModules = setOf("ktjs-dom-kit")
+val semanticModules = setOf("ktjs-dom-kit", "ktjs-demo-kit")
 
 fun isPublished(module: String): Boolean = module.startsWith(publishedPrefix)
 
@@ -242,9 +242,13 @@ tasks.register("printPublishedVersions") {
 // `node_modules/@docusaurus/core` to exist. (A site that also builds a browser bundle gets it for
 // free, because the webpack step installs npm; this one does not build one.)
 tasks.register<Sync>("pagesSite") {
-    dependsOn("kotlinNpmInstall", ":docs:docusaurusBuild", "dokkaGeneratePublicationHtml")
+    dependsOn("kotlinNpmInstall", ":docs:docusaurusBuild", ":demo:jsBrowserDistribution", "dokkaGeneratePublicationHtml")
     into(layout.buildDirectory.dir("pages"))
     from(layout.buildDirectory.dir("js/docusaurus/docs/build"))
+    from(layout.buildDirectory.dir("js/demo/dist/js/productionExecutable")) {
+        // The interactive demo sits under `demo/`, next to the docs; the docs site links to it.
+        into("demo")
+    }
     from(layout.buildDirectory.dir("dokka/html")) {
         into("api")
     }

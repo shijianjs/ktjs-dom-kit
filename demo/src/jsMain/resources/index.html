@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Demo of ktjs-dom-kit: typed element creation, attribute-backed properties, adopted stylesheets and custom elements.">
+    <title>ktjs-dom-kit demo</title>
+    <!-- Lumo is the vendor stylesheet of the Vaadin components the shell is built from. A page-level
+         `<link>` is the contract those components expect; nothing of ours is injected into the host
+         document. -->
+    <link rel="stylesheet" href="lumo.css">
+    <link rel="stylesheet" href="utility.css">
+    <script src="demo.js" defer></script>
+</head>
+<body style="margin: 0">
+<noscript>This demo is written in Kotlin/JS and needs JavaScript enabled.</noscript>
+<!-- The whole site is one custom element: sidebar, top bar and content area live in its shadow. -->
+<ktjs-demo-shell id="demo" class="page"></ktjs-demo-shell>
+</body>
+</html>

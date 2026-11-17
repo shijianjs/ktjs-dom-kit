@@ -47,6 +47,12 @@ rootProject.name = "ktjs-dom-kit"
 // version report pick up every `ktjs-*` project automatically.
 include(":ktjs-dom-kit")
 
+// The demo layer shared by every demo site in this account: shell, catalog, router, pages.
+include(":ktjs-demo-kit")
+
 // The documentation site: Kotlin configuration plus Markdown, assembled by the ktjs-docusaurus
 // Gradle plugin into a static site that `pagesSite` publishes at the Pages root.
+// The interactive demo: the same shell every demo site uses, over this library.'s own APIs.
+include(":demo")
+
 include(":docs")
