@@ -90,9 +90,15 @@ class DemoPageTest(private val browser: Browser) {
 
         val logo = page.locator("ktjs-demo-shell [slot='navbar'] .shell__logo")
         assertEquals(1, logo.count(), "the nav bar has one site mark")
+        // The mark is the repository logo (the same file the README and the docs site show), not an
+        // Iconify glyph: if the build ever stops copying it, this fails instead of drawing a broken box.
+        assertEquals("IMG", logo.evaluate("el => el.tagName"))
+        assertEquals("img/ktjs-dom-kit-logo.png", logo.getAttribute("src"))
+        assertTrue((logo.evaluate("el => el.naturalWidth") as Number).toInt() > 0, "the mark was loaded")
         val logoBox = logo.boundingBox()!!
         val titleBox = page.locator("ktjs-demo-shell [slot='navbar'] .shell__title").boundingBox()!!
         assertTrue(logoBox.x + logoBox.width <= titleBox.x + 1.0, "the mark sits left of the title")
+        assertTrue(logoBox.height <= 30.0, "the mark stays navbar-sized, got ${logoBox.height}px")
         assertNoErrors()
     }
 

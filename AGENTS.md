@@ -39,9 +39,10 @@
   `ktjs-client/ktjs-docusaurus-kit-browser.js`，`docs/build.gradle.kts` 用 `extractKitBundle` 从 klib
   解出来交给插件放到 `static/ktjs-client/`，再由 `ClientModule.kt` 在 hydrate 之后按 locale 的
   `baseUrl` 加载。Node 会读配置文件，所以这个 bundle 绝不能进 `docs` 的 Kotlin 依赖图。
-- **没有 demo 模块**：这个仓库装的是库而不是某个 npm 包的封装，示例代码写在文档页里，浏览器验证靠模块自己的
-  `jsTest`。以后某个库确实需要可视化演示时再按模板的方式加 `demo`，同时补 `pagesSite`、CI 与 Pages 工作流。
-- Logo 只有一份（`docs/src/jsMain/resources/static/img/ktjs-dom-kit-logo.png`）。
+- **有这个仓库自己的 demo**：`ktjs-demo-kit`（外壳、路由、i18n 容器、主题）+ `demo`（本站五个页面）。示例既
+  是集成测试也是浏览器验收：`./gradlew :demo:e2eTest`（Playwright，含截图与几何断言）。
+- Logo 只有一份（`docs/src/jsMain/resources/static/img/ktjs-dom-kit-logo.png`）：README、文档站与 demo 都用它。
+  demo 构建期由 `scaleLogo` 缩到 128px 放进产物，**不要**在仓库里再放第二张 logo。
 
 Kotlin 包名统一以账号的 GitHub Pages 域名倒写为前缀：`io.github.<owner>.ktjs.<name>`。不要用裸根包
 （`vaadin`、`echarts`、`iconify` 之类），否则项目间以及与其他库容易在同一 classpath 上撞包。新增模块时

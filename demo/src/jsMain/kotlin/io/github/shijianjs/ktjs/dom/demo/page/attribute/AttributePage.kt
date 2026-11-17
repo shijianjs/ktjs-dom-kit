@@ -1,16 +1,19 @@
 package io.github.shijianjs.ktjs.dom.demo.page.attribute
 
+import io.github.shijianjs.ktjs.demo.Binder
 import io.github.shijianjs.ktjs.demo.Lang
+import io.github.shijianjs.ktjs.demo.Langs
 import io.github.shijianjs.ktjs.demo.Page
 import io.github.shijianjs.ktjs.demo.Readout
+import io.github.shijianjs.ktjs.demo.Translations
 import io.github.shijianjs.ktjs.demo.codeText
 import io.github.shijianjs.ktjs.demo.exampleBox
 import io.github.shijianjs.ktjs.demo.newPage
 import io.github.shijianjs.ktjs.demo.paragraph
 import io.github.shijianjs.ktjs.demo.row
 import io.github.shijianjs.ktjs.demo.sectionBlock
+import io.github.shijianjs.ktjs.demo.texts
 import io.github.shijianjs.ktjs.demo.withTheme
-import io.github.shijianjs.ktjs.dom.demo.page.Binder
 import io.github.shijianjs.ktjs.vaadin.button.createButton
 import web.dom.clickEvent
 import web.events.addHandler
@@ -55,7 +58,10 @@ private val attributeChinese: AttributeTexts = AttributeTexts(
     declaredNote = "换一个 codec 只改变属性类型，不改变属性名，组件里其他地方一行都不用动。",
 )
 
-private fun attributeTexts(lang: Lang): AttributeTexts = if (lang == Lang.EN) attributeEnglish else attributeChinese
+private val attributeTexts: Translations<AttributeTexts> = texts(
+    Langs.EN to attributeEnglish,
+    Langs.ZH_HANS to attributeChinese,
+)
 
 /**
  * `attr { }`: a property backed by an HTML attribute. The demo drives the same attribute through two
@@ -64,7 +70,7 @@ private fun attributeTexts(lang: Lang): AttributeTexts = if (lang == Lang.EN) at
 internal class AttributePage : Page {
     private val page = newPage()
 
-    private val texts = Binder(::attributeTexts)
+    private val texts = Binder(attributeTexts)
 
     private val badge = newStepBadge()
 
@@ -110,7 +116,7 @@ internal class AttributePage : Page {
     }
 
     override fun applyTranslation(lang: Lang) {
-        val current = attributeTexts(lang)
+        val current = attributeTexts[lang]
         page.setTitle(current.title)
         page.setSummary(current.summary)
         texts.apply(lang)

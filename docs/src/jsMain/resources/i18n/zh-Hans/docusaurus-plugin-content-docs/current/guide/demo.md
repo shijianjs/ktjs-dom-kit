@@ -41,6 +41,15 @@ fragment（`#/elements`）里，所以静态托管上的深链可用，刷新也
 - Lumo 的 `utility.css` 是**文档级**样式表，规则穿不进 shadow 树。外壳仍然用包装里的类名，但把用到的
   两条声明（`items-center`、`justify-between`）写进自己的 sheet —— 见 `Sheets.kt` 里的注释。
 
+### 语言与站点标记
+
+- 语言是 BCP 47 标签本身，不是 `enum`：`Lang("ja")` 就注册一门语言，`LanguageState(languages = …)`
+  决定站点提供哪几门，每个文本类用 `texts(Langs.EN to …, Langs.ZH_HANS to …)` 声明自己的译文。
+  没有条目的语言回落到第一个声明的语言，所以新注册的语言在译文补齐前就能出现在菜单里；
+  声明顺序就是菜单顺序。
+- 站点标记是 `<img>`：`ShellConfig.logoSrc` 指向 README 与文档站用的同一份 logo。演示的构建
+  （`scaleLogo`）把它缩到 128px —— 仓库里只有一份 logo，产物也不会为 28px 的位置塞一张 1254px 的原图。
+
 ### 本地运行
 
 `./gradlew :demo:jsBrowserDevelopmentRun` 起开发服务器；`:demo:jsBrowserProductionRun` 跑生产包。

@@ -1,13 +1,15 @@
 package io.github.shijianjs.ktjs.dom.demo
 
-import io.github.shijianjs.ktjs.demo.Lang
+import io.github.shijianjs.ktjs.demo.Langs
 import io.github.shijianjs.ktjs.demo.SiteTexts
+import io.github.shijianjs.ktjs.demo.Translations
+import io.github.shijianjs.ktjs.demo.texts
 
 /**
  * Every string the shell and the navigation show, in English.
  *
- * One object per language, resolved through [siteTexts]; a new language is a new object here and an
- * enum entry in `Lang`, and no existing string is touched.
+ * One object per language, declared once in [siteTexts]; adding a language is one more entry there
+ * plus one in `LanguageState.languages`, and no existing string is touched.
  */
 private val englishSite: SiteTexts = SiteTexts(
     siteTitle = "ktjs-dom-kit",
@@ -61,5 +63,8 @@ private val chineseSite: SiteTexts = SiteTexts(
     ),
 )
 
-/** The shell's strings for [lang]. */
-fun siteTexts(lang: Lang): SiteTexts = if (lang == Lang.EN) englishSite else chineseSite
+/** The shell's strings, one entry per registered language. */
+val siteTexts: Translations<SiteTexts> = texts(
+    Langs.EN to englishSite,
+    Langs.ZH_HANS to chineseSite,
+)

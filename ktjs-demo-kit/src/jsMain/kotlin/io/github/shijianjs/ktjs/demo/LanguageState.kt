@@ -6,16 +6,25 @@ import web.storage.localStorage
 /**
  * The active language of the site.
  *
- * One instance per site, created in `main` and handed to the shell. The state is persisted so a
- * reload keeps the language, and `document.documentElement.lang` follows it — that is what
- * screen readers and hyphenation read.
+ * One instance per site, created in `main` and handed to the shell. [languages] is the site's own
+ * registration list — the kit starts with [Langs.EN] and [Langs.ZH_HANS], and a site adds any other
+ * `Lang(tag)` it has copy for; the language menu and the stored value are both checked against it.
+ *
+ * The state is persisted so a reload keeps the language, and `document.documentElement.lang` follows
+ * it — that is what screen readers and hyphenation read.
  *
  * Listeners are notified in place: switching is a walk over the mounted pages, never a rebuild.
  */
 class LanguageState(
+    val languages: List<Lang> = listOf(Langs.EN, Langs.ZH_HANS),
     private val storageKey: String = "ktjs-demo-lang",
-    initial: Lang = Lang.EN,
+    initial: Lang = languages.first(),
 ) {
+    init {
+        require(languages.isNotEmpty()) { "a site needs at least one language" }
+        require(languages.any { it == initial }) { "the initial language ${initial.code} is not registered" }
+    }
+
     var current: Lang = readStored() ?: initial
         private set
 
@@ -42,12 +51,12 @@ class LanguageState(
     }
 
     private fun applyDocumentLang() {
-        document.documentElement?.setAttribute("lang", current.code)
+        document.documentElement.setAttribute("lang", current.code)
     }
 
     private fun readStored(): Lang? =
         runCatching { localStorage.getItem(storageKey) }.getOrNull()?.let { stored ->
-            Lang.entries.firstOrNull { it.code == stored }
+            languages.firstOrNull { it.code == stored }
         }
 
     private fun store(lang: Lang) {

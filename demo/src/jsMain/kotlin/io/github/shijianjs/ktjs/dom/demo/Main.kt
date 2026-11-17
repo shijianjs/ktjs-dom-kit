@@ -1,8 +1,8 @@
 package io.github.shijianjs.ktjs.dom.demo
 
-import io.github.shijianjs.ktjs.demo.Chrome
 import io.github.shijianjs.ktjs.demo.DemoShell
 import io.github.shijianjs.ktjs.demo.LanguageState
+import io.github.shijianjs.ktjs.demo.ShellConfig
 import io.github.shijianjs.ktjs.demo.Theme
 import web.dom.ElementId
 import web.dom.document
@@ -29,13 +29,14 @@ fun main() {
         siteCatalog(),
         language,
         theme,
-        Chrome(
+        ShellConfig(
             siteVersion = KIT_VERSION,
             docsUrl = DOCS_URL,
             apiUrl = API_URL,
             sourceUrl = SOURCE_URL,
-            logoIcon = "lucide:component",
+            // The same file the documentation and the README show; the demo build scales it down.
+            logoSrc = "img/ktjs-dom-kit-logo.png",
         ),
-        ::siteTexts,
+        siteTexts,
     )
 }

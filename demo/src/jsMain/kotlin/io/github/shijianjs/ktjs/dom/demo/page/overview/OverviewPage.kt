@@ -1,7 +1,10 @@
 package io.github.shijianjs.ktjs.dom.demo.page.overview
 
+import io.github.shijianjs.ktjs.demo.Binder
 import io.github.shijianjs.ktjs.demo.Lang
+import io.github.shijianjs.ktjs.demo.Langs
 import io.github.shijianjs.ktjs.demo.Page
+import io.github.shijianjs.ktjs.demo.Translations
 import io.github.shijianjs.ktjs.demo.anchor
 import io.github.shijianjs.ktjs.demo.codeText
 import io.github.shijianjs.ktjs.demo.element
@@ -9,8 +12,8 @@ import io.github.shijianjs.ktjs.demo.newPage
 import io.github.shijianjs.ktjs.demo.paragraph
 import io.github.shijianjs.ktjs.demo.row
 import io.github.shijianjs.ktjs.demo.sectionBlock
+import io.github.shijianjs.ktjs.demo.texts
 import io.github.shijianjs.ktjs.dom.demo.API_URL
-import io.github.shijianjs.ktjs.dom.demo.page.Binder
 import web.html.HtmlTagName
 
 /** Every string this page shows, in one language. */
@@ -77,7 +80,10 @@ private val overviewChinese: OverviewTexts = OverviewTexts(
     nextBody = "先看元素创建，再看属性绑定、样式表，最后是自定义元素。",
 )
 
-private fun overviewTexts(lang: Lang): OverviewTexts = if (lang == Lang.EN) overviewEnglish else overviewChinese
+private val overviewTexts: Translations<OverviewTexts> = texts(
+    Langs.EN to overviewEnglish,
+    Langs.ZH_HANS to overviewChinese,
+)
 
 /**
  * Landing page: what the library is, how it is consumed, where the reference lives.
@@ -88,7 +94,7 @@ private fun overviewTexts(lang: Lang): OverviewTexts = if (lang == Lang.EN) over
 internal class OverviewPage : Page {
     private val page = newPage()
 
-    private val texts = Binder(::overviewTexts)
+    private val texts = Binder(overviewTexts)
 
     override val node get() = page
 
@@ -124,7 +130,7 @@ internal class OverviewPage : Page {
     }
 
     override fun applyTranslation(lang: Lang) {
-        val current = overviewTexts(lang)
+        val current = overviewTexts[lang]
         page.setTitle(current.title)
         page.setSummary(current.summary)
         texts.apply(lang)

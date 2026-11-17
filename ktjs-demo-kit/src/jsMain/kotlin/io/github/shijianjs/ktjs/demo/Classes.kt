@@ -38,7 +38,7 @@ internal val CODE: ClassName = ClassName("code")
 /** The site title, an `h1` that sits directly in the navbar's `slot="navbar"`. */
 internal val SHELL_TITLE: ClassName = ClassName("shell__title")
 
-/** The site mark, immediately left of the title; an Iconify icon, sized here rather than by width. */
+/** The site mark, immediately left of the title; an `<img>`, sized by the sheet, not by attributes. */
 internal val SHELL_LOGO: ClassName = ClassName("shell__logo")
 
 /** The version tag next to the title; hidden when a site reports no version. */

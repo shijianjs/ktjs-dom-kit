@@ -3,6 +3,7 @@ package io.github.shijianjs.ktjs.demo
 import io.github.shijianjs.ktjs.dom.css.cssSheet
 import io.github.shijianjs.ktjs.vaadin.lumoutility.LumoUtility
 import web.cssom.AlignItems
+import web.cssom.Auto
 import web.cssom.BoxSizing
 import web.cssom.CSSStyleSheet
 import web.cssom.CustomPropertyName
@@ -157,10 +158,11 @@ val SHELL_SHEET: CSSStyleSheet = cssSheet {
         flexShrink = number(0.0)
     }
 
-    // The mark follows the same rule as the side-nav icons: an Iconify element is sized by font-size
-    // (it draws an `<svg width="1em">`), never by width/height.
+    // The mark is an image, not an icon: its height is fixed by the navbar and the width follows the
+    // file, so a wide logo is not squashed into a square box.
     SHELL_LOGO {
-        fontSize = 26.px
+        height = 28.px
+        width = Auto.auto
         flexShrink = number(0.0)
     }
 

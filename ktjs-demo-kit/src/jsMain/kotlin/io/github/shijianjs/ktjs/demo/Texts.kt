@@ -4,9 +4,9 @@ package io.github.shijianjs.ktjs.demo
  * Every string the shell and the navigation show, in one language.
  *
  * The site keeps one instance per language (`englishSite` / `chineseSite` … in the application) and
- * hands the shell a `(Lang) -> SiteTexts` function, so a new language is a new instance and nothing
- * else. Body copy of a page is not here: each page owns its own text class, the same way — one
- * instance per language, resolved through a function of the page.
+ * declares the table with [texts]; a new language is one more entry there plus the same in each page's
+ * text class, and no existing string is touched. Body copy of a page is not here: each page owns its
+ * own text class the same way.
  *
  * The menu bars use fixed nouns for their buttons ([languageLabel], [themeLabel], [docsLabel]) and put
  * the current value in the menu itself, so opening and choosing never resizes the navbar.

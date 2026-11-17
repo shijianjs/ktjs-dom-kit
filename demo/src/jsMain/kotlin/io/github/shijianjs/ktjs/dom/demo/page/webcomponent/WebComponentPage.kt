@@ -1,7 +1,10 @@
 package io.github.shijianjs.ktjs.dom.demo.page.webcomponent
 
+import io.github.shijianjs.ktjs.demo.Binder
 import io.github.shijianjs.ktjs.demo.Lang
+import io.github.shijianjs.ktjs.demo.Langs
 import io.github.shijianjs.ktjs.demo.Page
+import io.github.shijianjs.ktjs.demo.Translations
 import io.github.shijianjs.ktjs.demo.codeText
 import io.github.shijianjs.ktjs.demo.element
 import io.github.shijianjs.ktjs.demo.exampleBox
@@ -9,7 +12,7 @@ import io.github.shijianjs.ktjs.demo.newPage
 import io.github.shijianjs.ktjs.demo.paragraph
 import io.github.shijianjs.ktjs.demo.row
 import io.github.shijianjs.ktjs.demo.sectionBlock
-import io.github.shijianjs.ktjs.dom.demo.page.Binder
+import io.github.shijianjs.ktjs.demo.texts
 import io.github.shijianjs.ktjs.vaadin.button.createButton
 import web.dom.clickEvent
 import web.events.addHandler
@@ -56,8 +59,10 @@ private val webComponentChinese: WebComponentTexts = WebComponentTexts(
     definitionNote = "没有 es2015，编译器会发射无法 new 的函数；不剥桥，第一次调用 DOM 方法就会自递归。",
 )
 
-private fun webComponentTexts(lang: Lang): WebComponentTexts =
-    if (lang == Lang.EN) webComponentEnglish else webComponentChinese
+private val webComponentTexts: Translations<WebComponentTexts> = texts(
+    Langs.EN to webComponentEnglish,
+    Langs.ZH_HANS to webComponentChinese,
+)
 
 /**
  * Shows custom elements as they are actually used: one tag, several instances, each with its own
@@ -66,7 +71,7 @@ private fun webComponentTexts(lang: Lang): WebComponentTexts =
 internal class WebComponentPage : Page {
     private val page = newPage()
 
-    private val texts = Binder(::webComponentTexts)
+    private val texts = Binder(webComponentTexts)
 
     private val instanceHost = element(HtmlTagName.div)
 
@@ -102,7 +107,7 @@ internal class WebComponentPage : Page {
     }
 
     override fun applyTranslation(lang: Lang) {
-        val current = webComponentTexts(lang)
+        val current = webComponentTexts[lang]
         page.setTitle(current.title)
         page.setSummary(current.summary)
         texts.apply(lang)

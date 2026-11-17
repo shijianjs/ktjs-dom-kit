@@ -48,13 +48,15 @@ import web.window._blank
 import web.window.window
 
 /**
- * Identity of the site that is not a translated string.
+ * The site's identity and destination URLs — everything the frame needs that is **not** a translated
+ * string.
  *
  * The site title itself lives in [SiteTexts], because it changes with the language; the version tag
- * and the link targets do not. Every URL is optional: a site with only a repository gets a menu with
- * one entry, and a site with none hides the menu entirely.
+ * and the targets do not. Every URL is optional: a site with only a repository gets a menu with one
+ * entry, and a site with none hides the menu entirely. [logoSrc] is a plain image URL, so a site
+ * reuses the very file its documentation and README show instead of inventing a second mark.
  */
-class Chrome(
+class ShellConfig(
     /** Shown next to the title in the navbar, e.g. `Kotlin/JS 2.4.21`; empty hides the line. */
     val siteVersion: String = "",
     /** Documentation site, usually the root the demo is published under. */
@@ -63,8 +65,8 @@ class Chrome(
     val apiUrl: String? = null,
     /** Source repository. */
     val sourceUrl: String? = null,
-    /** Iconify id of the site mark, drawn immediately left of the title. */
-    val logoIcon: String? = null,
+    /** Site mark, drawn immediately left of the title; `null` leaves the title to stand alone. */
+    val logoSrc: String? = null,
 )
 
 /**
@@ -148,9 +150,9 @@ class DemoShell : CustomElementAdapter() {
 
     private lateinit var theme: Theme
 
-    private lateinit var chrome: Chrome
+    private lateinit var config: ShellConfig
 
-    private lateinit var texts: (Lang) -> SiteTexts
+    private lateinit var texts: Translations<SiteTexts>
 
     private lateinit var router: Router
 
@@ -196,27 +198,29 @@ class DemoShell : CustomElementAdapter() {
     /**
      * Builds the drawer, the navbar and the router, then shows the route already in the URL.
      *
-     * [texts] resolves the shell's strings for a language: the application owns one [SiteTexts]
-     * instance per language and hands this function over, so the shell itself carries no copy.
+     * [texts] is the application's translation table: one [SiteTexts] per language, declared with
+     * `texts(Langs.EN to …, Langs.ZH_HANS to …)`. The shell carries no copy of its own and lists the
+     * language menu from [LanguageState.languages], so registering a language is entirely the
+     * application's call.
      */
     fun mount(
         catalog: Catalog,
         language: LanguageState,
         theme: Theme,
-        chrome: Chrome,
-        texts: (Lang) -> SiteTexts,
+        config: ShellConfig,
+        texts: Translations<SiteTexts>,
     ) {
         this.catalog = catalog
         this.language = language
         this.theme = theme
-        this.chrome = chrome
+        this.config = config
         this.texts = texts
 
         registerLumoIcons()
         buildLogo()
 
-        titleVersion.textContent = chrome.siteVersion
-        titleVersion.setHidden(chrome.siteVersion.isEmpty())
+        titleVersion.textContent = config.siteVersion
+        titleVersion.setHidden(config.siteVersion.isEmpty())
 
         buildGroups()
         buildActions()
@@ -235,20 +239,20 @@ class DemoShell : CustomElementAdapter() {
         router.navigate(route)
     }
 
-    private fun textsFor(lang: Lang): SiteTexts = texts(lang)
+    private fun textsFor(lang: Lang): SiteTexts = texts[lang]
 
     private fun titleOf(entry: Entry, lang: Lang): String = textsFor(lang).pageTitles[entry.id] ?: entry.id
 
     /** The mark sits immediately left of the name, so it reads as one lock-up with the title. */
     private fun buildLogo() {
-        val icon = chrome.logoIcon ?: return
-        navbarStart.insertBefore(
-            createIconifyIcon(icon) {
-                classList.add(SHELL_LOGO)
-                setAttribute("aria-hidden", "true")
-            },
-            siteTitle,
-        )
+        val src = config.logoSrc ?: return
+        val logo = HtmlTagName.img.createElement {
+            classList.add(SHELL_LOGO)
+            setAttribute("src", src)
+            setAttribute("alt", "")
+            setAttribute("aria-hidden", "true")
+        }
+        navbarStart.insertBefore(logo, siteTitle)
     }
 
     private fun buildGroups() {
@@ -390,13 +394,13 @@ class DemoShell : CustomElementAdapter() {
         val current = textsFor(language.current)
         val entries = mutableListOf<SubMenuItem>()
 
-        chrome.docsUrl?.let { url ->
+        config.docsUrl?.let { url ->
             entries += menuEntry("docs:site", "lucide:book", current.siteDocsLabel) { openLink(url) }
         }
-        chrome.apiUrl?.let { url ->
+        config.apiUrl?.let { url ->
             entries += menuEntry("docs:api", "lucide:file-code", current.apiLabel) { openLink(url) }
         }
-        chrome.sourceUrl?.let { url ->
+        config.sourceUrl?.let { url ->
             entries += menuEntry("docs:source", "lucide:github", current.sourceLabel) { openLink(url) }
         }
 
@@ -410,7 +414,7 @@ class DemoShell : CustomElementAdapter() {
 
     private fun rebuildLanguageMenu() {
         val current = textsFor(language.current)
-        val entries = Lang.entries.map { lang ->
+        val entries = language.languages.map { lang ->
             menuEntry("lang:${lang.code}", "lucide:languages", textsFor(lang).langLabel, lang == language.current) {
                 language.set(lang)
             }

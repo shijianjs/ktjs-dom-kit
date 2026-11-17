@@ -1,7 +1,10 @@
 package io.github.shijianjs.ktjs.dom.demo.page.elements
 
+import io.github.shijianjs.ktjs.demo.Binder
 import io.github.shijianjs.ktjs.demo.Lang
+import io.github.shijianjs.ktjs.demo.Langs
 import io.github.shijianjs.ktjs.demo.Page
+import io.github.shijianjs.ktjs.demo.Translations
 import io.github.shijianjs.ktjs.demo.codeText
 import io.github.shijianjs.ktjs.demo.element
 import io.github.shijianjs.ktjs.demo.exampleBox
@@ -10,8 +13,8 @@ import io.github.shijianjs.ktjs.demo.newPage
 import io.github.shijianjs.ktjs.demo.paragraph
 import io.github.shijianjs.ktjs.demo.row
 import io.github.shijianjs.ktjs.demo.sectionBlock
+import io.github.shijianjs.ktjs.demo.texts
 import io.github.shijianjs.ktjs.demo.withTheme
-import io.github.shijianjs.ktjs.dom.demo.page.Binder
 import io.github.shijianjs.ktjs.vaadin.button.createButton
 import web.dom.clickEvent
 import web.events.addHandler
@@ -61,7 +64,10 @@ private val elementsChinese: ElementsTexts = ElementsTexts(
     collectionNote = "列表自己持有节点：新增一条只是多一个 li，其余节点不动。",
 )
 
-private fun elementsTexts(lang: Lang): ElementsTexts = if (lang == Lang.EN) elementsEnglish else elementsChinese
+private val elementsTexts: Translations<ElementsTexts> = texts(
+    Langs.EN to elementsEnglish,
+    Langs.ZH_HANS to elementsChinese,
+)
 
 /**
  * `TagName<T>.createElement { }`: the tag carries the element type, so the created node needs no cast
@@ -70,7 +76,7 @@ private fun elementsTexts(lang: Lang): ElementsTexts = if (lang == Lang.EN) elem
 internal class ElementsPage : Page {
     private val page = newPage()
 
-    private val texts = Binder(::elementsTexts)
+    private val texts = Binder(elementsTexts)
 
     private val list: HTMLElement = element(HtmlTagName.ul)
 
@@ -105,7 +111,7 @@ internal class ElementsPage : Page {
     }
 
     override fun applyTranslation(lang: Lang) {
-        val current = elementsTexts(lang)
+        val current = elementsTexts[lang]
         page.setTitle(current.title)
         page.setSummary(current.summary)
         texts.apply(lang)

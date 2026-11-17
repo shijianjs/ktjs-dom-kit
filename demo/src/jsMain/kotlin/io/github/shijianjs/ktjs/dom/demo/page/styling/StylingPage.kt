@@ -1,14 +1,17 @@
 package io.github.shijianjs.ktjs.dom.demo.page.styling
 
+import io.github.shijianjs.ktjs.demo.Binder
 import io.github.shijianjs.ktjs.demo.Lang
+import io.github.shijianjs.ktjs.demo.Langs
 import io.github.shijianjs.ktjs.demo.Page
+import io.github.shijianjs.ktjs.demo.Translations
 import io.github.shijianjs.ktjs.demo.codeText
 import io.github.shijianjs.ktjs.demo.exampleBox
 import io.github.shijianjs.ktjs.demo.newPage
 import io.github.shijianjs.ktjs.demo.paragraph
 import io.github.shijianjs.ktjs.demo.row
 import io.github.shijianjs.ktjs.demo.sectionBlock
-import io.github.shijianjs.ktjs.dom.demo.page.Binder
+import io.github.shijianjs.ktjs.demo.texts
 
 private class StylingTexts(
     val title: String,
@@ -51,7 +54,10 @@ private val stylingChinese: StylingTexts = StylingTexts(
     sharedStep = "共享样式表：reset（box-sizing、:host display）与所有组件都要用的主题 token。",
 )
 
-private fun stylingTexts(lang: Lang): StylingTexts = if (lang == Lang.EN) stylingEnglish else stylingChinese
+private val stylingTexts: Translations<StylingTexts> = texts(
+    Langs.EN to stylingEnglish,
+    Langs.ZH_HANS to stylingChinese,
+)
 
 /**
  * The one example where a class and a sheet are genuinely required: `:hover` cannot be inline, and a
@@ -60,7 +66,7 @@ private fun stylingTexts(lang: Lang): StylingTexts = if (lang == Lang.EN) stylin
 internal class StylingPage : Page {
     private val page = newPage()
 
-    private val texts = Binder(::stylingTexts)
+    private val texts = Binder(stylingTexts)
 
     private val hoverBox = newHoverBox()
 
@@ -88,7 +94,7 @@ internal class StylingPage : Page {
     }
 
     override fun applyTranslation(lang: Lang) {
-        val current = stylingTexts(lang)
+        val current = stylingTexts[lang]
         page.setTitle(current.title)
         page.setSummary(current.summary)
         texts.apply(lang)

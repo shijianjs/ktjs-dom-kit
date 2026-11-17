@@ -49,6 +49,17 @@ The shell is one `vaadin-app-layout`:
   The shell still uses the wrapper's class names, but repeats the two declarations it needs
   (`items-center`, `justify-between`) in its own sheet — see the comments in `Sheets.kt`.
 
+### Languages and the site mark
+
+- A language is a BCP 47 tag, not an enum: `Lang("ja")` registers one, `LanguageState(languages = …)`
+  decides which ones the site offers, and every text class declares its copy as
+  `texts(Langs.EN to …, Langs.ZH_HANS to …)`. A language without an entry falls back to the first
+  declared one, so a newly registered language appears in the menu before its copy is complete, and
+  declaration order is menu order.
+- The site mark is an `<img>`: `ShellConfig.logoSrc` points at the same logo file the README and the
+  documentation site show. The demo build (`scaleLogo`) renders it down to 128px, so the repository
+  keeps exactly one logo and the bundle does not ship a 1254px original for a 28px slot.
+
 ### Running it
 
 `./gradlew :demo:jsBrowserDevelopmentRun` serves the demo on a local port; `:demo:jsBrowserProductionRun`

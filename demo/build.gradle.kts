@@ -1,3 +1,8 @@
+// Referenced with imports rather than fully qualified names: inside a Gradle script `java` is the
+// JavaPluginExtension accessor, so `java.awt.…` does not resolve.
+import java.awt.RenderingHints
+import java.awt.image.BufferedImage
+
 plugins {
     kotlin("multiplatform")
 }
@@ -21,6 +26,37 @@ val copyLumoStyles = tasks.register<Copy>("copyLumoStyles") {
     into(layout.buildDirectory.dir("generated/lumo"))
 }
 
+// -----------------------------------------------------------------------------------------------
+// Site mark
+//
+// There is exactly one logo file in the repository (the one the README and the documentation site
+// show), so the demo does not keep a second copy. It does not ship the 1254px original either: the
+// navbar draws it at 28px, so the build writes a 128px rendering into the demo resources.
+// -----------------------------------------------------------------------------------------------
+val logoPixels = 128
+
+val scaleLogo = tasks.register("scaleLogo") {
+    description = "Scales the repository logo down into the demo resources."
+    val source = rootProject.file("docs/src/jsMain/resources/static/img/ktjs-dom-kit-logo.png")
+    val outputDir = layout.buildDirectory.dir("generated/logo")
+    inputs.file(source)
+    outputs.dir(outputDir)
+    doLast {
+        val target = outputDir.get().asFile.resolve("img/ktjs-dom-kit-logo.png")
+        target.parentFile.mkdirs()
+        val original = javax.imageio.ImageIO.read(source)
+        val scaled = BufferedImage(logoPixels, logoPixels, BufferedImage.TYPE_INT_ARGB)
+        val graphics = scaled.createGraphics()
+        graphics.setRenderingHint(
+            RenderingHints.KEY_INTERPOLATION,
+            RenderingHints.VALUE_INTERPOLATION_BILINEAR,
+        )
+        graphics.drawImage(original, 0, 0, logoPixels, logoPixels, null)
+        graphics.dispose()
+        javax.imageio.ImageIO.write(scaled, "png", target)
+    }
+}
+
 kotlin {
     js {
         useEsModules()
@@ -42,6 +78,7 @@ kotlin {
     sourceSets {
         jsMain {
             resources.srcDir(copyLumoStyles)
+            resources.srcDir(scaleLogo)
         }
         jsMain.dependencies {
             // The library this site documents, as a project dependency: a demo always runs against
