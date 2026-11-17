@@ -36,7 +36,13 @@ kotlin {
             // classes, so consumers write against them without an extra dependency line.
             api(project(":ktjs-dom-kit"))
             api("org.jetbrains.kotlin-wrappers:kotlin-browser:2026.11.1")
-            api("io.github.shijianjs:ktjs-vaadin-web-components:25.3.5-kt.4")
+            // The unreleased wrapper revision that adds `lumoutility.LumoUtility`. Versions here stay
+            // SNAPSHOT until the release batch: every module is published to mavenLocal and consumed
+            // from there, so nothing reaches Central before the user signs off on the whole migration.
+            api("io.github.shijianjs:ktjs-vaadin-web-components:25.3.5-kt.5-SNAPSHOT")
+            // Icons in the sidebar are `<iconify-icon>` elements. The type never leaves this module
+            // (the catalog only carries icon-name strings), so a plain implementation is enough.
+            implementation("io.github.shijianjs:ktjs-iconify-icon:3.0.5-kt.6-SNAPSHOT")
         }
         jsTest.dependencies {
             implementation(kotlin("test"))

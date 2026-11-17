@@ -35,15 +35,30 @@ internal val READOUT: ClassName = ClassName("readout")
 
 internal val CODE: ClassName = ClassName("code")
 
-internal val SHELL_BRAND_NAME: ClassName = ClassName("shell__brand-name")
+/** The site title, an `h1` that sits directly in the navbar's `slot="navbar"`. */
+internal val SHELL_TITLE: ClassName = ClassName("shell__title")
 
-internal val SHELL_BRAND_VERSION: ClassName = ClassName("shell__brand-version")
+/** The version tag next to the title; hidden when a site reports no version. */
+internal val SHELL_VERSION: ClassName = ClassName("shell__version")
 
-/** The brand stack that rides in the side nav's `label` slot. */
-internal val SHELL_BRAND: ClassName = ClassName("shell__brand")
-
+/** The navbar as a whole: title and breadcrumbs on the left, actions on the right. */
 internal val SHELL_TOPBAR: ClassName = ClassName("shell__topbar")
 
+/** The left half of the navbar; vertical centring comes from a Lumo utility class, not from here. */
+internal val SHELL_TOPBAR_START: ClassName = ClassName("shell__topbar-start")
+
+internal val SHELL_ACTIONS: ClassName = ClassName("shell__actions")
+
+/**
+ * One button of the action row.
+ *
+ * The width is fixed so switching language (a longer or shorter label) or theme (primary vs default
+ * Lumo variant) never resizes the row and therefore never shifts the breadcrumbs.
+ */
+internal val SHELL_ACTION: ClassName = ClassName("shell__action")
+
+/** Size of the Iconify icon in a side-nav item's `prefix` slot; the element renders at `1em`. */
+internal val SHELL_NAV_ICON: ClassName = ClassName("shell__nav-icon")
 
 internal val SHELL_LINK: ClassName = ClassName("shell__link")
 

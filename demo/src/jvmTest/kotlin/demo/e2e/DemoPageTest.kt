@@ -37,6 +37,95 @@ class DemoPageTest(private val browser: Browser) {
         assertEquals(emptyList<String>(), consoleErrors)
     }
 
+    private fun actionWidths(page: Page): List<Double> =
+        (page.locator("ktjs-demo-shell [slot='navbar'] vaadin-button").evaluateAll(
+            """
+            (buttons) => buttons
+              .filter((button) => button.getBoundingClientRect().width > 0)
+              .map((button) => button.getBoundingClientRect().width)
+            """.trimIndent(),
+        ) as List<*>).map { (it as Number).toDouble() }
+
+    @Test
+    fun `the title sits in the navbar, not in the drawer`() {
+        val page = open("")
+
+        assertEquals("ktjs-dom-kit", page.locator("ktjs-demo-shell [slot='navbar'] .shell__title").textContent())
+        assertEquals(0, page.locator("ktjs-demo-shell [slot='drawer'] .shell__title").count())
+        assertNoErrors()
+    }
+
+    /**
+     * The navbar is one line: the toggle, the title, its version tag and the breadcrumbs all share the
+     * same vertical centre, and so do the two halves of the bar.
+     */
+    @Test
+    fun `navbar children share one vertical centre`() {
+        val page = open("")
+
+        val centres = page.locator("ktjs-demo-shell [slot='navbar']").first().evaluate(
+            """
+            (navbar) => {
+              const centre = (node) => {
+                const rect = node.getBoundingClientRect();
+                return (rect.top + rect.bottom) / 2;
+              };
+              const box = (node) => {
+                const rect = node.getBoundingClientRect();
+                return [node.tagName.toLowerCase(), Math.round(rect.top), Math.round(rect.height)];
+              };
+              const start = navbar.querySelector('.shell__topbar-start');
+              return {
+                bar: centre(navbar),
+                halves: [...navbar.children].map(centre),
+                start: [...start.children].map(centre),
+                startBox: [...start.children].map(box),
+                startHeight: start.getBoundingClientRect().height,
+              };
+            }
+            """.trimIndent(),
+        ) as Map<*, *>
+
+        fun spread(values: List<Double>): Double = values.max() - values.min()
+
+        val bar = (centres["bar"] as Number).toDouble()
+        val halves = (centres["halves"] as List<*>).map { (it as Number).toDouble() }
+        val start = (centres["start"] as List<*>).map { (it as Number).toDouble() }
+        val boxes = centres["startBox"]
+        assertTrue(spread(halves + bar) <= 1.0, "navbar halves were off-centre: $halves vs $bar")
+        assertTrue(
+            spread(start + bar) <= 1.0,
+            "toggle, title, version and breadcrumbs were off-centre: $start; navbar=$bar, boxes=$boxes, " +
+                "startHeight=${centres["startHeight"]}",
+        )
+        assertNoErrors()
+    }
+
+    /**
+     * Switching the language changes the button label and switching the theme changes its variant; the
+     * row must not resize, or the breadcrumbs jump every time.
+     */
+    @Test
+    fun `language and theme toggles keep the action row as wide as it was`() {
+        val page = open("")
+
+        val before = actionWidths(page)
+        assertEquals(4, before.size, "four action buttons: two languages, light and dark")
+
+        page.locator("ktjs-demo-shell [slot='navbar'] vaadin-button:text-is('中文')").click()
+        page.waitForSelector("ktjs-demo-page .page__title:text-is('ktjs-dom-kit 概览')")
+        assertEquals(before, actionWidths(page), "the language switch resized the buttons")
+
+        page.locator("ktjs-demo-shell [slot='navbar'] vaadin-button:text-is('暗色')").click()
+        assertEquals(before, actionWidths(page), "the theme switch resized the buttons")
+        assertEquals(
+            2,
+            page.locator("ktjs-demo-shell [slot='navbar'] vaadin-button[theme~='primary']").count(),
+            "one language and one theme carry `primary`; the rest have no theme",
+        )
+        assertNoErrors()
+    }
+
     @Test
     fun `shell upgrades and keeps our sheets inside shadow roots`() {
         val page = open("")

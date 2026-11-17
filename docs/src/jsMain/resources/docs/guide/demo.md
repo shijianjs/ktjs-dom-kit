@@ -25,5 +25,20 @@ Two invariants the page keeps, and the end-to-end suite asserts:
 - **the language switch never rebuilds a page** — it rewrites text in place, so a counter that was
   clicked keeps its value when the language changes.
 
+### Shell
+
+The shell is one `vaadin-app-layout`:
+
+- the site title (`<h1>`), the version tag, the drawer toggle and the breadcrumbs sit in the navbar,
+  the way the official `app-layout` drawer example does it; the grouped `vaadin-side-nav` sits in the
+  drawer, one parent item per group and one child item per page;
+- every navigation entry carries an `iconify-icon` (`lucide:*`), so the demo doubles as a check that
+  `ktjs-iconify` and the shell work together;
+- the language and theme buttons keep one fixed width, so switching only changes which button is
+  `theme="primary"` — the navbar does not shift;
+- Lumo's `utility.css` is a document-level stylesheet, so its classes cannot reach into a shadow tree.
+  The shell still uses the wrapper's class names, but repeats the two declarations it needs
+  (`items-center`, `justify-between`) in its own sheet — see the comments in `Sheets.kt`.
+
 The demo is built by `./gradlew pagesSite`, which puts the documentation at `/`, this page at `/demo/`
 and the API reference at `/api/`.

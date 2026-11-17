@@ -30,7 +30,28 @@ class ScreenshotTest(private val browser: Browser) {
         page.navigate(DemoServer.baseUrl + path)
         page.waitForSelector("ktjs-demo-shell vaadin-app-layout")
         page.setDefaultTimeout(7_000.0)
+        // Iconify fetches each icon from the API on first use; screenshots and size assertions are
+        // meaningless while the elements are still `loading`.
+        waitForIcons(page)
         return page
+    }
+
+    /**
+     * Waits until every iconify element has rendered. `document.querySelectorAll` cannot see into
+     * the shell's shadow tree, so the check goes through a Playwright locator, which does.
+     */
+    private fun waitForIcons(page: Page) {
+        val deadline = System.currentTimeMillis() + 10_000
+        while (true) {
+            val states = page.locator("ktjs-demo-shell iconify-icon").evaluateAll(
+                "nodes => nodes.map((node) => node.status)",
+            ) as List<*>
+            if (states.isNotEmpty() && states.none { it != "rendered" }) return
+            if (System.currentTimeMillis() > deadline) {
+                throw AssertionError("icons never finished loading: $states")
+            }
+            Thread.sleep(100)
+        }
     }
 
     private fun shoot(page: Page, name: String): Path {
@@ -107,6 +128,40 @@ class ScreenshotTest(private val browser: Browser) {
             page.locator("ktjs-demo-shell vaadin-side-nav vaadin-side-nav-item[current]").count(),
             "exactly one navigation item is current",
         )
+        // The title lives in the navbar, the way the app-layout examples put it there, not in the drawer.
+        assertEquals("ktjs-dom-kit", page.locator("ktjs-demo-shell [slot='navbar'] .shell__title").textContent())
+        assertEquals(0, page.locator("ktjs-demo-shell [slot='drawer'] .shell__title").count())
+        // Every page row carries its Iconify icon in the prefix slot; groups carry one too.
+        assertEquals(
+            page.locator("ktjs-demo-shell [slot='drawer'] vaadin-side-nav-item[data-route]").count(),
+            page.locator(
+                "ktjs-demo-shell [slot='drawer'] vaadin-side-nav-item[data-route] iconify-icon[slot='prefix']",
+            ).count(),
+            "every page row has an icon",
+        )
+        assertTrue(
+            page.locator("ktjs-demo-shell [slot='drawer'] iconify-icon[slot='prefix']").count() >=
+                page.locator("ktjs-demo-shell [slot='drawer'] vaadin-side-nav-item").count(),
+        )
+        // The wrapper is only decoration if the icon never renders: `iconify-icon.status` tells.
+        val icon = page.locator("ktjs-demo-shell [slot='drawer'] iconify-icon").first().evaluate(
+            """
+            (node) => {
+              const rect = node.getBoundingClientRect();
+              return {
+                status: node.status,
+                icon: node.icon,
+                width: Math.round(rect.width),
+                height: Math.round(rect.height),
+              };
+            }
+            """.trimIndent(),
+        ) as Map<*, *>
+        assertTrue(
+            icon["status"] == "rendered",
+            "the sidebar icon did not render: $icon",
+        )
+        assertTrue((icon["width"] as Number).toInt() > 0 && (icon["height"] as Number).toInt() > 0, "icon has no box: $icon")
         shoot(page, "light-overview")
         page.close()
     }
@@ -131,7 +186,7 @@ class ScreenshotTest(private val browser: Browser) {
         assertEquals(
             "开始",
             page.locator("ktjs-demo-shell vaadin-side-nav vaadin-side-nav-item").first()
-                .evaluate("node => node.firstElementChild.textContent") as String,
+                .evaluate("node => node.querySelector('span').textContent") as String,
             "group headings switch language too",
         )
         assertNoHorizontalOverflow(page)

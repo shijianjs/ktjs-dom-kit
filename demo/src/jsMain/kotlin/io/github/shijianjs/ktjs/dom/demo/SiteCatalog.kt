@@ -15,22 +15,25 @@ const val KIT_VERSION: String = "0.1.0"
 /** Dokka entry point of the API reference, deployed next to the docs site. */
 const val API_URL: String = "https://shijianjs.github.io/ktjs-dom-kit/api/"
 
-private val OVERVIEW: Group = Group("overview")
+private val OVERVIEW: Group = Group("overview", "lucide:home")
 
-private val DOM: Group = Group("dom")
+private val DOM: Group = Group("dom", "lucide:layers")
 
-private val COMPONENTS: Group = Group("components")
+private val COMPONENTS: Group = Group("components", "lucide:package")
 
 /**
  * The site: one entry per page. Adding a page means adding one entry here and its titles in
  * [siteTexts] — the sidebar, the breadcrumb, the router and the page cache all derive from this list.
+ *
+ * The icon is an Iconify name drawn in the sidebar row; the group's icon is drawn on the collapsible
+ * parent row. Pages without a natural icon simply omit it.
  */
 fun siteCatalog(): Catalog = Catalog(
     listOf(
-        Entry("overview", OVERVIEW) { OverviewPage() },
-        Entry("elements", DOM) { ElementsPage() },
-        Entry("attributes", DOM) { AttributePage() },
-        Entry("stylesheets", DOM) { StylingPage() },
-        Entry("custom-elements", COMPONENTS) { WebComponentPage() },
+        Entry("overview", OVERVIEW, "lucide:sparkles") { OverviewPage() },
+        Entry("elements", DOM, "lucide:code-xml") { ElementsPage() },
+        Entry("attributes", DOM, "lucide:tags") { AttributePage() },
+        Entry("stylesheets", DOM, "lucide:paintbrush") { StylingPage() },
+        Entry("custom-elements", COMPONENTS, "lucide:puzzle") { WebComponentPage() },
     ),
 )

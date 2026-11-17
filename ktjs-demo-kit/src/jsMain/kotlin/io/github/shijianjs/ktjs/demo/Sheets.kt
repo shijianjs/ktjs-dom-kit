@@ -1,12 +1,12 @@
 package io.github.shijianjs.ktjs.demo
 
 import io.github.shijianjs.ktjs.dom.css.cssSheet
+import io.github.shijianjs.ktjs.vaadin.lumoutility.LumoUtility
 import web.cssom.AlignItems
 import web.cssom.BoxSizing
 import web.cssom.CSSStyleSheet
 import web.cssom.CustomPropertyName
 import web.cssom.Display
-import web.cssom.FlexDirection
 import web.cssom.JustifyContent
 import web.cssom.Length
 import web.cssom.Margin
@@ -118,27 +118,54 @@ val SHELL_SHEET: CSSStyleSheet = cssSheet {
     }
 
 
-    SHELL_BRAND {
-        display = Display.flex
-        flexDirection = FlexDirection.column
-        rowGap = 2.px
-    }
+    // `utility.css` is a document-level sheet of `@vaadin/vaadin-lumo-styles`, so its rules cannot
+    // cross into this shadow tree. The classes are still the ones Lumo defines — the selectors below
+    // are the wrapper's `ClassName` values — and the declarations have to be repeated here for them
+    // to apply inside the shell. Only the handful the shell uses is repeated.
+    LumoUtility.AlignItems.CENTER { alignItems = AlignItems.center }
 
-    SHELL_BRAND_NAME {
+    LumoUtility.JustifyContent.BETWEEN { justifyContent = JustifyContent.spaceBetween }
+
+    // The title and its version tag live in the navbar. Sizes follow the app-layout examples:
+    // `font-size: 1.125rem; margin: 0` for the h1, a muted 11px tag beside it.
+    SHELL_TITLE {
+        margin = Margin(0.px, 0.px)
         fontSize = 18.px
         color = Palette.text
+        // One line: the navbar has room for the actions only if the title stops shrinking.
+        whiteSpace = WhiteSpace.nowrap
+        flexShrink = number(0.0)
     }
 
-    SHELL_BRAND_VERSION {
+    SHELL_VERSION {
         fontSize = 11.px
         color = Palette.muted
     }
 
     SHELL_TOPBAR {
         width = 100.pct
-        justifyContent = JustifyContent.spaceBetween
     }
 
+    // The left cluster may be narrower than the title plus the full breadcrumb trail; letting it
+    // shrink keeps the actions on screen instead of pushing the navbar wider than the viewport.
+    SHELL_TOPBAR_START {
+        minWidth = 0.px
+    }
+
+    // The action row keeps its intrinsic width, so the left cluster is what gives way.
+    SHELL_ACTIONS {
+        flexShrink = number(0.0)
+    }
+
+    SHELL_ACTION {
+        width = 90.px
+        // Lumo's primary variant raises min-width; pin it too, or the selected button is wider.
+        minWidth = 90.px
+    }
+
+    SHELL_NAV_ICON {
+        fontSize = 18.px
+    }
 
     SHELL_LINK {
         color = Palette.accent

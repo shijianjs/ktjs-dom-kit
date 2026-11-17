@@ -22,4 +22,15 @@ fragment（`#/elements`）里，所以静态托管上的深链可用，刷新也
   只 adopt 它需要的 sheet，页面里唯一的 `style` 属性在外壳宿主元素上；
 - **换语言不重建页面** —— 逐个节点改写文案，所以已经点过的计数器在切换语言后仍是原值。
 
+### 外壳
+
+外壳就是一个 `vaadin-app-layout`：
+
+- 站点标题（`<h1>`）、版本号、抽屉开关和面包屑都在导航栏里，写法照官方 `app-layout` 的 drawer
+  示例；左侧抽屉里是分组的 `vaadin-side-nav`，一个组一个无 `path` 的父项、一个页面一个子项；
+- 每个导航项都带 `iconify-icon`（`lucide:*`），所以演示本身也在验证 `ktjs-iconify` 与外壳的配合；
+- 中英、亮暗四个按钮固定等宽，切换时只改哪个按钮是 `theme="primary"`，导航栏不会整体抖动；
+- Lumo 的 `utility.css` 是**文档级**样式表，规则穿不进 shadow 树。外壳仍然用包装里的类名，但把用到的
+  两条声明（`items-center`、`justify-between`）写进自己的 sheet —— 见 `Sheets.kt` 里的注释。
+
 `./gradlew pagesSite` 会生成整个站点：文档在 `/`，演示在 `/demo/`，API 参考在 `/api/`。

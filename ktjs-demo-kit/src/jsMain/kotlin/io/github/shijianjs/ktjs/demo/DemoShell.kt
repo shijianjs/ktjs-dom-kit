@@ -4,6 +4,8 @@ import io.github.shijianjs.ktjs.dom.element.createElement
 import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementAdapter
 import io.github.shijianjs.ktjs.dom.webcomponent.attachStyledShadow
 import io.github.shijianjs.ktjs.dom.webcomponent.defineIfMissing
+import io.github.shijianjs.ktjs.iconify.IconifyIconElement
+import io.github.shijianjs.ktjs.iconify.createIconifyIcon
 import io.github.shijianjs.ktjs.vaadin.applayout.AppLayoutPrimarySections
 import io.github.shijianjs.ktjs.vaadin.applayout.createAppLayout
 import io.github.shijianjs.ktjs.vaadin.applayout.createDrawerToggle
@@ -15,6 +17,7 @@ import io.github.shijianjs.ktjs.vaadin.button.createButton
 import io.github.shijianjs.ktjs.vaadin.horizontallayout.HorizontalLayoutElement
 import io.github.shijianjs.ktjs.vaadin.horizontallayout.createHorizontalLayout
 import io.github.shijianjs.ktjs.vaadin.lumostyles.registerLumoIcons
+import io.github.shijianjs.ktjs.vaadin.lumoutility.LumoUtility
 import io.github.shijianjs.ktjs.vaadin.sidenav.SideNavItemElement
 import io.github.shijianjs.ktjs.vaadin.sidenav.createSideNav
 import io.github.shijianjs.ktjs.vaadin.sidenav.createSideNavItem
@@ -35,7 +38,7 @@ import web.html.HtmlTagName
  * and the API reference entry point do not.
  */
 class Chrome(
-    /** Shown under the title in the sidebar, e.g. `Kotlin/JS 2.4.21`; empty hides the line. */
+    /** Shown next to the title in the navbar, e.g. `Kotlin/JS 2.4.21`; empty hides the line. */
     val siteVersion: String = "",
     /** Dokka entry point of the wrapper this demo belongs to, when the site has one. */
     val apiUrl: String? = null,
@@ -64,9 +67,23 @@ class DemoShell : CustomElementAdapter() {
 
     private val drawerToggle = createDrawerToggle { ariaLabelProperty = "Toggle navigation" }
 
+    /**
+     * The site title, in the navbar the way every app-layout example puts it: an `h1` that is a direct
+     * child of the navbar, not a box stacked back into the drawer.
+     */
+    private val siteTitle: HTMLElement = HtmlTagName.h1.createElement { classList.add(SHELL_TITLE) }
+
+    private val titleVersion: HTMLElement = HtmlTagName.span.createElement { classList.add(SHELL_VERSION) }
+
+    /** Left half of the navbar: toggle, title, version and breadcrumbs, centred on one line. */
+    private val navbarStart: HorizontalLayoutElement = createHorizontalLayout {
+        withTheme("spacing")
+        classList.add(SHELL_TOPBAR_START, LumoUtility.AlignItems.CENTER)
+    }
+
     private val navbar: HorizontalLayoutElement = createHorizontalLayout {
         withTheme("spacing")
-        classList.add(SHELL_TOPBAR)
+        classList.add(SHELL_TOPBAR, LumoUtility.AlignItems.CENTER, LumoUtility.JustifyContent.BETWEEN)
         setAttribute("slot", "navbar")
     }
 
@@ -76,26 +93,19 @@ class DemoShell : CustomElementAdapter() {
 
     private val crumbPage: BreadcrumbsItemElement = createBreadcrumbsItem()
 
-    private val actions: HorizontalLayoutElement = createHorizontalLayout { withTheme("spacing") }
+    private val actions: HorizontalLayoutElement = createHorizontalLayout {
+        withTheme("spacing")
+        classList.add(SHELL_ACTIONS, LumoUtility.AlignItems.CENTER)
+    }
 
     /**
      * The whole left column is one `vaadin-side-nav`, the component Vaadin builds for a drawer:
      * groups are parent items (no `path`, so a click only expands them) and pages are their
-     * `slot="children"` items. The brand rides in the component's `label` slot, so the drawer has no
-     * hand-built stack of boxes at all.
+     * `slot="children"` items.
      */
     private val sideNav = createSideNav()
 
     private val content: VerticalLayoutElement = createVerticalLayout { withTheme("padding", "spacing") }
-
-    private val brandName: HTMLElement = HtmlTagName.span.createElement { classList.add(SHELL_BRAND_NAME) }
-
-    private val brandVersion: HTMLElement = HtmlTagName.span.createElement { classList.add(SHELL_BRAND_VERSION) }
-
-    private val brand: VerticalLayoutElement = createVerticalLayout {
-        classList.add(SHELL_BRAND)
-        setAttribute("slot", "label")
-    }
 
     private lateinit var catalog: Catalog
 
@@ -111,6 +121,8 @@ class DemoShell : CustomElementAdapter() {
 
     private val navItems: MutableMap<String, SideNavItemElement> = mutableMapOf()
 
+    private val navLabels: MutableMap<String, HTMLElement> = mutableMapOf()
+
     private val groupLabels: MutableMap<String, HTMLElement> = mutableMapOf()
 
     private val languageButtons: MutableMap<Lang, ButtonElement> = mutableMapOf()
@@ -121,19 +133,18 @@ class DemoShell : CustomElementAdapter() {
 
     private val apiLink: HTMLElement = HtmlTagName.a.createElement { classList.add(SHELL_LINK) }
 
-    private val lightButton: ButtonElement = createButton()
+    private val lightButton: ButtonElement = createButton { classList.add(SHELL_ACTION) }
 
-    private val darkButton: ButtonElement = createButton()
+    private val darkButton: ButtonElement = createButton { classList.add(SHELL_ACTION) }
 
     init {
         appLayout.primarySection = AppLayoutPrimarySections.navbar
 
-        brand.append(brandName, brandVersion)
-        sideNav.append(brand)
         sideNav.setAttribute("slot", "drawer")
 
         breadcrumbs.append(crumbGroup, crumbPage)
-        navbar.append(drawerToggle, breadcrumbs, actions)
+        navbarStart.append(drawerToggle, siteTitle, titleVersion, breadcrumbs)
+        navbar.append(navbarStart, actions)
 
         appLayout.append(navbar, sideNav, content)
         attachStyledShadow(RESET, SHELL_SHEET).append(appLayout)
@@ -160,8 +171,8 @@ class DemoShell : CustomElementAdapter() {
 
         registerLumoIcons()
 
-        brandVersion.textContent = chrome.siteVersion
-        brandVersion.setHidden(chrome.siteVersion.isEmpty())
+        titleVersion.textContent = chrome.siteVersion
+        titleVersion.setHidden(chrome.siteVersion.isEmpty())
 
         buildGroups()
         buildActions()
@@ -193,19 +204,24 @@ class DemoShell : CustomElementAdapter() {
             val groupItem = createSideNavItem { expanded = true }
             val groupLabel = HtmlTagName.span.createElement()
             groupLabel.textContent = current.groupTitles[group.id] ?: group.id
+            group.icon?.let { groupItem.append(navIcon(it)) }
             groupItem.append(groupLabel)
 
             catalog.entriesOf(group).forEach { entry ->
                 // No `path`: the component matches `location.pathname`, which cannot see a `#/…` hash,
                 // and a `#/…` path would make *every* item look current. The row is therefore a plain
                 // item that the frame turns into a link and highlights itself.
-                val item = createSideNavItem { textContent = titleOf(entry, language.current) }
+                val item = createSideNavItem()
+                val label = HtmlTagName.span.createElement { textContent = titleOf(entry, language.current) }
+                entry.icon?.let { item.append(navIcon(it)) }
+                item.append(label)
                 item.dataset["route"] = entry.id
                 item.setAttribute("slot", "children")
                 item.setAttribute("role", "link")
                 item.tabIndex = 0
                 item.clickEvent.addHandler { navigate(entry.id) }
                 navItems[entry.id] = item
+                navLabels[entry.id] = label
                 groupItem.append(item)
             }
 
@@ -213,6 +229,20 @@ class DemoShell : CustomElementAdapter() {
             sideNav.append(groupItem)
         }
     }
+
+    /**
+     * A sidebar icon: `<iconify-icon>` in the item's `prefix` slot.
+     *
+     * The icon name is an Iconify id (`lucide:layers`), so the site carries no SVG of its own; the size
+     * is [ICON_SIZE] via the frame's sheet and never a `width`/`height` attribute (the element renders
+     * an `<svg width="1em">`, which those attributes would only stretch).
+     */
+    private fun navIcon(name: String): IconifyIconElement =
+        createIconifyIcon(name) {
+            setAttribute("slot", "prefix")
+            classList.add(SHELL_NAV_ICON)
+            setAttribute("aria-hidden", "true")
+        }
 
     private fun buildActions() {
         val current = textsFor(language.current)
@@ -227,7 +257,10 @@ class DemoShell : CustomElementAdapter() {
         // One button per language the site ships, each labelled in the language it switches to: a
         // third language only needs an enum entry and its SiteTexts instance.
         Lang.entries.forEach { lang ->
-            val button = createButton { textContent = textsFor(lang).langLabel }
+            val button = createButton {
+                textContent = textsFor(lang).langLabel
+                classList.add(SHELL_ACTION)
+            }
             button.clickEvent.addHandler { language.set(lang) }
             languageButtons[lang] = button
             actions.append(button)
@@ -249,14 +282,25 @@ class DemoShell : CustomElementAdapter() {
     }
 
     private fun syncThemeButtons() {
-        lightButton.withTheme(if (theme.isDark) "tertiary" else "primary")
-        darkButton.withTheme(if (theme.isDark) "primary" else "tertiary")
+        setActive(lightButton, !theme.isDark)
+        setActive(darkButton, theme.isDark)
     }
 
     private fun syncLanguageButtons() {
-        languageButtons.forEach { (lang, button) ->
-            button.withTheme(if (language.current == lang) "primary" else "tertiary")
-        }
+        languageButtons.forEach { (lang, button) -> setActive(button, language.current == lang) }
+    }
+
+    /**
+     * Marks the selected variant of a toggle with Lumo's `primary` theme; the other one carries no
+     * theme at all.
+     *
+     * `primary` and the default variant have the same box (padding and min-width); `tertiary`, which
+     * this used to switch to, drops `min-width` and halves the padding, so every toggle resized the
+     * action row. The fixed width in [SHELL_ACTION] then keeps even a longer label from moving the
+     * navbar's layout.
+     */
+    private fun setActive(button: ButtonElement, active: Boolean) {
+        if (active) button.withTheme("primary") else button.withTheme()
     }
 
     private fun show(route: String) {
@@ -294,13 +338,13 @@ class DemoShell : CustomElementAdapter() {
 
     private fun applyLanguage() {
         val current = textsFor(language.current)
-        brandName.textContent = current.siteTitle
+        siteTitle.textContent = current.siteTitle
 
         catalog.groups.forEach { group ->
             groupLabels[group.id]?.textContent = current.groupTitles[group.id] ?: group.id
         }
         catalog.entries.forEach { entry ->
-            navItems[entry.id]?.textContent = titleOf(entry, language.current)
+            navLabels[entry.id]?.textContent = titleOf(entry, language.current)
         }
 
         if (chrome.apiUrl != null) apiLink.textContent = current.apiLabel
