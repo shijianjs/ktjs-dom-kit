@@ -10,12 +10,15 @@ import org.junit.jupiter.api.Test
 /**
  * The acceptance rules every demo site of this account has to meet, asserted in a real browser:
  *
- * - one screen, not a stack of sections: sidebar with groups, top bar with a breadcrumb, an action
- *   row and a content area that swaps one page at a time;
+ * - one screen, not a stack of sections: sidebar with groups, top bar with a breadcrumb, the link /
+ *   language / theme menus in the action row, and a content area that swaps one page at a time;
  * - `#/<slug>` deep links, navigation highlighting and `document.title` following the route;
  * - a language switch that rewrites text in place and keeps page state;
- * - a light/dark switch that flips the document theme;
- * - no stylesheet of ours on `document`, no inline styling beyond the host element, no console errors.
+ * - a theme menu that flips the document between light, dark and the browser's own preference;
+ * - no stylesheet of ours on `document`, no inline styling in the page body, no console errors.
+ *
+ * The menus are driven through their own elements — a button opens the menu, and an entry is picked by
+ * the `data-action` it carries — so a test never depends on which label happens to be translated.
  */
 @UsePlaywright(DemoOptions::class)
 class DemoPageTest(private val browser: Browser) {
@@ -29,6 +32,9 @@ class DemoPageTest(private val browser: Browser) {
         }
         page.navigate(DemoServer.baseUrl + path.trimStart('#').let { if (path.startsWith("#")) "#$it" else it })
         page.waitForSelector("ktjs-demo-shell vaadin-app-layout")
+        // The shell builds its menus in mount(), one task after the element itself upgrades;
+        // measuring or clicking before they exist makes a test depend on timing, not on behaviour.
+        page.locator("ktjs-demo-shell vaadin-menu-bar-item[data-menu='theme']").first().waitFor()
         page.setDefaultTimeout(7_000.0)
         return page
     }
@@ -37,12 +43,35 @@ class DemoPageTest(private val browser: Browser) {
         assertEquals(emptyList<String>(), consoleErrors)
     }
 
-    private fun actionWidths(page: Page): List<Double> =
-        (page.locator("ktjs-demo-shell [slot='navbar'] vaadin-button").evaluateAll(
+    /** Opens the menu bar of [menu] (`docs`, `language` or `theme`) by clicking its button. */
+    private fun openMenu(page: Page, menu: String) {
+        page.locator("ktjs-demo-shell vaadin-menu-bar-item[data-menu='$menu']")
+            .first()
+            .click()
+        // The entries are teleported into the menu's overlay; waiting for one keeps the next
+        // step independent of the opening animation.
+        page.locator("vaadin-menu-bar-item[data-action]:visible").first().waitFor()
+    }
+
+    /** Picks the entry carrying [action], e.g. `theme:dark`, from the menu named by its prefix. */
+    private fun pick(page: Page, action: String) {
+        openMenu(page, action.substringBefore(':'))
+        page.locator("vaadin-menu-bar-item[data-action='$action']").first().click()
+    }
+
+    /**
+     * Geometry of the right-hand side of the navbar: the action row's box and where the breadcrumbs
+     * start. Choosing a menu entry must not move either — the buttons are fixed nouns and only the
+     * icon and the check mark change.
+     */
+    private fun actionGeometry(page: Page): List<Double> =
+        (page.locator("ktjs-demo-shell [slot='navbar']").first().evaluate(
             """
-            (buttons) => buttons
-              .filter((button) => button.getBoundingClientRect().width > 0)
-              .map((button) => button.getBoundingClientRect().width)
+            (navbar) => {
+              const actions = navbar.querySelector('.shell__actions').getBoundingClientRect();
+              const crumbs = navbar.querySelector('vaadin-breadcrumbs').getBoundingClientRect();
+              return [actions.width, actions.x, crumbs.x];
+            }
             """.trimIndent(),
         ) as List<*>).map { (it as Number).toDouble() }
 
@@ -55,9 +84,21 @@ class DemoPageTest(private val browser: Browser) {
         assertNoErrors()
     }
 
+    @Test
+    fun `the navbar carries a logo immediately left of the title`() {
+        val page = open("")
+
+        val logo = page.locator("ktjs-demo-shell [slot='navbar'] .shell__logo")
+        assertEquals(1, logo.count(), "the nav bar has one site mark")
+        val logoBox = logo.boundingBox()!!
+        val titleBox = page.locator("ktjs-demo-shell [slot='navbar'] .shell__title").boundingBox()!!
+        assertTrue(logoBox.x + logoBox.width <= titleBox.x + 1.0, "the mark sits left of the title")
+        assertNoErrors()
+    }
+
     /**
-     * The navbar is one line: the toggle, the title, its version tag and the breadcrumbs all share the
-     * same vertical centre, and so do the two halves of the bar.
+     * The navbar is one line: the toggle, the mark, the title, its version tag and the breadcrumbs all
+     * share the same vertical centre, and so do the two halves of the bar.
      */
     @Test
     fun `navbar children share one vertical centre`() {
@@ -95,34 +136,53 @@ class DemoPageTest(private val browser: Browser) {
         assertTrue(spread(halves + bar) <= 1.0, "navbar halves were off-centre: $halves vs $bar")
         assertTrue(
             spread(start + bar) <= 1.0,
-            "toggle, title, version and breadcrumbs were off-centre: $start; navbar=$bar, boxes=$boxes, " +
-                "startHeight=${centres["startHeight"]}",
+            "toggle, mark, title, version and breadcrumbs were off-centre: $start; navbar=$bar, " +
+                "boxes=$boxes, startHeight=${centres["startHeight"]}",
         )
         assertNoErrors()
     }
 
-    /**
-     * Switching the language changes the button label and switching the theme changes its variant; the
-     * row must not resize, or the breadcrumbs jump every time.
-     */
     @Test
-    fun `language and theme toggles keep the action row as wide as it was`() {
+    fun `choosing a theme does not resize or move the action row`() {
         val page = open("")
 
-        val before = actionWidths(page)
-        assertEquals(4, before.size, "four action buttons: two languages, light and dark")
+        val before = actionGeometry(page)
+        pick(page, "theme:dark")
+        assertEquals("dark", page.evaluate("document.documentElement.getAttribute('theme')") as String)
+        assertEquals(before, actionGeometry(page), "the theme menu resized or shifted the navbar")
 
-        page.locator("ktjs-demo-shell [slot='navbar'] vaadin-button:text-is('中文')").click()
-        page.waitForSelector("ktjs-demo-page .page__title:text-is('ktjs-dom-kit 概览')")
-        assertEquals(before, actionWidths(page), "the language switch resized the buttons")
+        pick(page, "theme:light")
+        assertEquals(null, page.evaluate("document.documentElement.getAttribute('theme')") as String?)
+        assertEquals(before, actionGeometry(page))
 
-        page.locator("ktjs-demo-shell [slot='navbar'] vaadin-button:text-is('暗色')").click()
-        assertEquals(before, actionWidths(page), "the theme switch resized the buttons")
-        assertEquals(
-            2,
-            page.locator("ktjs-demo-shell [slot='navbar'] vaadin-button[theme~='primary']").count(),
-            "one language and one theme carry `primary`; the rest have no theme",
-        )
+        pick(page, "theme:system")
+        assertEquals("light-dark", page.evaluate("document.documentElement.getAttribute('theme')") as String)
+        assertEquals(before, actionGeometry(page))
+        assertNoErrors()
+    }
+
+    /** The background the whole site sits on; `body` itself is transparent under Lumo. */
+    private fun shellBackground(page: Page): String =
+        page.locator("ktjs-demo-shell").first()
+            .evaluate("node => getComputedStyle(node).backgroundColor") as String
+
+    /**
+     * Following the browser is a real option, not a label: with `theme="light-dark"` Lumo resolves
+     * `prefers-color-scheme` itself, so emulating a dark browser repaints the whole site without any
+     * JavaScript of ours running.
+     */
+    @Test
+    fun `the follow-browser theme tracks prefers-color-scheme`() {
+        val page = open("")
+        pick(page, "theme:system")
+
+        page.emulateMedia(Page.EmulateMediaOptions().setColorScheme(com.microsoft.playwright.options.ColorScheme.DARK))
+        val dark = luminance(shellBackground(page))
+        assertTrue(dark < 0.2, "a dark browser did not darken the site: $dark")
+
+        page.emulateMedia(Page.EmulateMediaOptions().setColorScheme(com.microsoft.playwright.options.ColorScheme.LIGHT))
+        val light = luminance(shellBackground(page))
+        assertTrue(light > 0.7, "a light browser did not lighten the site: $light")
         assertNoErrors()
     }
 
@@ -134,10 +194,31 @@ class DemoPageTest(private val browser: Browser) {
         assertTrue(page.evaluate("customElements.get('ktjs-demo-shell') !== undefined") as Boolean)
         assertTrue(page.evaluate("customElements.get('ktjs-demo-page') !== undefined") as Boolean)
         assertEquals(
-            1,
-            (page.evaluate("document.querySelectorAll('[style]').length") as Number).toInt(),
-            "only the host element carries a style attribute",
+            0,
+            (page.evaluate("document.querySelectorAll('ktjs-demo-page [style]').length") as Number).toInt(),
+            "page content is styled by sheets, not by inline declarations",
         )
+        assertNoErrors()
+    }
+
+    @Test
+    fun `the action row offers links, languages and themes as menus`() {
+        val page = open("")
+
+        assertEquals(3, page.locator("ktjs-demo-shell [slot='navbar'] vaadin-menu-bar").count())
+
+        // The entries of a menu are materialised the first time it opens, and stay in the overlay
+        // afterwards; the action prefix tells which menu they belong to.
+        openMenu(page, "docs")
+        assertEquals(3, page.locator("vaadin-menu-bar-item[data-action^='docs:']").count())
+        page.keyboard().press("Escape")
+
+        openMenu(page, "lang")
+        assertEquals(2, page.locator("vaadin-menu-bar-item[data-action^='lang:']").count())
+        page.keyboard().press("Escape")
+
+        openMenu(page, "theme")
+        assertEquals(3, page.locator("vaadin-menu-bar-item[data-action^='theme:']").count())
         assertNoErrors()
     }
 
@@ -173,7 +254,7 @@ class DemoPageTest(private val browser: Browser) {
         counter.locator("vaadin-button").click()
         assertEquals("2", counter.locator(".counter__value").textContent())
 
-        page.locator("ktjs-demo-shell [slot='navbar'] vaadin-button:text-is('中文')").click()
+        pick(page, "lang:zh-Hans")
         page.waitForSelector("ktjs-demo-page .page__title:text-is('自定义元素')")
         assertEquals(
             "2",
@@ -182,22 +263,15 @@ class DemoPageTest(private val browser: Browser) {
         )
         assertNoErrors()
     }
+}
 
-    @Test
-    fun `theme switch flips the document theme`() {
-        val page = open("")
-
-        page.locator("ktjs-demo-shell [slot='navbar'] vaadin-button:text-is('Dark')").click()
-        assertEquals(
-            "dark",
-            page.evaluate("document.documentElement.getAttribute('theme')") as String,
-        )
-
-        page.locator("ktjs-demo-shell [slot='navbar'] vaadin-button:text-is('Light')").click()
-        assertEquals(
-            null,
-            page.evaluate("document.documentElement.getAttribute('theme')") as String?,
-        )
-        assertNoErrors()
+/** Relative luminance of an `rgb(…)`/`rgba(…)` colour; used to tell a light page from a dark one. */
+private fun luminance(color: String): Double {
+    val parts = color.removePrefix("rgb").removePrefix("rgba").trim('(', ')', ' ').split(',')
+    fun channel(value: String): Double {
+        val number = value.trim().toDouble()
+        val normalized = if (value.contains('%')) number / 100.0 else number / 255.0
+        return if (normalized <= 0.03928) normalized / 12.92 else Math.pow((normalized + 0.055) / 1.055, 2.4)
     }
+    return 0.2126 * channel(parts[0]) + 0.7152 * channel(parts[1]) + 0.0722 * channel(parts[2])
 }

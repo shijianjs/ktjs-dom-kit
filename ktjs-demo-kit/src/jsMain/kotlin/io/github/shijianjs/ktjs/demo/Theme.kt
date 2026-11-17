@@ -1,44 +1,46 @@
 package io.github.shijianjs.ktjs.demo
 
 import web.dom.document
-import web.cssom.MediaQuery
-import web.cssom.matchMedia
 import web.storage.localStorage
 
 /**
- * Light / dark theme of the site.
+ * Light / dark / follow-the-browser theme of the site.
  *
- * Lumo's dark theme is a top-level switch: the stylesheet selects on `html[theme~="dark"]`, so the
- * only thing to do here is put that attribute on the document element and remember the choice.
- * Components inside shadow trees follow the tokens it flips — no component carries its own
- * `[data-theme]` selector.
+ * Lumo 25 resolves its colours through `light-dark()`, so the switch is the document's `color-scheme`:
+ * `theme="dark"` for dark, `theme="light-dark"` lets the CSS follow `prefers-color-scheme`, and no
+ * attribute at all is the plain light theme. The attribute lives on the document element, so custom
+ * properties are inherited into every shadow tree — no component carries its own `[data-theme]`
+ * selector, and no component needs a change when the user's preference flips.
  */
+enum class ThemeMode {
+    LIGHT,
+    DARK,
+
+    /** Delegates to the browser: Lumo's `light-dark` colour scheme. */
+    SYSTEM,
+}
+
 class Theme(private val storageKey: String = "ktjs-demo-theme") {
-    var isDark: Boolean = readStored() ?: prefersDark()
+    var mode: ThemeMode = readStored() ?: ThemeMode.SYSTEM
         private set
 
-    /** Applies the stored (or system) theme; call once before building the shell. */
+    /** Applies the stored mode; call once before building the shell. */
     fun applyStored() {
-        apply(isDark)
+        apply(mode)
     }
 
-    /** Applies [dark] and persists it. */
-    fun apply(dark: Boolean) {
-        isDark = dark
+    /** Applies [mode] and persists it. */
+    fun apply(mode: ThemeMode) {
+        this.mode = mode
         val root = document.documentElement
-        if (dark) {
-            root?.setAttribute("theme", "dark")
-        } else {
-            root?.removeAttribute("theme")
+        when (mode) {
+            ThemeMode.LIGHT -> root.removeAttribute("theme")
+            ThemeMode.DARK -> root.setAttribute("theme", "dark")
+            ThemeMode.SYSTEM -> root.setAttribute("theme", "light-dark")
         }
-        runCatching { localStorage.setItem(storageKey, if (dark) "dark" else "light") }
+        runCatching { localStorage.setItem(storageKey, mode.name.lowercase()) }
     }
 
-    private fun prefersDark(): Boolean =
-        runCatching { matchMedia(MediaQuery("(prefers-color-scheme: dark)")).matches }.getOrDefault(false)
-
-    private fun readStored(): Boolean? =
-        runCatching { localStorage.getItem(storageKey) }.getOrNull()?.let { stored ->
-            if (stored == "dark") true else if (stored == "light") false else null
-        }
+    private fun readStored(): ThemeMode? = runCatching { localStorage.getItem(storageKey) }.getOrNull()
+        ?.let { stored -> ThemeMode.entries.firstOrNull { it.name.lowercase() == stored } }
 }

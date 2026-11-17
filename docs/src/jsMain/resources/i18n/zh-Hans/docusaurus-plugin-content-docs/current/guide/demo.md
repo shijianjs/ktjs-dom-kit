@@ -5,7 +5,7 @@ sidebar_label: 演示
 # 演示
 
 可交互的演示发布在 [`/demo/`](pathname:///demo/)。它是一个完整的单页应用：一个外壳，左侧是按组
-划分的目录，顶栏有面包屑、API 链接、中英切换和亮暗切换，内容区一次只显示一个页面。路由放在
+划分的目录，顶栏有站点标记、标题、面包屑和三个下拉菜单，内容区一次只显示一个页面。路由放在
 fragment（`#/elements`）里，所以静态托管上的深链可用，刷新也不会丢。
 
 | 路由 | 展示内容 |
@@ -19,18 +19,34 @@ fragment（`#/elements`）里，所以静态托管上的深链可用，刷新也
 页面守住两条不变量，端到端测试逐条断言：
 
 - **自有样式表绝不挂 `document`** —— `document.adoptedStyleSheets.length` 恒为 `0`，每个 shadow root
-  只 adopt 它需要的 sheet，页面里唯一的 `style` 属性在外壳宿主元素上；
+  只 adopt 它需要的 sheet，页面正文里没有内联 `style`（唯一的内联声明是菜单项上的 Iconify 尺寸，
+  它们跟着元素进了菜单的 overlay —— 那是我们的 sheet 进不去的 shadow 树）；
 - **换语言不重建页面** —— 逐个节点改写文案，所以已经点过的计数器在切换语言后仍是原值。
 
 ### 外壳
 
 外壳就是一个 `vaadin-app-layout`：
 
-- 站点标题（`<h1>`）、版本号、抽屉开关和面包屑都在导航栏里，写法照官方 `app-layout` 的 drawer
-  示例；左侧抽屉里是分组的 `vaadin-side-nav`，一个组一个无 `path` 的父项、一个页面一个子项；
+- 站点标记、标题（`<h1>`）、版本号、抽屉开关和面包屑都在导航栏里，写法照官方 `app-layout` 的
+  drawer 示例；左侧抽屉里是分组的 `vaadin-side-nav`，一个组一个无 `path` 的父项、一个页面一个子项；
 - 每个导航项都带 `iconify-icon`（`lucide:*`），所以演示本身也在验证 `ktjs-iconify` 与外壳的配合；
-- 中英、亮暗四个按钮固定等宽，切换时只改哪个按钮是 `theme="primary"`，导航栏不会整体抖动；
+- 操作区是三个 `vaadin-menu-bar` 下拉菜单 —— **文档**（使用文档、API 参考、仓库）、**语言**、
+  **外观** —— 而不是一排按钮：这几样语义上就是菜单，当前值放在菜单里，按钮用固定名词，
+  所以打开或选择都不会让导航栏改宽度；
+- 外观菜单三项：**亮色**、**暗色**、**跟随浏览器**。最后一项给文档元素写 `theme="light-dark"`，
+  由 Lumo 自己解析 `prefers-color-scheme`，系统偏好一变整站跟着重绘 —— 外壳里没有 `matchMedia`
+  监听；
+- 菜单子项落在 `menu-bar` 自己的 shadow 树里，外壳的 sheet 够不到，所以那部分内容的尺寸与选中强调
+  只能内联；
 - Lumo 的 `utility.css` 是**文档级**样式表，规则穿不进 shadow 树。外壳仍然用包装里的类名，但把用到的
   两条声明（`items-center`、`justify-between`）写进自己的 sheet —— 见 `Sheets.kt` 里的注释。
+
+### 本地运行
+
+`./gradlew :demo:jsBrowserDevelopmentRun` 起开发服务器；`:demo:jsBrowserProductionRun` 跑生产包。
+`js { }` 里必须设 `target = "es2015"`：否则 Kotlin 发射 ES5 风格的类，`HTMLElement.call(this)` 不能
+用 `new` 调用，自定义元素永远不会升级。如果运行只报 `Error occurred. See log for details`、没有别的
+信息，先关掉 Gradle daemon（`./gradlew --stop`）再试 —— 这个故障出现过一次，是 daemon 的问题，
+不是构建的问题。
 
 `./gradlew pagesSite` 会生成整个站点：文档在 `/`，演示在 `/demo/`，API 参考在 `/api/`。

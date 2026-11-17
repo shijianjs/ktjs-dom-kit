@@ -11,10 +11,16 @@ import io.github.shijianjs.ktjs.demo.SiteTexts
  */
 private val englishSite: SiteTexts = SiteTexts(
     siteTitle = "ktjs-dom-kit",
-    langLabel = "EN",
+    langLabel = "English",
+    languageLabel = "Language",
+    themeLabel = "Theme",
+    docsLabel = "Docs",
+    siteDocsLabel = "Documentation",
     apiLabel = "API reference",
+    sourceLabel = "GitHub",
     lightLabel = "Light",
     darkLabel = "Dark",
+    systemLabel = "Follow browser",
     groupTitles = mapOf(
         "overview" to "Getting started",
         "dom" to "DOM",
@@ -32,9 +38,15 @@ private val englishSite: SiteTexts = SiteTexts(
 private val chineseSite: SiteTexts = SiteTexts(
     siteTitle = "ktjs-dom-kit",
     langLabel = "中文",
+    languageLabel = "语言",
+    themeLabel = "外观",
+    docsLabel = "文档",
+    siteDocsLabel = "使用文档",
     apiLabel = "API 文档",
+    sourceLabel = "GitHub 仓库",
     lightLabel = "亮色",
     darkLabel = "暗色",
+    systemLabel = "跟随浏览器",
     groupTitles = mapOf(
         "overview" to "开始",
         "dom" to "DOM",

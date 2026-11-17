@@ -29,6 +29,9 @@ class ScreenshotTest(private val browser: Browser) {
         val page = browser.newPage(Browser.NewPageOptions().setViewportSize(1600, 900))
         page.navigate(DemoServer.baseUrl + path)
         page.waitForSelector("ktjs-demo-shell vaadin-app-layout")
+        // The shell builds its menus in mount(), one task after the element itself upgrades;
+        // measuring or clicking before they exist makes a test depend on timing, not on behaviour.
+        page.locator("ktjs-demo-shell vaadin-menu-bar-item[data-menu='theme']").first().waitFor()
         page.setDefaultTimeout(7_000.0)
         // Iconify fetches each icon from the API on first use; screenshots and size assertions are
         // meaningless while the elements are still `loading`.
@@ -59,6 +62,20 @@ class ScreenshotTest(private val browser: Browser) {
         val file = results.resolve("$name.png").toAbsolutePath()
         page.screenshot(Page.ScreenshotOptions().setPath(file))
         return file
+    }
+
+    private fun openMenu(page: Page, menu: String) {
+        page.locator("ktjs-demo-shell vaadin-menu-bar-item[data-menu='$menu']")
+            .first()
+            .click()
+        // The entries are teleported into the menu's overlay; waiting for one keeps the next
+        // step independent of the opening animation.
+        page.locator("vaadin-menu-bar-item[data-action]:visible").first().waitFor()
+    }
+
+    private fun pick(page: Page, action: String) {
+        openMenu(page, action.substringBefore(':'))
+        page.locator("vaadin-menu-bar-item[data-action='$action']").first().click()
     }
 
     /** The site is one screen: nothing is wider than the viewport, whatever the language. */
@@ -169,7 +186,7 @@ class ScreenshotTest(private val browser: Browser) {
     @Test
     fun `dark theme repaints the same page`() {
         val page = open("")
-        page.locator("ktjs-demo-shell [slot='navbar'] vaadin-button:text-is('Dark')").click()
+        pick(page, "theme:dark")
         page.waitForTimeout(400.0)
         val dark = luminance(page, "ktjs-demo-shell")
         assertTrue(dark < 0.2, "content background luminance was $dark in the dark theme")
@@ -181,8 +198,11 @@ class ScreenshotTest(private val browser: Browser) {
     @Test
     fun `chinese switch repaints every string in place`() {
         val page = open("")
-        page.locator("ktjs-demo-shell [slot='navbar'] vaadin-button:text-is('中文')").click()
+        pick(page, "lang:zh-Hans")
         page.waitForSelector("ktjs-demo-page .page__title:text-is('ktjs-dom-kit 概览')")
+        // The menu closes with an animation; a screenshot taken mid-close shows a ghost overlay.
+        page.keyboard().press("Escape")
+        page.waitForTimeout(500.0)
         assertEquals(
             "开始",
             page.locator("ktjs-demo-shell vaadin-side-nav vaadin-side-nav-item").first()
@@ -213,8 +233,9 @@ class ScreenshotTest(private val browser: Browser) {
         )
 
         shoot(page, "light-custom-elements")
-        page.locator("ktjs-demo-shell [slot='navbar'] vaadin-button:text-is('Dark')").click()
-        page.waitForTimeout(400.0)
+        pick(page, "theme:dark")
+        page.keyboard().press("Escape")
+        page.waitForTimeout(500.0)
         shoot(page, "dark-custom-elements")
         page.close()
     }

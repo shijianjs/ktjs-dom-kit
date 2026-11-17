@@ -157,20 +157,15 @@ val SHELL_SHEET: CSSStyleSheet = cssSheet {
         flexShrink = number(0.0)
     }
 
-    SHELL_ACTION {
-        width = 90.px
-        // Lumo's primary variant raises min-width; pin it too, or the selected button is wider.
-        minWidth = 90.px
+    // The mark follows the same rule as the side-nav icons: an Iconify element is sized by font-size
+    // (it draws an `<svg width="1em">`), never by width/height.
+    SHELL_LOGO {
+        fontSize = 26.px
+        flexShrink = number(0.0)
     }
 
     SHELL_NAV_ICON {
         fontSize = 18.px
-    }
-
-    SHELL_LINK {
-        color = Palette.accent
-        fontSize = 12.px
-        whiteSpace = WhiteSpace.nowrap
     }
 
 }

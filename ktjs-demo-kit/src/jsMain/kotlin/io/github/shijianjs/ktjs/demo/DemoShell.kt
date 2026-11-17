@@ -1,6 +1,7 @@
 package io.github.shijianjs.ktjs.demo
 
 import io.github.shijianjs.ktjs.dom.element.createElement
+import io.github.shijianjs.ktjs.dom.element.inlineStyle
 import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementAdapter
 import io.github.shijianjs.ktjs.dom.webcomponent.attachStyledShadow
 import io.github.shijianjs.ktjs.dom.webcomponent.defineIfMissing
@@ -12,36 +13,58 @@ import io.github.shijianjs.ktjs.vaadin.applayout.createDrawerToggle
 import io.github.shijianjs.ktjs.vaadin.breadcrumbs.BreadcrumbsItemElement
 import io.github.shijianjs.ktjs.vaadin.breadcrumbs.createBreadcrumbs
 import io.github.shijianjs.ktjs.vaadin.breadcrumbs.createBreadcrumbsItem
-import io.github.shijianjs.ktjs.vaadin.button.ButtonElement
-import io.github.shijianjs.ktjs.vaadin.button.createButton
 import io.github.shijianjs.ktjs.vaadin.horizontallayout.HorizontalLayoutElement
 import io.github.shijianjs.ktjs.vaadin.horizontallayout.createHorizontalLayout
 import io.github.shijianjs.ktjs.vaadin.lumostyles.registerLumoIcons
 import io.github.shijianjs.ktjs.vaadin.lumoutility.LumoUtility
+import io.github.shijianjs.ktjs.vaadin.menubar.HTMLElementOrString
+import io.github.shijianjs.ktjs.vaadin.menubar.MenuBarElement
+import io.github.shijianjs.ktjs.vaadin.menubar.MenuBarItem
+import io.github.shijianjs.ktjs.vaadin.menubar.SubMenuItem
+import io.github.shijianjs.ktjs.vaadin.menubar.createMenuBar
 import io.github.shijianjs.ktjs.vaadin.sidenav.SideNavItemElement
 import io.github.shijianjs.ktjs.vaadin.sidenav.createSideNav
 import io.github.shijianjs.ktjs.vaadin.sidenav.createSideNavItem
 import io.github.shijianjs.ktjs.vaadin.verticallayout.VerticalLayoutElement
 import io.github.shijianjs.ktjs.vaadin.verticallayout.createVerticalLayout
+import js.objects.unsafeJso
+import js.reflect.unsafeCast
 import web.components.CustomElementReference
+import web.cssom.Color
+import web.cssom.integer
+import web.cssom.px
 import web.dom.TagName
 import web.dom.clickEvent
 import web.dom.document
+import web.events.Event
+import web.events.EventHandler
+import web.events.EventType
 import web.events.addHandler
+import web.events.addEventListener
 import web.html.HTMLElement
 import web.html.HtmlTagName
+import web.window.WindowTarget
+import web.window._blank
+import web.window.window
 
 /**
  * Identity of the site that is not a translated string.
  *
  * The site title itself lives in [SiteTexts], because it changes with the language; the version tag
- * and the API reference entry point do not.
+ * and the link targets do not. Every URL is optional: a site with only a repository gets a menu with
+ * one entry, and a site with none hides the menu entirely.
  */
 class Chrome(
     /** Shown next to the title in the navbar, e.g. `Kotlin/JS 2.4.21`; empty hides the line. */
     val siteVersion: String = "",
-    /** Dokka entry point of the wrapper this demo belongs to, when the site has one. */
+    /** Documentation site, usually the root the demo is published under. */
+    val docsUrl: String? = null,
+    /** Dokka entry point of the wrapper this demo belongs to. */
     val apiUrl: String? = null,
+    /** Source repository. */
+    val sourceUrl: String? = null,
+    /** Iconify id of the site mark, drawn immediately left of the title. */
+    val logoIcon: String? = null,
 )
 
 /**
@@ -75,7 +98,7 @@ class DemoShell : CustomElementAdapter() {
 
     private val titleVersion: HTMLElement = HtmlTagName.span.createElement { classList.add(SHELL_VERSION) }
 
-    /** Left half of the navbar: toggle, title, version and breadcrumbs, centred on one line. */
+    /** Left half of the navbar: toggle, optional mark, title, version and breadcrumbs on one line. */
     private val navbarStart: HorizontalLayoutElement = createHorizontalLayout {
         withTheme("spacing")
         classList.add(SHELL_TOPBAR_START, LumoUtility.AlignItems.CENTER)
@@ -97,6 +120,18 @@ class DemoShell : CustomElementAdapter() {
         withTheme("spacing")
         classList.add(SHELL_ACTIONS, LumoUtility.AlignItems.CENTER)
     }
+
+    /**
+     * Links are a menu, not a row of anchors: the site's own pages, the API reference and the
+     * repository are three destinations of the same kind.
+     */
+    private val docsMenu: MenuBarElement = createMenuBar { withTheme("dropdown-indicators") }
+
+    /** One entry per [Lang]; the label of a language is always that language's own name. */
+    private val languageMenu: MenuBarElement = createMenuBar { withTheme("dropdown-indicators") }
+
+    /** Light / dark / follow-the-browser. */
+    private val themeMenu: MenuBarElement = createMenuBar { withTheme("dropdown-indicators") }
 
     /**
      * The whole left column is one `vaadin-side-nav`, the component Vaadin builds for a drawer:
@@ -125,17 +160,18 @@ class DemoShell : CustomElementAdapter() {
 
     private val groupLabels: MutableMap<String, HTMLElement> = mutableMapOf()
 
-    private val languageButtons: MutableMap<Lang, ButtonElement> = mutableMapOf()
-
     private val pages: MutableMap<String, Page> = mutableMapOf()
 
     private var shownRoute: String? = null
 
-    private val apiLink: HTMLElement = HtmlTagName.a.createElement { classList.add(SHELL_LINK) }
-
-    private val lightButton: ButtonElement = createButton { classList.add(SHELL_ACTION) }
-
-    private val darkButton: ButtonElement = createButton { classList.add(SHELL_ACTION) }
+    /**
+     * What a menu entry does, keyed by the action id carried on the entry's own element.
+     *
+     * A `MenuBarItem` is a plain JS object and the menu keeps the very instance it was given, but the
+     * *element* is easier to read back from the `item-selected` event: it travels with the item into
+     * the overlay, and its `data-action` is also what the end-to-end test clicks.
+     */
+    private val menuActions: MutableMap<String, () -> Unit> = mutableMapOf()
 
     init {
         appLayout.primarySection = AppLayoutPrimarySections.navbar
@@ -145,6 +181,13 @@ class DemoShell : CustomElementAdapter() {
         breadcrumbs.append(crumbGroup, crumbPage)
         navbarStart.append(drawerToggle, siteTitle, titleVersion, breadcrumbs)
         navbar.append(navbarStart, actions)
+
+        docsMenu.dataset["menu"] = "docs"
+        languageMenu.dataset["menu"] = "lang"
+        themeMenu.dataset["menu"] = "theme"
+        attachSelection(docsMenu)
+        attachSelection(languageMenu)
+        attachSelection(themeMenu)
 
         appLayout.append(navbar, sideNav, content)
         attachStyledShadow(RESET, SHELL_SHEET).append(appLayout)
@@ -170,6 +213,7 @@ class DemoShell : CustomElementAdapter() {
         this.texts = texts
 
         registerLumoIcons()
+        buildLogo()
 
         titleVersion.textContent = chrome.siteVersion
         titleVersion.setHidden(chrome.siteVersion.isEmpty())
@@ -194,6 +238,18 @@ class DemoShell : CustomElementAdapter() {
     private fun textsFor(lang: Lang): SiteTexts = texts(lang)
 
     private fun titleOf(entry: Entry, lang: Lang): String = textsFor(lang).pageTitles[entry.id] ?: entry.id
+
+    /** The mark sits immediately left of the name, so it reads as one lock-up with the title. */
+    private fun buildLogo() {
+        val icon = chrome.logoIcon ?: return
+        navbarStart.insertBefore(
+            createIconifyIcon(icon) {
+                classList.add(SHELL_LOGO)
+                setAttribute("aria-hidden", "true")
+            },
+            siteTitle,
+        )
+    }
 
     private fun buildGroups() {
         val current = textsFor(language.current)
@@ -234,8 +290,8 @@ class DemoShell : CustomElementAdapter() {
      * A sidebar icon: `<iconify-icon>` in the item's `prefix` slot.
      *
      * The icon name is an Iconify id (`lucide:layers`), so the site carries no SVG of its own; the size
-     * is [ICON_SIZE] via the frame's sheet and never a `width`/`height` attribute (the element renders
-     * an `<svg width="1em">`, which those attributes would only stretch).
+     * is [SHELL_NAV_ICON] via the frame's sheet and never a `width`/`height` attribute (the element
+     * renders an `<svg width="1em">`, which those attributes would only stretch).
      */
     private fun navIcon(name: String): IconifyIconElement =
         createIconifyIcon(name) {
@@ -245,62 +301,157 @@ class DemoShell : CustomElementAdapter() {
         }
 
     private fun buildActions() {
-        val current = textsFor(language.current)
-        val apiUrl = chrome.apiUrl
-        if (apiUrl != null) {
-            apiLink.textContent = current.apiLabel
-            apiLink.setAttribute("href", apiUrl)
-            apiLink.setAttribute("rel", "noopener noreferrer")
-            actions.append(apiLink)
-        }
-
-        // One button per language the site ships, each labelled in the language it switches to: a
-        // third language only needs an enum entry and its SiteTexts instance.
-        Lang.entries.forEach { lang ->
-            val button = createButton {
-                textContent = textsFor(lang).langLabel
-                classList.add(SHELL_ACTION)
-            }
-            button.clickEvent.addHandler { language.set(lang) }
-            languageButtons[lang] = button
-            actions.append(button)
-        }
-
-        lightButton.clickEvent.addHandler { applyTheme(false) }
-        darkButton.clickEvent.addHandler { applyTheme(true) }
-        actions.append(lightButton, darkButton)
-
-        lightButton.textContent = current.lightLabel
-        darkButton.textContent = current.darkLabel
-        syncThemeButtons()
-        syncLanguageButtons()
-    }
-
-    private fun applyTheme(dark: Boolean) {
-        theme.apply(dark)
-        syncThemeButtons()
-    }
-
-    private fun syncThemeButtons() {
-        setActive(lightButton, !theme.isDark)
-        setActive(darkButton, theme.isDark)
-    }
-
-    private fun syncLanguageButtons() {
-        languageButtons.forEach { (lang, button) -> setActive(button, language.current == lang) }
+        actions.append(docsMenu, languageMenu, themeMenu)
     }
 
     /**
-     * Marks the selected variant of a toggle with Lumo's `primary` theme; the other one carries no
-     * theme at all.
+     * A menu entry's content: a `vaadin-menu-bar-item` holding an Iconify icon and the label; the
+     * current entry of a menu has its label emphasised.
      *
-     * `primary` and the default variant have the same box (padding and min-width); `tertiary`, which
-     * this used to switch to, drops `min-width` and halves the padding, so every toggle resized the
-     * action row. The fixed width in [SHELL_ACTION] then keeps even a longer label from moving the
-     * navbar's layout.
+     * Everything here is inline on purpose: an entry is teleported into the menu's overlay, which
+     * lives in the menu-bar's own shadow tree, so a class declared in [SHELL_SHEET] cannot reach it.
+     * The inline declarations travel with the element; this is the documented exception for nodes
+     * that leave their owner's tree.
      */
-    private fun setActive(button: ButtonElement, active: Boolean) {
-        if (active) button.withTheme("primary") else button.withTheme()
+    private fun menuItemNode(action: String, icon: String, label: String, checked: Boolean): HTMLElement =
+        TagName<HTMLElement>("vaadin-menu-bar-item").createElement {
+            if (action.isNotEmpty()) dataset["action"] = action
+            append(menuIcon(icon))
+            val text = HtmlTagName.span.createElement { textContent = label }
+            if (checked) {
+                text.inlineStyle.apply {
+                    fontWeight = integer(600)
+                    color = Color("var(--lumo-primary-text-color)")
+                }
+            }
+            append(text)
+        }
+
+    private fun menuIcon(name: String): IconifyIconElement =
+        createIconifyIcon(name) {
+            setAttribute("aria-hidden", "true")
+            inlineStyle.apply {
+                fontSize = 18.px
+                marginRight = 8.px
+            }
+        }
+
+    /**
+     * A button of a menu bar; [children] make it a drop-down instead of an action.
+     *
+     * The button carries the [menu] id as well, so the end-to-end test opens a menu through the element
+     * the menu itself renders — the top-level entry *is* our component, there is no internal button
+     * element to reach for.
+     */
+    private fun menuButton(
+        menu: String,
+        icon: String,
+        label: String,
+        children: Array<SubMenuItem>,
+    ): MenuBarItem =
+        unsafeJso<MenuBarItem> {
+            component = HTMLElementOrString(
+                menuItemNode("", icon, label, false).also { it.dataset["menu"] = menu },
+            )
+            this.children = children
+        }
+
+    private fun menuEntry(
+        action: String,
+        icon: String,
+        label: String,
+        checked: Boolean = false,
+        onClick: () -> Unit,
+    ): SubMenuItem {
+        menuActions[action] = onClick
+        return unsafeJso<SubMenuItem> { component = HTMLElementOrString(menuItemNode(action, icon, label, checked)) }
+    }
+
+    /**
+     * Routes a selection to its entry. `item-selected` carries the very item object the menu was built
+     * with; the element that travelled into the overlay is reachable through `value.component`, and its
+     * `data-action` is what the map above is keyed by.
+     */
+    private fun attachSelection(menu: MenuBarElement) {
+        menu.addEventListener(EventType<Event>("item-selected"), EventHandler { event ->
+            val component = event.unsafeCast<dynamic>().detail.value.component
+            val action = (component as? HTMLElement)?.dataset?.get("action")
+            action?.let { menuActions[it]?.invoke() }
+        })
+    }
+
+    private fun rebuildMenus() {
+        rebuildDocsMenu()
+        rebuildLanguageMenu()
+        rebuildThemeMenu()
+    }
+
+    private fun rebuildDocsMenu() {
+        val current = textsFor(language.current)
+        val entries = mutableListOf<SubMenuItem>()
+
+        chrome.docsUrl?.let { url ->
+            entries += menuEntry("docs:site", "lucide:book", current.siteDocsLabel) { openLink(url) }
+        }
+        chrome.apiUrl?.let { url ->
+            entries += menuEntry("docs:api", "lucide:file-code", current.apiLabel) { openLink(url) }
+        }
+        chrome.sourceUrl?.let { url ->
+            entries += menuEntry("docs:source", "lucide:github", current.sourceLabel) { openLink(url) }
+        }
+
+        docsMenu.setHidden(entries.isEmpty())
+        if (entries.isEmpty()) return
+
+        docsMenu.items = arrayOf(
+            menuButton("docs", "lucide:book-open", current.docsLabel, entries.toTypedArray()),
+        )
+    }
+
+    private fun rebuildLanguageMenu() {
+        val current = textsFor(language.current)
+        val entries = Lang.entries.map { lang ->
+            menuEntry("lang:${lang.code}", "lucide:languages", textsFor(lang).langLabel, lang == language.current) {
+                language.set(lang)
+            }
+        }.toTypedArray()
+        languageMenu.items = arrayOf(
+            menuButton("lang", "lucide:languages", current.languageLabel, entries),
+        )
+    }
+
+    private fun rebuildThemeMenu() {
+        val current = textsFor(language.current)
+        val topIcon = when (theme.mode) {
+            ThemeMode.LIGHT -> "lucide:sun"
+            ThemeMode.DARK -> "lucide:moon"
+            ThemeMode.SYSTEM -> "lucide:monitor"
+        }
+        val entries = arrayOf(
+            menuEntry("theme:light", "lucide:sun", current.lightLabel, theme.mode == ThemeMode.LIGHT) {
+                applyTheme(ThemeMode.LIGHT)
+            },
+            menuEntry("theme:dark", "lucide:moon", current.darkLabel, theme.mode == ThemeMode.DARK) {
+                applyTheme(ThemeMode.DARK)
+            },
+            menuEntry("theme:system", "lucide:monitor", current.systemLabel, theme.mode == ThemeMode.SYSTEM) {
+                applyTheme(ThemeMode.SYSTEM)
+            },
+        )
+        themeMenu.items = arrayOf(menuButton("theme", topIcon, current.themeLabel, entries))
+    }
+
+    private fun applyTheme(mode: ThemeMode) {
+        theme.apply(mode)
+        rebuildThemeMenu()
+    }
+
+    /**
+     * Destinations open in a new tab: the demo is a place to try things out, and a reader following a
+     * link to the API reference or the repository should not lose their place in it.
+     */
+    private fun openLink(url: String) {
+        window.open(url, WindowTarget._blank)
     }
 
     private fun show(route: String) {
@@ -347,14 +498,7 @@ class DemoShell : CustomElementAdapter() {
             navLabels[entry.id]?.textContent = titleOf(entry, language.current)
         }
 
-        if (chrome.apiUrl != null) apiLink.textContent = current.apiLabel
-        languageButtons.forEach { (lang, button) -> button.textContent = textsFor(lang).langLabel }
-        lightButton.textContent = current.lightLabel
-        darkButton.textContent = current.darkLabel
-
-        syncThemeButtons()
-        syncLanguageButtons()
-
+        rebuildMenus()
         pages.values.forEach { it.applyTranslation(language.current) }
 
         val entry = shownRoute?.let { catalog.entry(it) }

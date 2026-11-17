@@ -25,5 +25,17 @@ fun main() {
     val shell = document.getElementById(ElementId("demo")) as? DemoShell
         ?: error("index.html has no <ktjs-demo-shell id=\"demo\">")
 
-    shell.mount(siteCatalog(), language, theme, Chrome(KIT_VERSION, API_URL), ::siteTexts)
+    shell.mount(
+        siteCatalog(),
+        language,
+        theme,
+        Chrome(
+            siteVersion = KIT_VERSION,
+            docsUrl = DOCS_URL,
+            apiUrl = API_URL,
+            sourceUrl = SOURCE_URL,
+            logoIcon = "lucide:component",
+        ),
+        ::siteTexts,
+    )
 }

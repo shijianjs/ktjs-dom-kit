@@ -5,9 +5,9 @@ sidebar_label: Demo
 # Demo
 
 The interactive demo is published at [`/demo/`](pathname:///demo/). It is a single-page site: one
-shell with a grouped sidebar, a top bar (breadcrumb, API link, language switch, light/dark switch) and
-a content area that swaps one page at a time. Routes live in the fragment (`#/elements`), so a deep
-link works on a static host and survives a reload.
+shell with a grouped sidebar, a top bar (logo, title, breadcrumb, and three menus) and a content area
+that swaps one page at a time. Routes live in the fragment (`#/elements`), so a deep link works on a
+static host and survives a reload.
 
 | Route | What it shows |
 | --- | --- |
@@ -20,8 +20,9 @@ link works on a static host and survives a reload.
 Two invariants the page keeps, and the end-to-end suite asserts:
 
 - **nothing of ours is adopted on `document`** — `document.adoptedStyleSheets.length` stays `0`, every
-  shadow root adopts only the sheets it needs, and the only `style` attribute in the page is the one on
-  the host element;
+  shadow root adopts only the sheets it needs, and the page body carries no inline `style` attribute
+  (the only inline declarations are the Iconify sizes on menu entries, which travel into the menu's
+  overlay — a shadow tree our sheets cannot reach);
 - **the language switch never rebuilds a page** — it rewrites text in place, so a counter that was
   clicked keeps its value when the language changes.
 
@@ -29,16 +30,33 @@ Two invariants the page keeps, and the end-to-end suite asserts:
 
 The shell is one `vaadin-app-layout`:
 
-- the site title (`<h1>`), the version tag, the drawer toggle and the breadcrumbs sit in the navbar,
-  the way the official `app-layout` drawer example does it; the grouped `vaadin-side-nav` sits in the
-  drawer, one parent item per group and one child item per page;
+- the site mark, the title (`<h1>`), the version tag, the drawer toggle and the breadcrumbs sit in the
+  navbar, the way the official `app-layout` drawer example does it; the grouped `vaadin-side-nav` sits
+  in the drawer, one parent item per group and one child item per page;
 - every navigation entry carries an `iconify-icon` (`lucide:*`), so the demo doubles as a check that
   `ktjs-iconify` and the shell work together;
-- the language and theme buttons keep one fixed width, so switching only changes which button is
-  `theme="primary"` — the navbar does not shift;
+- the action row is three `vaadin-menu-bar` drop-downs — **Docs** (documentation, API reference,
+  repository), **Language** and **Theme** — instead of a row of buttons: a menu is what these are
+  semantically, the current value lives inside the menu, and fixed nouns on the buttons mean opening
+  or choosing one never resizes the navbar;
+- the theme menu has three entries, **Light**, **Dark** and **Follow browser**; the last one sets
+  `theme="light-dark"` on the document element, so Lumo resolves `prefers-color-scheme` itself and the
+  site repaints when the visitor's system preference changes — there is no `matchMedia` listener in the
+  shell;
+- an entry that is not on our side of `menu-bar`'s shadow boundary (the submenu content) is sized and
+  emphasised inline, because a class declared in the shell's sheet cannot reach it;
 - Lumo's `utility.css` is a document-level stylesheet, so its classes cannot reach into a shadow tree.
   The shell still uses the wrapper's class names, but repeats the two declarations it needs
   (`items-center`, `justify-between`) in its own sheet — see the comments in `Sheets.kt`.
+
+### Running it
+
+`./gradlew :demo:jsBrowserDevelopmentRun` serves the demo on a local port; `:demo:jsBrowserProductionRun`
+serves the production bundle. The `js { }` block sets `target = "es2015"`: without it Kotlin emits
+ES5-style classes whose `HTMLElement.call(this)` cannot be constructed, and no custom element ever
+upgrades. If a run fails with "Error occurred. See log for details" and nothing else, stop the Gradle
+daemon (`./gradlew --stop`) and try again — that failure has been seen once and was a daemon problem,
+not a build problem.
 
 The demo is built by `./gradlew pagesSite`, which puts the documentation at `/`, this page at `/demo/`
 and the API reference at `/api/`.

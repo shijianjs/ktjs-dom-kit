@@ -15,6 +15,12 @@ const val KIT_VERSION: String = "0.1.0"
 /** Dokka entry point of the API reference, deployed next to the docs site. */
 const val API_URL: String = "https://shijianjs.github.io/ktjs-dom-kit/api/"
 
+/** The documentation site of this kit; its guide pages describe the very demo next to it. */
+const val DOCS_URL: String = "https://shijianjs.github.io/ktjs-dom-kit/"
+
+/** Source repository, linked from the navbar's link menu. */
+const val SOURCE_URL: String = "https://github.com/shijianjs/ktjs-dom-kit"
+
 private val OVERVIEW: Group = Group("overview", "lucide:home")
 
 private val DOM: Group = Group("dom", "lucide:layers")
