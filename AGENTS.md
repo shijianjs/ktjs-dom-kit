@@ -51,8 +51,9 @@
     shadow 里的 `<svg>` 删掉，却保留 `status === "rendered"`；而它断连时又把 `_visible` 复位成 `true`，
     于是菜单第二次打开时观察者报「还是可见」、不会重绘，图标永久变成 18px 空白。凡是由祖先切换显隐的图标
     （下拉项、可折叠分组）都加 `noobserver`。回归用例：`a menu keeps the icons of its entries when reopened`。
-- Logo 只有一份（`docs/src/jsMain/resources/static/img/ktjs-dom-kit-logo.png`）：README、文档站与 demo 都用它。
-  demo 构建期由 `scaleLogo` 缩到 128px 放进产物，**不要**在仓库里再放第二张 logo。
+- Logo 只有一份（`docs/src/jsMain/resources/static/img/ktjs-dom-kit-logo.png`）：README、文档站、demo 的导航栏
+  以及**浏览器标签页的 favicon** 都用它。demo 构建期由 `scaleLogo` 缩到 128px 放进产物，**不要**在仓库里
+  再放第二张 logo，也不另做 `.ico`；`index.html` 里写 `<link rel="icon" type="image/png" href="img/…">`。
 
 Kotlin 包名统一以账号的 GitHub Pages 域名倒写为前缀：`io.github.<owner>.ktjs.<name>`。不要用裸根包
 （`vaadin`、`echarts`、`iconify` 之类），否则项目间以及与其他库容易在同一 classpath 上撞包。新增模块时

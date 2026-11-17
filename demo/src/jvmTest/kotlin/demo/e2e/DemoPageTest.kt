@@ -192,6 +192,32 @@ class DemoPageTest(private val browser: Browser) {
     }
 
     /**
+     * The tab icon is the site logo — the same PNG the docs navbar and the README use, shrunk by the
+     * `scaleLogo` build step. A `<link>` that points at a file the build never copies would leave the
+     * browser showing its default globe, so the test also fetches it and checks the bytes arrive.
+     */
+    @Test
+    fun `the browser tab shows the site logo`() {
+        val page = open("")
+
+        val href = page.evaluate("document.querySelector('link[rel=\"icon\"]')?.href") as String?
+        assertTrue(
+            href != null && href.endsWith("/img/ktjs-dom-kit-logo.png"),
+            "the tab icon does not point at the logo: $href",
+        )
+        val bytes = page.evaluate(
+            """
+            async () => {
+              const response = await fetch(document.querySelector('link[rel="icon"]').href);
+              return response.ok ? (await response.blob()).size : -1;
+            }
+            """.trimIndent(),
+        ) as Number
+        assertTrue(bytes.toInt() > 0, "the tab icon did not load: $bytes bytes")
+        assertNoErrors()
+    }
+
+    /**
      * A dropdown entry is teleported into the menu's overlay and hidden again when the menu closes.
      * `iconify-icon` throws its own `<svg>` away on every "not visible" report while leaving
      * `status === "rendered"` behind, so without `noobserver` the entries come back blank on the
