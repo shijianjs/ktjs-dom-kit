@@ -544,6 +544,14 @@ class DemoLayout : CustomElementAdapter() {
         }
         setBreadcrumb(entry)
 
+        // On a narrow screen the drawer is an overlay; a reader who just picked a page expects it to
+        // get out of the way, so opening a route closes it. Wide screens keep it open — there it is a
+        // standing column, and `drawerOpened = false` would hide the navigation altogether. The 800px
+        // threshold is Vaadin app layout's own drawer-overlay breakpoint.
+        if (window.innerWidth < 800) {
+            appLayout.drawerOpened = false
+        }
+
         if (content.firstElementChild !== page.node) {
             content.replaceChildren(page.node)
         }
