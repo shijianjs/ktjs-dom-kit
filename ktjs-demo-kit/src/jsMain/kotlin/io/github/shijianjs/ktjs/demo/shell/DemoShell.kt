@@ -1,9 +1,9 @@
 package io.github.shijianjs.ktjs.demo.shell
 
-import io.github.shijianjs.ktjs.demo.Palette
-import io.github.shijianjs.ktjs.demo.RESET
-import io.github.shijianjs.ktjs.demo.Theme
-import io.github.shijianjs.ktjs.demo.ThemeMode
+import io.github.shijianjs.ktjs.demo.style.Palette
+import io.github.shijianjs.ktjs.demo.style.RESET
+import io.github.shijianjs.ktjs.demo.style.Theme
+import io.github.shijianjs.ktjs.demo.style.ThemeMode
 import io.github.shijianjs.ktjs.vaadin.themablemixin.addTheme
 import io.github.shijianjs.ktjs.vaadin.themablemixin.setTheme
 import io.github.shijianjs.ktjs.vaadin.horizontallayout.HorizontalLayoutVariants

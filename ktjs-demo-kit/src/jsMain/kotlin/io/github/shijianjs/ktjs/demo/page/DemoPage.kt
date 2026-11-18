@@ -1,6 +1,6 @@
 package io.github.shijianjs.ktjs.demo.page
 
-import io.github.shijianjs.ktjs.demo.RESET
+import io.github.shijianjs.ktjs.demo.style.RESET
 import io.github.shijianjs.ktjs.dom.element.invoke
 import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementAdapter
 import io.github.shijianjs.ktjs.dom.webcomponent.attachStyledShadow

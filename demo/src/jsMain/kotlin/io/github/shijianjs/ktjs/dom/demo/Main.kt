@@ -3,7 +3,7 @@ package io.github.shijianjs.ktjs.dom.demo
 import io.github.shijianjs.ktjs.demo.shell.DemoShell
 import io.github.shijianjs.ktjs.demo.i18n.LanguageState
 import io.github.shijianjs.ktjs.demo.shell.ShellConfig
-import io.github.shijianjs.ktjs.demo.Theme
+import io.github.shijianjs.ktjs.demo.style.Theme
 import web.dom.ElementId
 import web.dom.document
 

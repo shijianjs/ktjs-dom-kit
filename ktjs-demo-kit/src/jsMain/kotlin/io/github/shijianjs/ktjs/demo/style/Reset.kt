@@ -1,4 +1,4 @@
-package io.github.shijianjs.ktjs.demo
+package io.github.shijianjs.ktjs.demo.style
 
 import io.github.shijianjs.ktjs.dom.css.cssSheet
 import web.cssom.BoxSizing

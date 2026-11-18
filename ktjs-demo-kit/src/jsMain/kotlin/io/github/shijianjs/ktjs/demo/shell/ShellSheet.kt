@@ -1,6 +1,6 @@
 package io.github.shijianjs.ktjs.demo.shell
 
-import io.github.shijianjs.ktjs.demo.Palette
+import io.github.shijianjs.ktjs.demo.style.Palette
 import io.github.shijianjs.ktjs.dom.css.cssSheet
 import io.github.shijianjs.ktjs.dom.css.dsl.colorStop
 import io.github.shijianjs.ktjs.dom.css.dsl.or

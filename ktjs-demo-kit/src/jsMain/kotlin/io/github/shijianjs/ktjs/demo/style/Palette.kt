@@ -1,4 +1,4 @@
-package io.github.shijianjs.ktjs.demo
+package io.github.shijianjs.ktjs.demo.style
 
 import web.cssom.Color
 import web.cssom.CustomPropertyName

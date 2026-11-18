@@ -1,6 +1,6 @@
 package io.github.shijianjs.ktjs.demo.page
 
-import io.github.shijianjs.ktjs.demo.Palette
+import io.github.shijianjs.ktjs.demo.style.Palette
 import io.github.shijianjs.ktjs.dom.css.cssSheet
 import web.cssom.AlignItems
 import web.cssom.CSSStyleSheet

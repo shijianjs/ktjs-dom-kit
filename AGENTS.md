@@ -61,7 +61,8 @@
   `baseUrl` 加载。Node 会读配置文件，所以这个 bundle 绝不能进 `docs` 的 Kotlin 依赖图。
 - **有这个仓库自己的 demo**：`ktjs-demo-kit`（外壳、路由、i18n 容器、主题）+ `demo`（本站五个页面）。示例既
   是集成测试也是浏览器验收：`./gradlew :demo:e2eTest`（Playwright，含截图与几何断言）。
-  - 包按归属切（`io.github.shijianjs.ktjs.demo`）：根包只放跨 owner 的东西（`Palette`、`RESET`、`Theme`）；
+  - 包按归属切（`io.github.shijianjs.ktjs.demo`）：根包不再放文件，全部按 owner 分包——
+    `style/`（`Palette`、`RESET`、`Theme`——站点自己那套「一起变」的视觉，别处都不许重写）、
     `i18n/`（`Lang`、`LanguageState`、`Translations`、`SiteTexts`、`Binder`）、`nav/`（`Catalog` 的
     `Page`/`Group`/`Entry` 与 `Router`）、`page/`（`DemoPage`、`Blocks`、`PageSheet`、`PageClasses`）、
     `shell/`（`DemoShell`、`ShellSheet`、`ShellClasses`）。

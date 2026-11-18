@@ -1,4 +1,4 @@
-package io.github.shijianjs.ktjs.demo
+package io.github.shijianjs.ktjs.demo.style
 
 import web.dom.document
 import web.storage.localStorage

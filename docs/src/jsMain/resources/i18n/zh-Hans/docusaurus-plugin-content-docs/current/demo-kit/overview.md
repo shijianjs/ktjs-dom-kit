@@ -28,7 +28,7 @@ implementation("io.github.shijianjs:ktjs-demo-kit:0.1.0")
 | `…ktjs.demo.nav` | `Catalog`、`Group`、`Entry`、`Page`，以及它们背后的 hash `Router` |
 | `…ktjs.demo.i18n` | `Lang`（BCP 47 标签，可注册）、`LanguageState`、`Translations<T>` / `texts(…)` 与 `SiteTexts` |
 | `…ktjs.demo.page` | [`DemoPage`](./pages.md) 与区块：`paragraph`、`heading`、`anchor`、`codeText`、`bulletList`、`row`、`col`、`exampleBox`、`sectionBlock`、`Readout` |
-| `…ktjs.demo` | `Theme`（亮色 / 暗色 / 跟随浏览器）、`Palette`（站点上色用的 Lumo 自定义属性）、`RESET`（共享 reset 表） |
+| `…ktjs.demo.style` | `Theme` / `ThemeMode`（亮色 / 暗色 / 跟随浏览器）、`Palette`（站点上色用的 Lumo 自定义属性）、`RESET`（共享 reset 表） |
 
 ## 接一个站点
 
