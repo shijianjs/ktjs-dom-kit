@@ -5,7 +5,7 @@ sidebar_position: 6
 # 类型化样式表
 
 `cssSheet { … }` 从 csstype 的规则对象搭出一份 `CSSStyleSheet`：规则、取值、单位与伪类结构都来自类型，
-剩下的字符串只有那些确实没有类型的——自定义属性名、`:host`、`*`。
+剩下的字符串只有那些确实没有类型的——自定义属性名、`:nth-child` 公式、`::part(name)` 的标识符。
 
 可运行的对照实验（同一段规则的三种写法 + 一张 adopt 了 sheet 的卡片）在
 [ktjs-docusaurus](https://github.com/shijianjs/ktjs-docusaurus) 仓库的 `probes/web-components` 里，入口是
@@ -48,7 +48,7 @@ PropertiesBuilder (= JSO)
 ".card{…}.card:hover{…}"                            → CSSStyleSheet.replaceSync(…)
 ```
 
-- **顶层是选择器映射**，不是声明集合。`cardClass { … }`、`Pseudos.hover { … }`、`":host" { … }`、
+- **顶层是选择器映射**，不是声明集合。`cardClass { … }`、`Pseudos.hover { … }`、`pseudo(Pseudos.host) { … }`、
   `"@media …" { … }` 是 key；写在里面的属性属于最近一层 `{}` 的那条规则。
 - `serializeStyles` 的参数是**数组**（emotion 里它是 tagged template 的 `strings`）：
   `serializeStyles([rules])`。传对象本身会去读 `args[0]`，结果是空串。
@@ -72,7 +72,8 @@ cssSheet { cardClass { … } }
 可以加括号 `(ClassName("card")) { … }`；要复用就存成 `val` 再 `cardClass { … }`。
 
 伪类、伪元素用本模块自建的 `css/dsl/Pseudos.kt`：它列全 `csstype.SimplePseudosRuleBuilder` 的 64 个选择器，
-每个都带 `&`：
+外加 Web Components 的 `:host`。每个常量**就是伪类/伪元素本身的文本**——`Pseudos.hover` 是 `":hover"`、
+`Pseudos.before` 是 `"::before"`：
 
 ```kotlin
 Pseudos.hover { … }                                  // 和官方 hover { } 一样的写法
@@ -83,10 +84,17 @@ many(Pseudos.hover, Pseudos.focusVisible)             // 也可直接拼成一�
 
 短写法来自 `context(builder: RuleBuilder<T>) operator fun Pseudo.invoke(…)`：context 参数自动取
 `cssSheet { … }` 作用域里的 `PropertiesBuilder`（Kotlin 2.2+ context parameters，本仓库 2.4 无需开关），
-调用点需要 `import io.github.shijianjs.ktjs.dom.css.dsl.invoke`。和官方糖的差别是两点：我们带 `&`、能组合。
+调用点需要 `import io.github.shijianjs.ktjs.dom.css.dsl.invoke`。和官方糖的差别是两点：它把伪类
+**挂到当前规则上**（补 `&`，逗号分开的每一支各自补，否则 stylis 会把后面几支当成子元素），以及能组合。
 `many(…)` 的结果也是 `Pseudo`，可以直接 `(many(Pseudos.hover, Pseudos.focusVisible)) { … }`——括号不能省
 （`many` 是 `vararg`，不加括号尾随 lambda 会被当成 vararg 实参），所以组合态更推荐 `pseudos(…)`。
 显式的 `pseudo(value) { … }` 仍在，适合拿到一个 `Pseudo` 变量时用。
+
+冒号属于值本身，类别在造值时就定死：`pseudoClass("hover")` 是 `:hover`，`pseudoElement("before")` 是
+`::before`。调用点没有 `element = true` 这种开关，因为 CSS 里同一个名字不可能既是类又是元素。`&` 也不在
+值里——它说的是「挂到哪儿」，只有把它写进规则的作用域才补。所以同一个 `Pseudos.hover` 既能当状态调用
+（`&:hover`），也能当选择器零件用：`compound(className(ROW), pseudo(Pseudos.firstChild))` 就是
+`.row:first-child`。
 
 **at-rule 有官方入口，不要手写 `"@media …"` / `"@supports …"` 字符串**：
 
@@ -112,8 +120,9 @@ supports(
 | `var / env / rgb / many / array / important / linearGradient / stop / Content() / NamedColor / PropertyName / translatex` | `web.cssom` 的 `*.functions.kt`、`*.ext.kt`、`*.fun.kt` | 取值与函数 |
 
 **目前确实还是字符串的**：应用级自定义属性名（`CustomPropertyName("--brand")`），以及 CSS 本身就没有类型的实参
-——`:nth-child(2n+1)` 这种公式、`::part(label)` 这种标识符。选择器本身不再是字符串：`:host`、`*`、`&` 都是
-`Selectors` 的常量。
+——`:nth-child(2n+1)` 这种公式、`::part(label)` 这种标识符。选择器本身不再是字符串：`*`、`&` 是 `Selectors`
+的常量，`:host` / `:root` / `:scope` 是 `Pseudos` 的常量（它们本来就是伪类，所以同一个值也能当 `pseudo(…)`
+的实参）。
 
 ### 拼接选择器：`compound` + 组合器
 
@@ -126,7 +135,7 @@ private val SELECTED = ClassName("is-selected")
 
 val selected = compound(className(ROW), className(SELECTED))         // .row.is-selected
 val cell = className(ROW) child className(CLASS_LABEL)               // .row > .label
-val hostButton = pseudo("host", attributeSelector("collapsed")) child tag("button")
+val hostButton = pseudo(Pseudos.host, attributeSelector("collapsed")) child tag("button")
                                                                      // :host([collapsed]) > button
 
 cssSheet { selected { display = Display.block } }
@@ -137,14 +146,16 @@ cssSheet { selected { display = Display.block } }
 | 类型选择器 | `tag(HtmlTagName.div)` / `tag("vaadin-button")` |
 | class、id | `className(ClassName("x"))`、`id("main")` |
 | 属性 | `attributeSelector(name, value, operator, quote, caseFlag)`，value 可省，`[part="label"]` |
-| 伪类、伪元素 | `pseudo("hover")`、`pseudo("before", element = true)`、`pseudo("not", className(HIDDEN))` |
-| `*`、`&`、`:host`、`:root`、`:scope` | `Selectors.universal / nesting / host / root / scope` |
+| 伪类、伪元素 | `pseudo(Pseudos.hover)`、`pseudo(Pseudos.before)`、`pseudo(pseudoElement("part"), "label")`、`pseudo(pseudoClass("not"), className(HIDDEN))` |
+| `*`、`&` | `Selectors.universal`、`Selectors.nesting` |
 | 复合（同一个元素） | `compound(vararg parts)` |
 | 组合器 | `descendant`、`child`、`nextSibling`、`subsequentSibling`、`column`（infix） |
 | 选择器列表 | `selectorList(vararg selectors)`，逗号连接 |
 
-`Pseudos` 里的变体是 `Pseudo`，带着把它挂到父规则上的 `&`；`Pseudos.hover.asCssSelector()` 去掉这个标记，
-所以变体也能当一个独立选择器的组成部分。
+`Pseudos` 里的变体**本身就是它看起来的那个选择器零件**——`Pseudo` 只装 `:hover` 这样的文本，`&` 属于挂载它的
+作用域。所以同一个常量既能当外层规则的状态（`Pseudos.hover { … }` → `&:hover`），也能当一个独立选择器的零件
+（`compound(className(ROW), pseudo(Pseudos.firstChild))` → `.row:first-child`）。裸的 `:host` 规则键写
+`pseudo(Pseudos.host)`：写成 `Pseudos.host { … }` 会补上 `&` 得到 `&:host`，永远匹配不到。
 
 引擎刻意不做的三件事：
 
@@ -224,17 +235,20 @@ hover {}      -> .probe-sugar :hover{…}     ← 不是 .probe-sugar:hover
 [kotlin-wrappers#2933](https://github.com/JetBrains/kotlin-wrappers/issues/2933)。
 
 **但不必等它修**：这个糖是「一个方法一个伪类」，就算补上 `&` 也写不出
-`"&:hover, &:focus-visible"` 这种「多个状态共用一个块」的形式（本站的 `KtjsStep`、`KtjsAction` 都要）。
+`"&:hover,&:focus-visible"` 这种「多个状态共用一个块」的形式（本站的 `KtjsStep`、`KtjsAction` 都要）。
 所以 `css/dsl/Pseudos.kt` 自建一层，形态照 `web.dom.TagName` + `web.html.HtmlTagName`：
 
-- `external interface Pseudo` + `Pseudo(value)` 工厂；
-- `object Pseudos` 列全 `SimplePseudosRuleBuilder` 的 64 个字符串，每个带 `&`（`Pseudos.hover` = `"&:hover"`）；
-- `Pseudo.asSelector(): Selector` 转成 `Selector`；
+- `external interface Pseudo` + `pseudoClass(name)` / `pseudoElement(name)` 两个工厂——冒号和类别在造值时定死，
+  `Pseudo` 装的正好是 CSS 打印出来的那一段文本；
+- `object Pseudos` 列全 `SimplePseudosRuleBuilder` 的 64 个字符串（外加 `:host`），每个常量就是伪类本身
+  （`Pseudos.hover` = `":hover"`、`Pseudos.before` = `"::before"`）；
+- `pseudo(pseudo)` / `pseudo(pseudo, argument)` 把 `Pseudo` 变成选择器零件；
 - `context(RuleBuilder<T>) operator fun Pseudo.invoke(block)`——于是 `Pseudos.hover { … }` 的写法和官方
-  `hover { … }` 一样，但带 `&`；
+  `hover { … }` 一样；`&` 是在这里由作用域补的，逗号分开的每一支各自补；
 - `RuleBuilder.pseudo(pseudo, block)`（显式形式）与 `RuleBuilder.pseudos(vararg pseudos, block)`
   （后者用 `web.cssom.many` 把多个 `Selector` 拼成一条）；`many` 也可以直接拼多个 `Pseudo`；
-- 列表外的选择器用工厂：`Pseudo("&:not(…)")`、`Pseudo("&::part(…)")`。
+- 列表外的伪类/伪元素用 `pseudoClass("not")` + 实参选择器、`pseudoElement("part")` + 名字——自由的是
+  **实参**，不是类别。
 
 ### 不要用 CSSOM 逐条 `insertRule` 代替序列化
 

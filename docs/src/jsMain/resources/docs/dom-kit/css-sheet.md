@@ -6,7 +6,7 @@ sidebar_position: 6
 
 `cssSheet { … }` builds a `CSSStyleSheet` from a csstype rules object: rules, values, units and
 pseudo-class structure all come from types, and the only strings left are the ones that genuinely
-have no type — a custom property name, `:host`, `*`.
+have no type — a custom property name, an `:nth-child` formula, the identifier in `::part(name)`.
 
 The runnable side-by-side experiment (three ways of writing the same rule, plus a card that adopted
 the sheet) belongs to the [ktjs-docusaurus](https://github.com/shijianjs/ktjs-docusaurus) repository —
@@ -53,8 +53,8 @@ PropertiesBuilder (= JSO)
 ```
 
 - **The top level is a map of selectors**, not a set of declarations. `cardClass { … }`,
-  `Pseudos.hover { … }`, `":host" { … }` and `"@media …" { … }` are keys; a property written inside
-  one belongs to the rule of the nearest enclosing block.
+  `Pseudos.hover { … }`, `pseudo(Pseudos.host) { … }` and `"@media …" { … }` are keys; a property
+  written inside one belongs to the rule of the nearest enclosing block.
 - `serializeStyles` takes an **array** (it is the tagged template's `strings` in emotion):
   `serializeStyles([rules])`. Passing the object itself makes it read `args[0]` and emit an empty
   string.
@@ -82,11 +82,12 @@ trailing lambda as a second argument". Use parentheses for a one-off (`(ClassNam
 or store it in a `val` and call `cardClass { … }`.
 
 Pseudo-classes and pseudo-elements come from the module's own `css/dsl/Pseudos.kt`, which lists all 64 of
-`csstype.SimplePseudosRuleBuilder`'s selectors, each carrying `&`:
+`csstype.SimplePseudosRuleBuilder`'s selectors plus the Web Components `:host`. Each constant **is the
+pseudo text alone** — `Pseudos.hover` is `":hover"`, `Pseudos.before` is `"::before"`:
 
 ```kotlin
 Pseudos.hover { … }                                  // the same shape as the official hover { }
-pseudos(Pseudos.hover, Pseudos.focusVisible) { … }   // one block for "&:hover, &:focus-visible"
+pseudos(Pseudos.hover, Pseudos.focusVisible) { … }   // one block for "&:hover,&:focus-visible"
 Pseudos.before { … }
 many(Pseudos.hover, Pseudos.focusVisible)             // a combined Pseudo, too
 ```
@@ -95,11 +96,19 @@ The short form comes from `context(builder: RuleBuilder<T>) operator fun Pseudo.
 context parameter picks up the `PropertiesBuilder` of the enclosing `cssSheet { … }` (Kotlin 2.2+
 context parameters; this repository is on 2.4 and needs no flag), and the call site imports
 `io.github.shijianjs.ktjs.dom.css.dsl.invoke`. It differs from the official sugar in the two ways that
-matter: it carries `&`, and it can combine. `many(…)` also produces a `Pseudo`, so
-`(many(Pseudos.hover, Pseudos.focusVisible)) { … }` works — the parentheses are required (`many` is
-`vararg`, and a trailing lambda would be taken as another argument), which is why `pseudos(…)` is the
-recommended form for a combined state. The explicit `pseudo(value) { … }` remains, for when you
-already hold a `Pseudo` variable.
+matter: it **attaches** the pseudo to the rule with `&`, and it can combine (every comma-separated
+branch gets its own `&`, otherwise stylis reads the later ones as descendants). `many(…)` produces a
+`Pseudo`, so `(many(Pseudos.hover, Pseudos.focusVisible)) { … }` works — the parentheses are required
+(`many` is `vararg`, and a trailing lambda would be taken as another argument), which is why
+`pseudos(…)` is the recommended form for a combined state. The explicit `pseudo(value) { … }` remains,
+for when you already hold a `Pseudo` variable.
+
+The colon is part of the value, and the kind is fixed when the value is created: `pseudoClass("hover")`
+is `:hover`, `pseudoElement("before")` is `::before`. There is no `element = true` flag to pass at the
+call site, because CSS never lets the same name be both. `&` is *not* part of the value either — it is
+about where the variant is attached, so only the scope that writes it into a rule adds it. That is why
+the same `Pseudos.hover` both invokes as a state (`&:hover`) and composes as a selector part:
+`compound(className(ROW), pseudo(Pseudos.firstChild))` is `.row:first-child`.
 
 **At-rules have official entry points — do not write `"@media …"` / `"@supports …"` strings:**
 
@@ -127,7 +136,9 @@ What the wrappers already provide (look for these in the IDE before writing your
 
 **What is still a string**: application-level custom property names (`CustomPropertyName("--brand")`),
 and the arguments CSS itself does not type — an `:nth-child(2n+1)` formula, a `::part(label)` name. The
-selectors themselves are no longer strings: `:host`, `*`, `&` are constants of `Selectors`.
+selectors themselves are no longer strings: `*` and `&` are constants of `Selectors`, and `:host` /
+`:root` / `:scope` are constants of `Pseudos` (they are pseudo-classes, so the same value also works as
+an argument to `pseudo(…)`).
 
 ### Selectors you build: `compound` + combinators
 
@@ -141,7 +152,7 @@ private val SELECTED = ClassName("is-selected")
 
 val selected = compound(className(ROW), className(SELECTED))         // .row.is-selected
 val cell = className(ROW) child className(CLASS_LABEL)               // .row > .label
-val hostButton = pseudo("host", attributeSelector("collapsed")) child tag("button")
+val hostButton = pseudo(Pseudos.host, attributeSelector("collapsed")) child tag("button")
                                                                      // :host([collapsed]) > button
 
 cssSheet { selected { display = Display.block } }
@@ -152,15 +163,18 @@ cssSheet { selected { display = Display.block } }
 | type selector | `tag(HtmlTagName.div)` / `tag("vaadin-button")` |
 | class, id | `className(ClassName("x"))`, `id("main")` |
 | attribute | `attributeSelector(name, value, operator, quote, caseFlag)` — value optional, `[part="label"]` |
-| pseudo-class, pseudo-element | `pseudo("hover")`, `pseudo("before", element = true)`, `pseudo("not", className(HIDDEN))` |
-| `*`, `&`, `:host`, `:root`, `:scope` | `Selectors.universal / nesting / host / root / scope` |
+| pseudo-class, pseudo-element | `pseudo(Pseudos.hover)`, `pseudo(Pseudos.before)`, `pseudo(pseudoElement("part"), "label")`, `pseudo(pseudoClass("not"), className(HIDDEN))` |
+| `*`, `&` | `Selectors.universal`, `Selectors.nesting` |
 | compound (one element) | `compound(vararg parts)` |
 | combinators | `descendant`, `child`, `nextSibling`, `subsequentSibling`, `column` (infix) |
 | selector list | `selectorList(vararg selectors)` — commas |
 
-A variant from `Pseudos` is a `Pseudo` and carries the `&` that attaches it to its parent rule;
-`Pseudos.hover.asCssSelector()` drops that marker, so a variant also works as a part of a standalone
-selector.
+A variant from `Pseudos` already *is* the selector part it looks like — `Pseudo` holds `:hover`, `&`
+belongs to the scope that attaches it. So the same constant is both a state of the enclosing rule
+(`Pseudos.hover { … }` → `&:hover`) and a part of a standalone selector
+(`compound(className(ROW), pseudo(Pseudos.firstChild))` → `.row:first-child`). A bare `:host` rule key
+is `pseudo(Pseudos.host)`: `Pseudos.host { … }` would attach `&` and produce `&:host`, which never
+matches.
 
 What the engine deliberately does not do:
 
@@ -248,20 +262,23 @@ writes the string from the csstype union into the method body verbatim, while th
 as [kotlin-wrappers#2933](https://github.com/JetBrains/kotlin-wrappers/issues/2933).
 
 **There is no reason to wait for it.** That sugar is one method per pseudo-class, so even with `&` it
-could not express `"&:hover, &:focus-visible"` — one block shared by several states, which the
+could not express `"&:hover,&:focus-visible"` — one block shared by several states, which the
 elements in this repository need. So `css/dsl/Pseudos.kt` builds its own layer, shaped after
 `web.dom.TagName` + `web.html.HtmlTagName`:
 
-- `external interface Pseudo` + a `Pseudo(value)` factory;
-- `object Pseudos` listing all 64 strings of `SimplePseudosRuleBuilder`, each with `&`
-  (`Pseudos.hover` is `"&:hover"`);
-- `Pseudo.asSelector(): Selector`;
+- `external interface Pseudo` + `pseudoClass(name)` / `pseudoElement(name)` factories — the colon and
+  the kind are decided where the value is created, so `Pseudo` holds exactly what CSS prints;
+- `object Pseudos` listing all 64 strings of `SimplePseudosRuleBuilder` (plus `:host`), each constant
+  the pseudo text alone (`Pseudos.hover` is `":hover"`, `Pseudos.before` is `"::before"`);
+- `pseudo(pseudo)` / `pseudo(pseudo, argument)` turning a `Pseudo` into a selector part;
 - `context(RuleBuilder<T>) operator fun Pseudo.invoke(block)`, so `Pseudos.hover { … }` reads like the
-  official `hover { … }` but carries `&`;
+  official `hover { … }`; `&` is added here, by the scope that attaches it, and each comma-separated
+  branch gets its own `&`;
 - `RuleBuilder.pseudo(pseudo, block)` (the explicit form) and
   `RuleBuilder.pseudos(vararg pseudos, block)` (the latter joins the selectors with `web.cssom.many`);
   `many` also combines `Pseudo`s directly;
-- `Pseudo("&:not(…)")` and `Pseudo("&::part(…)")` for anything outside the list.
+- `pseudoClass("not")` + an argument selector, and `pseudoElement("part")` + a name, for anything
+  outside the list — the free-form part is the *argument*, never the kind.
 
 ### Do not replace the serializer with one `insertRule` per rule
 

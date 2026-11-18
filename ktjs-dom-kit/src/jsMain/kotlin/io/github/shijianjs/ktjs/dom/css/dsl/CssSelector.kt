@@ -15,7 +15,7 @@ import web.cssom.Selector
  * ```kotlin
  * // .row.is-selected > vaadin-button::part(label)
  * compound(className(ROW), className(SELECTED))
- *     .child(compound(tag("vaadin-button"), pseudo("part", "label", element = true)))
+ *     .child(compound(tag("vaadin-button"), pseudo(pseudoElement("part"), "label")))
  * ```
  *
  * Every part is a value, so a selector can be a field, passed to a function, or stored in a catalog.

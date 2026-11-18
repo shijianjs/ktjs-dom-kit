@@ -6,202 +6,249 @@ import web.cssom.Selector
 import web.cssom.many
 
 /**
- * Typed pseudo variants, in the shape of `web.dom.TagName` (an external interface plus a
- * constructor-like factory) and `web.html.HtmlTagName` (an object listing every constant).
+ * A pseudo-class or a pseudo-element, holding exactly what CSS prints: `:hover`, `::before`,
+ * `:nth-child`.
  *
- * The list is the complete set of selectors from `csstype.SimplePseudosRuleBuilder` (64 entries), but
- * each one is prefixed with `&`. That fixes two things at once:
+ * A [Pseudo] never carries a leading `&`. That combinator is about **where** the variant is attached,
+ * not about what the variant is — the scope that writes it into a rule adds it ([Pseudo.invoke],
+ * `RuleBuilder.pseudo`, `RuleBuilder.pseudos`), and a variant used as a selector part
+ * (`pseudo(Pseudos.not, …)`) has no use for it at all.
  *
- * - the upstream `hover {}` / `before {}` helpers emit `":hover"` / `"::before"`, which stylis reads
- *   as a **descendant** selector (JetBrains/kotlin-wrappers#2933);
- * - and no upstream fix can express `"&:hover, &:focus-visible"` — one block for several states —
- *   because those helpers are one-pseudo methods. Here `many` joins any number of variants.
+ * The kind is decided when the value is created, with one factory per kind, because CSS fixes it for
+ * every name — `:hover` can never be an element and `::before` can never be a class:
  *
  * ```kotlin
- * cssSheet {
- *     cardClass {
- *         Pseudos.hover { borderColor = accent }                         // same shape as the wrapper's hover {}
- *         pseudos(Pseudos.hover, Pseudos.focusVisible) { borderColor = accent }
- *     }
- * }
+ * val hover = pseudoClass("hover")        // :hover
+ * val before = pseudoElement("before")    // ::before
  * ```
- *
- * The short form is [Pseudo.invoke]: a context parameter picks up the enclosing `RuleBuilder` (the
- * `PropertiesBuilder` that `cssSheet { … }` provides), so a `Pseudo` value can be invoked just like
- * `csstype`'s `hover {}` — except that ours carries `&` and can be combined. `many` joins either
- * `Selector`s or `Pseudo`s: `many(Pseudos.hover, Pseudos.focusVisible)` is a `Pseudo`
- * (`"&:hover,&:focus-visible"`), and `many(Selector("&:hover"), Selector("&:focus-visible"))` is a
- * `Selector`. Invoking that result needs parentheses — `(many(…)) { … }` — because `many` itself has
- * a `vararg`; for readability prefer `pseudos(…)`. `Pseudo("&:not(...)")` covers selectors outside
- * the list below.
  */
 external interface Pseudo
 
-inline fun Pseudo(value: String): Pseudo = unsafeCast(value)
+/** `:name` — a pseudo-class. [name] is written without the colon. */
+inline fun pseudoClass(name: String): Pseudo = unsafeCast(":$name")
 
-/** The variant as a `Selector`, attached to its parent rule by the leading `&`. */
-fun Pseudo.asSelector(): Selector = Selector("$this")
+/** `::name` — a pseudo-element. [name] is written without the colons. */
+inline fun pseudoElement(name: String): Pseudo = unsafeCast("::$name")
 
-/** One state of the enclosing rule. */
+/**
+ * `&` + the variant: the selector that attaches it to the rule it is written in, and only there.
+ *
+ * Every comma-separated branch gets its own `&` (`&:hover,&:focus-visible`), because stylis rewrites
+ * each branch separately — a branch left without `&` becomes a *descendant* of the parent rule
+ * (`.card :focus-visible`) instead of the same element in another state.
+ */
+private fun Pseudo.attachedToParent(): Selector = Selector(
+    "$this".branches().joinToString(",") { branch -> "&$branch" },
+)
+
+/** Splits on commas that are not inside parentheses — `:is(.a,.b)` stays one branch. */
+private fun String.branches(): List<String> {
+    val result = mutableListOf<String>()
+    var depth = 0
+    var start = 0
+    for (index in indices) {
+        when (this[index]) {
+            '(' -> depth++
+            ')' -> depth--
+            ',' -> if (depth == 0) {
+                result += substring(start, index).trim()
+                start = index + 1
+            }
+        }
+    }
+    result += substring(start).trim()
+    return result
+}
+
+/** One state of the enclosing rule: `pseudo(Pseudos.hover) { … }` is `&:hover`. */
 fun <T : Any> RuleBuilder<T>.pseudo(
     pseudo: Pseudo,
     block: T.() -> Unit,
 ) {
-    pseudo.asSelector()(block)
+    pseudo.attachedToParent()(block)
 }
+
 /**
- * One state of the enclosing rule, spelled the way the wrappers' own pseudo helpers are:
- * `Pseudos.hover { … }`. The context parameter is the `RuleBuilder` in scope (`cssSheet`'s
- * `PropertiesBuilder`); the `&` is already part of the [Pseudo] value.
+ * One state of the enclosing rule, spelled like the wrappers' own helpers: `Pseudos.hover { … }`.
  *
- * Requires Kotlin 2.2+ context parameters (no compiler flag in 2.4). Import `…dom.css.invoke` at
- * call sites, as with any operator extension.
+ * The context parameter is the `RuleBuilder` in scope (`cssSheet`'s `PropertiesBuilder`), and it is
+ * the scope that prefixes `&`. Requires Kotlin 2.2+ context parameters (no compiler flag in 2.4);
+ * import `…css.dsl.invoke` at call sites, as with any operator extension.
  */
 context(builder: RuleBuilder<T>)
-inline operator fun <T : Any> Pseudo.invoke(
+operator fun <T : Any> Pseudo.invoke(
     block: T.() -> Unit,
 ) {
     builder.apply {
-        this@invoke.asSelector()(block)
+        this@invoke.attachedToParent()(block)
     }
 }
 
-/** Several states sharing one block — `many` joins the selectors with commas. */
+/** Several states sharing one block — each one attached to the parent rule, joined by commas. */
 fun <T : Any> RuleBuilder<T>.pseudos(
     vararg pseudos: Pseudo,
     block: T.() -> Unit,
 ) {
-    val selectors = Array(pseudos.size) { index -> pseudos[index].asSelector() }
+    val selectors = Array(pseudos.size) { index -> pseudos[index].attachedToParent() }
     many(*selectors)(block)
 }
 
-/** Every simple pseudo from csstype's builder, each as a parent-attached variant. */
+/**
+ * Every simple pseudo from `csstype.SimplePseudosRuleBuilder` (64 entries), plus the Web Components
+ * ones that list omits (`:host`).
+ *
+ * Each constant is the plain pseudo text (`Pseudos.hover` is `:hover`); the `&` appears only when the
+ * variant is attached to a rule. That is what makes one value usable in both roles:
+ *
+ * ```kotlin
+ * cssSheet {
+ *     cardClass {
+ *         Pseudos.hover { borderColor = accent }                       // &:hover
+ *         pseudos(Pseudos.hover, Pseudos.focusVisible) { … }            // &:hover,&:focus-visible
+ *     }
+ *     pseudo(Pseudos.not, className(HIDDEN)) { display = Display.none } // :not(.is-hidden)
+ * }
+ * ```
+ */
 object Pseudos {
-    inline val after: Pseudo get() = Pseudo("&::after")
+    // === pseudo-elements ===
 
-    inline val backdrop: Pseudo get() = Pseudo("&::backdrop")
+    val after: Pseudo = pseudoElement("after")
 
-    inline val before: Pseudo get() = Pseudo("&::before")
+    val backdrop: Pseudo = pseudoElement("backdrop")
 
-    inline val cue: Pseudo get() = Pseudo("&::cue")
+    val before: Pseudo = pseudoElement("before")
 
-    inline val cueRegion: Pseudo get() = Pseudo("&::cue-region")
+    val cue: Pseudo = pseudoElement("cue")
 
-    inline val firstLetter: Pseudo get() = Pseudo("&::first-letter")
+    val cueRegion: Pseudo = pseudoElement("cue-region")
 
-    inline val firstLine: Pseudo get() = Pseudo("&::first-line")
+    val firstLetter: Pseudo = pseudoElement("first-letter")
 
-    inline val grammarError: Pseudo get() = Pseudo("&::grammar-error")
+    val firstLine: Pseudo = pseudoElement("first-line")
 
-    inline val marker: Pseudo get() = Pseudo("&::marker")
+    val grammarError: Pseudo = pseudoElement("grammar-error")
 
-    inline val placeholder: Pseudo get() = Pseudo("&::placeholder")
+    val marker: Pseudo = pseudoElement("marker")
 
-    inline val selection: Pseudo get() = Pseudo("&::selection")
+    val placeholder: Pseudo = pseudoElement("placeholder")
 
-    inline val spellingError: Pseudo get() = Pseudo("&::spelling-error")
+    val selection: Pseudo = pseudoElement("selection")
 
-    inline val targetText: Pseudo get() = Pseudo("&::target-text")
+    val spellingError: Pseudo = pseudoElement("spelling-error")
 
-    inline val viewTransition: Pseudo get() = Pseudo("&::view-transition")
+    val targetText: Pseudo = pseudoElement("target-text")
 
-    inline val active: Pseudo get() = Pseudo("&:active")
+    val viewTransition: Pseudo = pseudoElement("view-transition")
 
-    inline val anyLink: Pseudo get() = Pseudo("&:any-link")
+    // === pseudo-classes ===
 
-    inline val blank: Pseudo get() = Pseudo("&:blank")
+    val active: Pseudo = pseudoClass("active")
 
-    inline val checked: Pseudo get() = Pseudo("&:checked")
+    val anyLink: Pseudo = pseudoClass("any-link")
 
-    inline val current: Pseudo get() = Pseudo("&:current")
+    val blank: Pseudo = pseudoClass("blank")
 
-    inline val default: Pseudo get() = Pseudo("&:default")
+    val checked: Pseudo = pseudoClass("checked")
 
-    inline val defined: Pseudo get() = Pseudo("&:defined")
+    val current: Pseudo = pseudoClass("current")
 
-    inline val disabled: Pseudo get() = Pseudo("&:disabled")
+    val default: Pseudo = pseudoClass("default")
 
-    inline val empty: Pseudo get() = Pseudo("&:empty")
+    val defined: Pseudo = pseudoClass("defined")
 
-    inline val enabled: Pseudo get() = Pseudo("&:enabled")
+    val disabled: Pseudo = pseudoClass("disabled")
 
-    inline val first: Pseudo get() = Pseudo("&:first")
+    val empty: Pseudo = pseudoClass("empty")
 
-    inline val firstChild: Pseudo get() = Pseudo("&:first-child")
+    val enabled: Pseudo = pseudoClass("enabled")
 
-    inline val firstOfType: Pseudo get() = Pseudo("&:first-of-type")
+    val first: Pseudo = pseudoClass("first")
 
-    inline val focus: Pseudo get() = Pseudo("&:focus")
+    val firstChild: Pseudo = pseudoClass("first-child")
 
-    inline val focusVisible: Pseudo get() = Pseudo("&:focus-visible")
+    val firstOfType: Pseudo = pseudoClass("first-of-type")
 
-    inline val focusWithin: Pseudo get() = Pseudo("&:focus-within")
+    val focus: Pseudo = pseudoClass("focus")
 
-    inline val fullscreen: Pseudo get() = Pseudo("&:fullscreen")
+    val focusVisible: Pseudo = pseudoClass("focus-visible")
 
-    inline val future: Pseudo get() = Pseudo("&:future")
+    val focusWithin: Pseudo = pseudoClass("focus-within")
 
-    inline val hover: Pseudo get() = Pseudo("&:hover")
+    val fullscreen: Pseudo = pseudoClass("fullscreen")
 
-    inline val inRange: Pseudo get() = Pseudo("&:in-range")
+    val future: Pseudo = pseudoClass("future")
 
-    inline val indeterminate: Pseudo get() = Pseudo("&:indeterminate")
+    /**
+     * `:host` — the shadow host of the element whose sheet this is. Not part of csstype's list (it is
+     * a Web Components pseudo), but without it no shadow-root rule can be written typed.
+     *
+     * A bare `:host` rule key is `pseudo(Pseudos.host)`; `Pseudos.host { … }` would attach `&` and
+     * produce `&:host`, which never matches.
+     */
+    val host: Pseudo = pseudoClass("host")
 
-    inline val invalid: Pseudo get() = Pseudo("&:invalid")
+    val hover: Pseudo = pseudoClass("hover")
 
-    inline val lastChild: Pseudo get() = Pseudo("&:last-child")
+    val inRange: Pseudo = pseudoClass("in-range")
 
-    inline val lastOfType: Pseudo get() = Pseudo("&:last-of-type")
+    val indeterminate: Pseudo = pseudoClass("indeterminate")
 
-    inline val left: Pseudo get() = Pseudo("&:left")
+    val invalid: Pseudo = pseudoClass("invalid")
 
-    inline val link: Pseudo get() = Pseudo("&:link")
+    val lastChild: Pseudo = pseudoClass("last-child")
 
-    inline val localLink: Pseudo get() = Pseudo("&:local-link")
+    val lastOfType: Pseudo = pseudoClass("last-of-type")
 
-    inline val nthCol: Pseudo get() = Pseudo("&:nth-col")
+    val left: Pseudo = pseudoClass("left")
 
-    inline val nthLastCol: Pseudo get() = Pseudo("&:nth-last-col")
+    val link: Pseudo = pseudoClass("link")
 
-    inline val onlyChild: Pseudo get() = Pseudo("&:only-child")
+    val localLink: Pseudo = pseudoClass("local-link")
 
-    inline val onlyOfType: Pseudo get() = Pseudo("&:only-of-type")
+    val nthCol: Pseudo = pseudoClass("nth-col")
 
-    inline val optional: Pseudo get() = Pseudo("&:optional")
+    val nthLastCol: Pseudo = pseudoClass("nth-last-col")
 
-    inline val outOfRange: Pseudo get() = Pseudo("&:out-of-range")
+    val onlyChild: Pseudo = pseudoClass("only-child")
 
-    inline val past: Pseudo get() = Pseudo("&:past")
+    val onlyOfType: Pseudo = pseudoClass("only-of-type")
 
-    inline val paused: Pseudo get() = Pseudo("&:paused")
+    val optional: Pseudo = pseudoClass("optional")
 
-    inline val pictureInPicture: Pseudo get() = Pseudo("&:picture-in-picture")
+    val outOfRange: Pseudo = pseudoClass("out-of-range")
 
-    inline val placeholderShown: Pseudo get() = Pseudo("&:placeholder-shown")
+    val past: Pseudo = pseudoClass("past")
 
-    inline val playing: Pseudo get() = Pseudo("&:playing")
+    val paused: Pseudo = pseudoClass("paused")
 
-    inline val readOnly: Pseudo get() = Pseudo("&:read-only")
+    val pictureInPicture: Pseudo = pseudoClass("picture-in-picture")
 
-    inline val readWrite: Pseudo get() = Pseudo("&:read-write")
+    val placeholderShown: Pseudo = pseudoClass("placeholder-shown")
 
-    inline val required: Pseudo get() = Pseudo("&:required")
+    val playing: Pseudo = pseudoClass("playing")
 
-    inline val right: Pseudo get() = Pseudo("&:right")
+    val readOnly: Pseudo = pseudoClass("read-only")
 
-    inline val root: Pseudo get() = Pseudo("&:root")
+    val readWrite: Pseudo = pseudoClass("read-write")
 
-    inline val scope: Pseudo get() = Pseudo("&:scope")
+    val required: Pseudo = pseudoClass("required")
 
-    inline val target: Pseudo get() = Pseudo("&:target")
+    val right: Pseudo = pseudoClass("right")
 
-    inline val targetWithin: Pseudo get() = Pseudo("&:target-within")
+    val root: Pseudo = pseudoClass("root")
 
-    inline val userInvalid: Pseudo get() = Pseudo("&:user-invalid")
+    val scope: Pseudo = pseudoClass("scope")
 
-    inline val userValid: Pseudo get() = Pseudo("&:user-valid")
+    val target: Pseudo = pseudoClass("target")
 
-    inline val valid: Pseudo get() = Pseudo("&:valid")
+    val targetWithin: Pseudo = pseudoClass("target-within")
 
-    inline val visited: Pseudo get() = Pseudo("&:visited")
+    val userInvalid: Pseudo = pseudoClass("user-invalid")
+
+    val userValid: Pseudo = pseudoClass("user-valid")
+
+    val valid: Pseudo = pseudoClass("valid")
+
+    val visited: Pseudo = pseudoClass("visited")
 }

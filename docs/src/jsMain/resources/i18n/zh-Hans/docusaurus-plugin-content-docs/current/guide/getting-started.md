@@ -52,7 +52,7 @@ class KtjsChip : CustomElementAdapter() {
         val NAME: TagName<KtjsChip> = TagName("ktjs-chip")
 
         private val SHEET: CSSStyleSheet = cssSheet {
-            ":host" {
+            pseudo(Pseudos.host) {
                 display = Display.block
                 padding = Padding(0.5.rem)
             }

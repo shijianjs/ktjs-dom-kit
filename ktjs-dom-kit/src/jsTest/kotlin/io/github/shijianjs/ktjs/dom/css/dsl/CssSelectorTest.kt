@@ -33,9 +33,10 @@ class CssSelectorTest {
         assertEquals("#main", "${id("main")}")
         assertEquals("*", "${Selectors.universal}")
         assertEquals("&", "${Selectors.nesting}")
-        assertEquals(":host", "${Selectors.host}")
-        assertEquals(":root", "${Selectors.root}")
-        assertEquals(":scope", "${Selectors.scope}")
+        // `:host`, `:root` and `:scope` are pseudo-classes, not bare tokens: they live in `Pseudos`.
+        assertEquals(":host", "${Pseudos.host}")
+        assertEquals(":root", "${Pseudos.root}")
+        assertEquals(":scope", "${Pseudos.scope}")
     }
 
     @Test
@@ -61,21 +62,26 @@ class CssSelectorTest {
 
     @Test
     fun pseudosTakeAStringOrASelectorArgument() {
-        assertEquals(":hover", "${pseudo("hover")}")
-        assertEquals("::before", "${pseudo("before", element = true)}")
-        assertEquals(":nth-child(2n+1)", "${pseudo("nth-child", "2n+1")}")
-        assertEquals("::part(label)", "${pseudo("part", "label", element = true)}")
-        assertEquals(":not(.is-selected)", "${pseudo("not", className(SELECTED))}")
-        assertEquals(":is(.row,.label)", "${pseudo("is", selectorList(className(ROW), className(LABEL)))}")
+        assertEquals(":hover", "${pseudo(Pseudos.hover)}")
+        assertEquals("::before", "${pseudo(Pseudos.before)}")
+        assertEquals(":nth-child(2n+1)", "${pseudo(pseudoClass("nth-child"), "2n+1")}")
+        assertEquals("::part(label)", "${pseudo(pseudoElement("part"), "label")}")
+        assertEquals(":not(.is-selected)", "${pseudo(pseudoClass("not"), className(SELECTED))}")
+        assertEquals(
+            ":is(.row,.label)",
+            "${pseudo(pseudoClass("is"), selectorList(className(ROW), className(LABEL)))}",
+        )
     }
 
     @Test
-    fun aVariantBecomesASimpleSelectorWithoutItsParent() {
-        // `Pseudos.*` values are attached to their parent rule with `&`; as a standalone part the
-        // marker has to go, otherwise the result is a nesting selector at the top of a key.
-        assertEquals(":hover", "${Pseudos.hover.asCssSelector()}")
-        assertEquals("::before", "${Pseudos.before.asCssSelector()}")
-        assertEquals(":focus-visible", "${Pseudos.focusVisible.asCssSelector()}")
+    fun aVariantIsAPartWithNoAttachedParent() {
+        // `Pseudos.*` hold the pseudo text alone; `&` belongs to the scope that attaches them to a
+        // rule, so the same value is a clean part of any selector — no marker to strip.
+        assertEquals(":hover", "${Pseudos.hover}")
+        assertEquals("::before", "${Pseudos.before}")
+        assertEquals(":focus-visible", "${Pseudos.focusVisible}")
+        assertEquals(":hover", "${pseudo(Pseudos.hover)}")
+        assertEquals(".row:first-child", "${compound(className(ROW), pseudo(Pseudos.firstChild))}")
     }
 
     @Test
@@ -108,7 +114,7 @@ class CssSelectorTest {
         // `:host([collapsed]) > button` — the shape a Vaadin component writes by hand today. The
         // attribute sits *inside* the pseudo's parentheses, so it is the pseudo's argument, not a
         // sibling simple selector.
-        val hostCollapsed = pseudo("host", attributeSelector("collapsed"))
+        val hostCollapsed = pseudo(Pseudos.host, attributeSelector("collapsed"))
         assertEquals(":host([collapsed]) > button", "${hostCollapsed child tag("button")}")
     }
 

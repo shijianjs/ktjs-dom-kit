@@ -123,8 +123,9 @@ class CssSheetTest {
             }
         }
 
+        // The variant is the pseudo alone; `&` is added when it is attached to a rule, not stored in it.
+        assertEquals(":hover,:focus-visible", "$variant")
         assertEquals(".card:hover,.card:focus-visible{display:block;}", text)
-        assertEquals("&:hover,&:focus-visible", "$variant")
     }
 
     @Test

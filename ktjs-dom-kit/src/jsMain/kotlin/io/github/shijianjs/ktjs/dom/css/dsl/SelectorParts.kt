@@ -48,38 +48,28 @@ fun attributeSelector(
 }
 
 /**
- * `:hover` / `::before` — a pseudo-class or pseudo-element.
+ * `:hover` / `::before` as a selector part — the variant without the `&`, because a part is not
+ * attached to anything yet.
  *
- * [name] is written without the colons. Two forms take an argument: a string for what CSS does not
- * type (a `:nth-child` formula, a `::part(name)` identifier) and a [CssSelector] for what it does —
- * `:not(.is-hidden)`, `:is(.a, .b)`, `:host([collapsed])`.
+ * The argument is a [Pseudo] and nothing else: class-versus-element is decided by
+ * `pseudoClass` / `pseudoElement` (and by the constants in [Pseudos]), never by a flag at the call
+ * site — CSS fixes the kind per name.
+ *
+ * Two forms take an argument: a string for what CSS does not type (an `:nth-child` formula, a
+ * `::part(name)` identifier) and a [CssSelector] for what it does — `:not(.is-hidden)`,
+ * `:is(.a, .b)`, `:host([collapsed])`.
  */
-fun pseudo(
-    name: String,
-    element: Boolean = false,
-): CssSelector = CssSelector(if (element) "::$name" else ":$name")
+fun pseudo(pseudo: Pseudo): CssSelector = CssSelector("$pseudo")
 
 fun pseudo(
-    name: String,
+    pseudo: Pseudo,
     argument: String,
-    element: Boolean = false,
-): CssSelector = CssSelector((if (element) "::" else ":") + name + "(" + argument + ")")
+): CssSelector = CssSelector("$pseudo($argument)")
 
 fun pseudo(
-    name: String,
+    pseudo: Pseudo,
     argument: CssSelector,
-    element: Boolean = false,
-): CssSelector = pseudo(name, "$argument", element)
-
-/**
- * A `Pseudo` (a variant already attached to its parent rule, like `Pseudos.hover`) as a standalone
- * simple selector: the leading `&` is dropped, so `Pseudos.hover.asCssSelector()` is `:hover` and can
- * be composed into a selector of its own.
- */
-fun Pseudo.asCssSelector(): CssSelector {
-    val text = "$this"
-    return CssSelector(if (text.startsWith("&")) text.substring(1) else text)
-}
+): CssSelector = CssSelector("$pseudo($argument)")
 
 /** The selectors that are a single token and have no factory of their own. */
 object Selectors {
@@ -88,15 +78,6 @@ object Selectors {
 
     /** `&` — the nesting selector, for building rule keys that stay attached to their parent. */
     val nesting: CssSelector = CssSelector("&")
-
-    /** `:host` — the shadow host of a custom element. */
-    val host: CssSelector = CssSelector(":host")
-
-    /** `:root` — the document root. */
-    val root: CssSelector = CssSelector(":root")
-
-    /** `:scope` — the element a query was called on. */
-    val scope: CssSelector = CssSelector(":scope")
 }
 
 /** The six attribute comparison operators; `token` is what CSS spells, escaped where it starts with `$`. */
