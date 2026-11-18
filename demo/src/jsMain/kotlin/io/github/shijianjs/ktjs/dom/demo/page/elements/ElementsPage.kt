@@ -47,7 +47,7 @@ private val elementsEnglish: ElementsTexts = ElementsTexts(
     summary = "Every HTML tag has a typed constant in kotlin-browser; dom-kit's createElement carries that " +
         "type through to the created node.",
     typedHeading = "The tag decides the type",
-    typedHint = "Every node in this example was built with createElement — not one string tag name.",
+    typedHint = "Every node in this example was built from a typed tag — not one string tag name in sight.",
     typedExample = "HtmlTagName.h2 / HtmlTagName.p / HtmlTagName.a / HtmlTagName.code",
     typedNode = "Created with a typed tag",
     typedNote = "No cast and no querySelector: the created node already is the element type.",
@@ -67,7 +67,7 @@ private val elementsChinese: ElementsTexts = ElementsTexts(
     title = "元素创建",
     summary = "kotlin-browser 给每个 HTML 标签都提供了类型化常量，dom-kit 的 createElement 把这个类型一直带到创建结果。",
     typedHeading = "标签决定类型",
-    typedHint = "下面每个节点都是用 createElement 建的，没有一个字符串标签。",
+    typedHint = "下面每个节点都是从类型化标签建出来的，一个字符串标签都没有。",
     typedExample = "HtmlTagName.h2 / HtmlTagName.p / HtmlTagName.a / HtmlTagName.code",
     typedNode = "用类型化标签建出来的节点",
     typedNote = "不需要强转，也不需要 querySelector：建出来的就是那个元素类型。",

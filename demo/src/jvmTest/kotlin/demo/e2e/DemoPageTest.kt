@@ -266,6 +266,11 @@ class DemoPageTest(private val browser: Browser) {
         assertEquals(listOf("code", "code", "code"), shape["items"])
         assertTrue((shape["text"] as String).isNotBlank(), "the bound paragraph stayed empty")
         assertNoErrors()
+        // The screenshot is the visual half of the same claim: the new section must read as one card,
+        // not as loose text hanging under the previous one.
+        val file = java.nio.file.Path.of("build", "e2e-results", "light-elements.png").toAbsolutePath()
+        java.nio.file.Files.createDirectories(file.parent)
+        page.screenshot(Page.ScreenshotOptions().setPath(file))
     }
 
     @Test

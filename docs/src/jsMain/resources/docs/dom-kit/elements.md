@@ -66,5 +66,5 @@ Two consequences worth knowing:
 ## Named helpers
 
 When a shape repeats — a paragraph in body text, a code line in an example — a named helper is the
-right level, and it still builds with the same call. `createElement` is the primitive; helpers are
-the vocabulary on top of it, not a second way to create nodes.
+right level, and it still builds with the same call. The typed tag is the primitive; helpers are the
+vocabulary on top of it, not a second way to create nodes.

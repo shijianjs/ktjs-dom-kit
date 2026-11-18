@@ -61,4 +61,4 @@ operator fun <T : HTMLElement> T.unaryPlus(): T
 ## 具名 helper
 
 当某个形状反复出现——正文段落、示例里的代码行——具名 helper 才是合适的层次，它内部仍然用同一个
-调用建节点。`createElement` 是原语，helper 是它上面的词汇，不是第二条建节点的路。
+调用建节点。类型化标签是原语，helper 是它上面的词汇，不是第二条建节点的路。
