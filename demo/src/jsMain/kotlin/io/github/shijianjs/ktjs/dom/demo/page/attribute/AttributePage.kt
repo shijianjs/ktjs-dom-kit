@@ -1,6 +1,5 @@
 package io.github.shijianjs.ktjs.dom.demo.page.attribute
 
-import io.github.shijianjs.ktjs.dom.attribute.tokens
 import io.github.shijianjs.ktjs.demo.i18n.Binder
 import io.github.shijianjs.ktjs.demo.i18n.Lang
 import io.github.shijianjs.ktjs.demo.i18n.Langs
@@ -15,10 +14,11 @@ import io.github.shijianjs.ktjs.demo.page.newPage
 import io.github.shijianjs.ktjs.demo.page.paragraph
 import io.github.shijianjs.ktjs.demo.page.row
 import io.github.shijianjs.ktjs.demo.page.sectionBlock
-import io.github.shijianjs.ktjs.vaadin.themablemixin.addTheme
+import io.github.shijianjs.ktjs.dom.demo.wrapper.themeAttr
 import io.github.shijianjs.ktjs.vaadin.button.createButton
+import io.github.shijianjs.ktjs.vaadin.themablemixin.ThemePropertyMixin
+import io.github.shijianjs.ktjs.vaadin.themablemixin.addTheme
 import web.dom.clickEvent
-import web.html.HTMLElement
 import web.events.addHandler
 
 private class AttributeTexts(
@@ -166,7 +166,7 @@ internal class AttributePage : Page {
 
         val toggle = texts.bind(createButton(), { it.wrapperToggleLabel }).addTheme("primary")
         toggle.clickEvent.addHandler {
-            target.tokens("theme").toggle("primary")
+            target.themeAttr.toggle("primary")
             showWrapper(target)
         }
 
@@ -188,9 +188,9 @@ internal class AttributePage : Page {
         return section
     }
 
-    private fun showWrapper(target: HTMLElement) {
-        val tokens = target.tokens("theme").values
-        val raw = target.getAttribute("theme")
-        wrapperReadout.set("tokens = $tokens, attribute = ${if (raw == null) "missing" else "\"$raw\""}")
+    private fun showWrapper(target: ThemePropertyMixin) {
+        val theme = target.themeAttr
+        val raw = theme.raw
+        wrapperReadout.set("theme = ${theme.values}, attribute = ${if (raw == null) "missing" else "\"$raw\""}")
     }
 }

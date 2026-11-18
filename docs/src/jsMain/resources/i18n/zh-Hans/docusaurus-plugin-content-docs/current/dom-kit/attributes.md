@@ -54,7 +54,7 @@ var titleText: String by attr("title") { change -> heading.textContent = change.
 | `BooleanAttributeCodec` | `Boolean` | 存在性语义，和 `hidden` 一样——`<x flagged>` 与 `<x flagged="false">` 都是 `true`；`true` 写成裸属性，`false` 删掉它 |
 | `IntAttributeCodec` | `Int` | `toIntOrNull`；否则回退到 `default`（或 `0`） |
 | `DoubleAttributeCodec` | `Double` | `toDoubleOrNull`；回退到 `default`（或 `0.0`） |
-| `TokenListAttributeCodec` | `List<String>` | 空格分隔的词列表（`theme="primary small"`）；写入时去重，空列表即删掉属性。wrapper 元素上用 `tokens(name)`，见下文 |
+| `TokenListAttributeCodec` | `List<String>` | 空格分隔的词列表（`theme="primary small"`）；写入时去重，空列表即删掉属性。wrapper 元素上用 `tokenListAttribute(name)`，见下文 |
 
 其它类型就是一个 `AttributeCodec<T>` 实现——三个函数，不引序列化库：
 
@@ -123,16 +123,19 @@ val kind: Attribute<ActionKind> get() = attribute("kind", enumAttributeCodec(Act
 ### 词列表（token list）
 
 取值是一组空格分隔词的属性（`theme`、`aria-describedby`、`data-tags`）有自己的对象，用
-`element.tokens(name)` 取：
+`element.tokenListAttribute(name)` 取：
 
 ```kotlin
-val theme = button.tokens("theme")
-theme.add("primary")        // theme="primary"
-theme.toggle("small")       // theme="primary small"
-theme.contains("small")     // true
-theme.remove("primary")     // theme="small"
-theme.value = listOf("a", "b")   // 整体替换
-theme.clear()               // 属性被删掉
+// 属性名字符串只写这一处，页面里统一调 themeAttr
+val ThemePropertyMixin.themeAttr: TokenListAttribute
+    get() = unsafeCast<HTMLElement>().tokenListAttribute("theme")
+
+button.themeAttr.add("primary")            // theme="primary"
+button.themeAttr.toggle("small")           // theme="primary small"
+button.themeAttr.contains("small")         // true
+button.themeAttr.remove("primary")         // theme="small"
+button.themeAttr.value = listOf("a", "b")  // 整体替换
+button.themeAttr.clear()                   // 属性被删掉
 ```
 
 写入会规整化：单空格、去重、保持顺序；写空列表即删属性，于是「没有词」和「属性缺失」是同一个状态，跟空

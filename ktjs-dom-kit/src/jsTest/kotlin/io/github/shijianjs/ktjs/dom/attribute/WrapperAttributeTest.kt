@@ -12,7 +12,7 @@ import web.html.HtmlTagName
 /** An extension property on `HTMLElement` itself — the shape a wrapper type would carry. */
 private val HTMLElement.count: Attribute<Int> get() = intAttribute("data-count")
 
-private val HTMLElement.tags: TokenListAttribute get() = tokens("data-tags")
+private val HTMLElement.tags: TokenListAttribute get() = tokenListAttribute("data-tags")
 
 /**
  * The wrapper-facing half of `attr`: an [Attribute] (or [TokenListAttribute]) bound to an element the
@@ -116,7 +116,7 @@ class WrapperAttributeTest {
     @Test
     fun aTokenListMutatesTheAttributeInPlace() {
         val node = element()
-        val tokens = node.tokens("data-tags")
+        val tokens = node.tokenListAttribute("data-tags")
 
         assertFalse(tokens.contains("a"))
         tokens.add("a", "b")
@@ -145,15 +145,15 @@ class WrapperAttributeTest {
     @Test
     fun aTokenListSplitsTokensGivenTogether() {
         val node = element()
-        node.tokens("data-tags").add("a b", "c")
+        node.tokenListAttribute("data-tags").add("a b", "c")
         assertEquals("a b c", node.getAttribute("data-tags"))
-        assertEquals(listOf("a", "b", "c"), node.tokens("data-tags").values)
+        assertEquals(listOf("a", "b", "c"), node.tokenListAttribute("data-tags").values)
     }
 
     @Test
     fun aTextWrittenFromOutsideIsVisibleImmediately() {
         val node = element()
-        val tokens = node.tokens("data-tags")
+        val tokens = node.tokenListAttribute("data-tags")
         tokens.add("a")
         node.setAttribute("data-tags", "b")
         assertEquals(listOf("b"), tokens.values)

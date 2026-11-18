@@ -423,7 +423,7 @@ class DemoPageTest(private val browser: Browser) {
         // toggling the only token removes the attribute, so "no tokens" and "absent" are one state
         page.locator("vaadin-button:text-is('toggle primary')").click()
         val removed = readout.textContent().orEmpty()
-        assertTrue(removed.contains("tokens = []"), "readout was: $removed")
+        assertTrue(removed.contains("theme = []"), "readout was: $removed")
         assertTrue(removed.contains("attribute = missing"), "readout was: $removed")
 
         // a messy raw write is normalised on the next read instead of being stored as-is

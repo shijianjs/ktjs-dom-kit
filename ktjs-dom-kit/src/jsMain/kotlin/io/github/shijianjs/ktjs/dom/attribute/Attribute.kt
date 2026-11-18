@@ -81,4 +81,4 @@ fun HTMLElement.doubleAttribute(name: String): Attribute<Double> = Attribute(thi
 fun <T> HTMLElement.attribute(name: String, codec: AttributeCodec<T>): Attribute<T> = Attribute(this, name, codec)
 
 /** This element's space-separated token attribute [name]; see [TokenListAttribute]. */
-fun HTMLElement.tokens(name: String): TokenListAttribute = TokenListAttribute(this, name)
+fun HTMLElement.tokenListAttribute(name: String): TokenListAttribute = TokenListAttribute(this, name)

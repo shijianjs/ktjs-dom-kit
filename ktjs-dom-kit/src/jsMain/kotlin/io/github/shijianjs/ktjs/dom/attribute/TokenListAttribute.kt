@@ -8,12 +8,12 @@ import web.html.HTMLElement
  * One space-separated attribute **of one element** — the `classList` idea for `theme="primary small"`,
  * `aria-describedby="a b"`, `data-tags="x y"`.
  *
- * Obtained with `element.tokens(name)`; every operation reads or writes the attribute itself, so
+ * Obtained with `element.tokenListAttribute(name)`; every operation reads or writes the attribute itself, so
  * nothing has to be kept in sync and a write from anywhere (`setAttribute`, devtools, another
  * component) is visible on the next call.
  *
  * ```kotlin
- * val theme = button.tokens("theme")
+ * val theme = button.tokenListAttribute("theme")
  * theme.add("primary")        // theme="primary"
  * theme.toggle("small")       // theme="primary small"
  * theme.remove("primary")     // theme="small"

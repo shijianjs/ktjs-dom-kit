@@ -58,7 +58,7 @@ The value is converted by an `AttributeCodec<T>`. The built-in ones:
 | `BooleanAttributeCodec` | `Boolean` | presence, like `hidden` — `<x flagged>` and `<x flagged="false">` are both `true`; `true` writes a bare attribute, `false` removes it |
 | `IntAttributeCodec` | `Int` | `toIntOrNull`; anything else falls back to `default` (or `0`) |
 | `DoubleAttributeCodec` | `Double` | `toDoubleOrNull`; falls back to `default` (or `0.0`) |
-| `TokenListAttributeCodec` | `List<String>` | space-separated tokens (`theme="primary small"`); deduplicated on write, an empty list removes the attribute. On wrapper elements use `tokens(name)` instead, see below |
+| `TokenListAttributeCodec` | `List<String>` | space-separated tokens (`theme="primary small"`); deduplicated on write, an empty list removes the attribute. On wrapper elements use `tokenListAttribute(name)` instead, see below |
 
 Anything else is an `AttributeCodec<T>` implementation — three functions, no serialization library:
 
@@ -134,16 +134,19 @@ for the value.
 ### Token lists
 
 Attributes whose value is a set of space-separated words (`theme`, `aria-describedby`, `data-tags`)
-get their own object, obtained with `element.tokens(name)`:
+get their own object, obtained with `element.tokenListAttribute(name)`:
 
 ```kotlin
-val theme = button.tokens("theme")
-theme.add("primary")        // theme="primary"
-theme.toggle("small")       // theme="primary small"
-theme.contains("small")     // true
-theme.remove("primary")     // theme="small"
-theme.value = listOf("a", "b")   // replaces the whole list
-theme.clear()               // attribute removed
+// one declaration, next to the elements it describes — the page calls `themeAttr` everywhere
+val ThemePropertyMixin.themeAttr: TokenListAttribute
+    get() = unsafeCast<HTMLElement>().tokenListAttribute("theme")
+
+button.themeAttr.add("primary")            // theme="primary"
+button.themeAttr.toggle("small")           // theme="primary small"
+button.themeAttr.contains("small")         // true
+button.themeAttr.remove("primary")         // theme="small"
+button.themeAttr.value = listOf("a", "b")  // replaces the whole list
+button.themeAttr.clear()                   // attribute removed
 ```
 
 Writes are normalised: single spaces, duplicates dropped, order kept; an empty list removes the
