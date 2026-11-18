@@ -215,6 +215,31 @@ class ScreenshotTest(private val browser: Browser) {
     }
 
     @Test
+    fun `the attributes page shows the wrapper section in both themes`() {
+        val page = open("#/attributes")
+        // Third section: a wrapper element driven by an Attribute. Two rows of buttons must fit on one
+        // line, and the readout must sit under them, inside the same card.
+        assertEquals(
+            3,
+            page.locator("ktjs-demo-page .section").count(),
+            "the page carries three sections",
+        )
+        assertEquals(
+            "vaadin-button",
+            page.locator("ktjs-demo-page .section").last().locator("vaadin-button").first()
+                .evaluate("node => node.tagName.toLowerCase()") as String,
+            "the target is a wrapper element, not a bespoke one",
+        )
+        assertNoHorizontalOverflow(page)
+        shoot(page, "light-attributes")
+        pick(page, "theme:dark")
+        page.keyboard().press("Escape")
+        page.waitForTimeout(500.0)
+        shoot(page, "dark-attributes")
+        page.close()
+    }
+
+    @Test
     fun `sidebar headings are labels and the counter uses a Lumo button`() {
         val page = open("#/custom-elements")
 

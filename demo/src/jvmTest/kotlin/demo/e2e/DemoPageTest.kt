@@ -410,6 +410,28 @@ class DemoPageTest(private val browser: Browser) {
         )
         assertNoErrors()
     }
+
+    @Test
+    fun `a wrapper element is driven by an Attribute and its token list`() {
+        val page = open("#/attributes")
+        val readout = page.locator("ktjs-demo-page .readout").last()
+
+        page.locator("vaadin-button:text-is('toggle primary')").click()
+        val added = readout.textContent().orEmpty()
+        assertTrue(added.contains("[primary]"), "readout was: $added")
+
+        // toggling the only token removes the attribute, so "no tokens" and "absent" are one state
+        page.locator("vaadin-button:text-is('toggle primary')").click()
+        val removed = readout.textContent().orEmpty()
+        assertTrue(removed.contains("tokens = []"), "readout was: $removed")
+        assertTrue(removed.contains("attribute = missing"), "readout was: $removed")
+
+        // a messy raw write is normalised on the next read instead of being stored as-is
+        page.locator("vaadin-button:text-is('write messy text')").click()
+        val messy = readout.textContent().orEmpty()
+        assertTrue(messy.contains("[primary, small]"), "readout was: $messy")
+        assertNoErrors()
+    }
 }
 
 /** Relative luminance of an `rgb(…)`/`rgba(…)` colour; used to tell a light page from a dark one. */

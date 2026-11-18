@@ -58,6 +58,7 @@ The value is converted by an `AttributeCodec<T>`. The built-in ones:
 | `BooleanAttributeCodec` | `Boolean` | presence, like `hidden` — `<x flagged>` and `<x flagged="false">` are both `true`; `true` writes a bare attribute, `false` removes it |
 | `IntAttributeCodec` | `Int` | `toIntOrNull`; anything else falls back to `default` (or `0`) |
 | `DoubleAttributeCodec` | `Double` | `toDoubleOrNull`; falls back to `default` (or `0.0`) |
+| `TokenListAttributeCodec` | `List<String>` | space-separated tokens (`theme="primary small"`); deduplicated on write, an empty list removes the attribute |
 
 Anything else is an `AttributeCodec<T>` implementation — three functions, no serialization library:
 
@@ -81,6 +82,64 @@ enum class ActionKind { Primary, Secondary }
 
 var kind: ActionKind by attr(codec = enumAttributeCodec(ActionKind.entries), default = ActionKind.Primary)
 ```
+
+## Attributes on someone else's element
+
+`attr` belongs to *your own* component: it registers itself, reports changes and owns a default. A
+wrapper element from another repository (`createButton()` → `ButtonElement`) is an `external` class
+you cannot add members to, so for those — and for any element you do not want to give a delegate to —
+declare an `Attribute` instead and use the three functions that come with it.
+
+```kotlin
+object ThemeAttribute : Attribute<List<String>>("theme", TokenListAttributeCodec)
+object StepsAttribute : Attribute("steps", IntAttributeCodec)
+
+val button = createButton()
+button.writeAttribute(ThemeAttribute, listOf("primary", "small"))   // theme="primary small"
+assertEquals(listOf("primary", "small"), button.readAttribute(ThemeAttribute))
+
+button.setAttribute("steps", "12")                                  // written elsewhere
+assertEquals(12, button.readAttribute(StepsAttribute))
+```
+
+An `Attribute` is only a name plus a codec — **no registration, no observer, no default, no
+callback**. Reading goes through `getAttribute` every time, so a value written by another component,
+by devtools or by a raw `setAttribute` is visible on the next read; there is no cached copy that can
+drift. How to treat "missing" and what to do when it changes is the business of the element's owner,
+not of the definition, which is why both are absent here rather than defaulted like `attr`.
+
+There is deliberately **no `by` variant**: a wrapper element is an `external` class, so the only
+property you could declare on it is an extension property, and Kotlin does not delegate those. If a
+call site reads better as a property, write the two accessors there:
+
+```kotlin
+val ButtonElement.labelText: String
+    get() = readAttribute(LabelAttribute)
+    set(value) = writeAttribute(LabelAttribute, value)
+```
+
+### Token lists
+
+`TokenListAttributeCodec` covers the `classList` shape — attributes whose value is a set of
+space-separated words (`theme`, `aria-describedby`, `data-tags`). Write the list and it is
+normalised; write an empty list and the attribute is removed, so "no tokens" and "absent" are one
+state, exactly like an empty `class`.
+
+Mutating one token at a time reads better than handing over a whole list, so `tokens(attribute)`
+gives a small view over the attribute:
+
+```kotlin
+val tokens = button.tokens(ThemeAttribute)
+tokens.add("primary")        // theme="primary"
+tokens.toggle("small")       // theme="primary small"
+tokens.toggle("small")       // theme="primary"
+tokens.remove("primary")     // attribute removed
+tokens.clear()               // attribute removed
+```
+
+Every call reads and writes the attribute itself, in order: no in-memory set to keep in sync, no
+`DOMTokenList` exceptions for odd syntax (a malformed value simply is not a token), and
+`tokens.values` / `tokens.raw` show what the browser actually stores.
 
 ## `AttributeChange`
 

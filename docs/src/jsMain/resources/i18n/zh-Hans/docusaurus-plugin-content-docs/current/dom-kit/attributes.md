@@ -54,6 +54,7 @@ var titleText: String by attr("title") { change -> heading.textContent = change.
 | `BooleanAttributeCodec` | `Boolean` | 存在性语义，和 `hidden` 一样——`<x flagged>` 与 `<x flagged="false">` 都是 `true`；`true` 写成裸属性，`false` 删掉它 |
 | `IntAttributeCodec` | `Int` | `toIntOrNull`；否则回退到 `default`（或 `0`） |
 | `DoubleAttributeCodec` | `Double` | `toDoubleOrNull`；回退到 `default`（或 `0.0`） |
+| `TokenListAttributeCodec` | `List<String>` | 空格分隔的词列表（`theme="primary small"`）；写入时去重，空列表即删掉属性 |
 
 其它类型就是一个 `AttributeCodec<T>` 实现——三个函数，不引序列化库：
 
@@ -76,6 +77,58 @@ enum class ActionKind { Primary, Secondary }
 
 var kind: ActionKind by attr(codec = enumAttributeCodec(ActionKind.entries), default = ActionKind.Primary)
 ```
+
+## 别人的元素：`Attribute` 加三个函数
+
+`attr` 是给**自己的组件**用的：它自己注册、上报变化、持有默认值。别人仓库 wrapper 出来的元素
+（`createButton()` → `ButtonElement`）是 `external` 类，你没法给它加成员，这种元素——以及任何你不想
+给委托的元素——改用 `Attribute` 声明，配三个函数读写。
+
+```kotlin
+object ThemeAttribute : Attribute<List<String>>("theme", TokenListAttributeCodec)
+object StepsAttribute : Attribute("steps", IntAttributeCodec)
+
+val button = createButton()
+button.writeAttribute(ThemeAttribute, listOf("primary", "small"))   // theme="primary small"
+assertEquals(listOf("primary", "small"), button.readAttribute(ThemeAttribute))
+
+button.setAttribute("steps", "12")                                  // 别处写的
+assertEquals(12, button.readAttribute(StepsAttribute))
+```
+
+`Attribute` 只有名字和编解码器：**不注册、不监听、没有默认值、没有回调**。每次读都真的走
+`getAttribute`，所以别的组件、devtools、裸 `setAttribute` 写进去的值下一次读就能看到——不存在可能跑偏
+的缓存副本。「缺失时算什么」「变化了做什么」是元素主人的业务，不是定义的事，所以这两项在这里没有，而不是
+像 `attr` 那样给默认。
+
+这里**故意没有 `by` 版本**：wrapper 元素是 `external` 类，能在它上面声明的东西只有扩展属性，而 Kotlin
+的扩展属性不能委托。某个调用点确实更适合属性写法，就在那里自己写两个访问器：
+
+```kotlin
+val ButtonElement.labelText: String
+    get() = readAttribute(LabelAttribute)
+    set(value) = writeAttribute(LabelAttribute, value)
+```
+
+### 词列表（token list）
+
+`TokenListAttributeCodec` 对应 `classList` 那种形态——取值是一组空格分隔的词（`theme`、
+`aria-describedby`、`data-tags`）。写整个列表会规整化：去空白、去重、保持顺序；写空列表就删掉属性，
+于是「没有词」和「属性缺失」是同一个状态，跟空 `class` 一样。
+
+一次只改一个词比交出一整个列表顺手，`tokens(attribute)` 给出一层小视图：
+
+```kotlin
+val tokens = button.tokens(ThemeAttribute)
+tokens.add("primary")        // theme="primary"
+tokens.toggle("small")       // theme="primary small"
+tokens.toggle("small")       // theme="primary"
+tokens.remove("primary")     // 属性被删掉
+tokens.clear()               // 属性被删掉
+```
+
+每次调用都直接读写属性本身（按属性里的顺序）：没有要在内存里同步的集合，也不会像 `DOMTokenList` 那样对
+异常语法抛错（不合法的片段就只是不算一个词）；`tokens.values` / `tokens.raw` 表示浏览器里真实存的内容。
 
 ## `AttributeChange`
 

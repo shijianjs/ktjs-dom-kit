@@ -1,21 +1,28 @@
 package io.github.shijianjs.ktjs.dom.demo.page.attribute
 
+import io.github.shijianjs.ktjs.dom.attribute.Attribute
+import io.github.shijianjs.ktjs.dom.attribute.readAttribute
+import io.github.shijianjs.ktjs.dom.attribute.tokens
+import io.github.shijianjs.ktjs.dom.attribute.writeAttribute
+import io.github.shijianjs.ktjs.dom.attribute.types.TokenListAttributeCodec
 import io.github.shijianjs.ktjs.demo.i18n.Binder
 import io.github.shijianjs.ktjs.demo.i18n.Lang
 import io.github.shijianjs.ktjs.demo.i18n.Langs
+import io.github.shijianjs.ktjs.demo.i18n.Translations
+import io.github.shijianjs.ktjs.demo.i18n.texts
 import io.github.shijianjs.ktjs.demo.nav.Page
 import io.github.shijianjs.ktjs.demo.page.Readout
-import io.github.shijianjs.ktjs.demo.i18n.Translations
+import io.github.shijianjs.ktjs.demo.page.SectionBlock
 import io.github.shijianjs.ktjs.demo.page.codeText
 import io.github.shijianjs.ktjs.demo.page.exampleBox
 import io.github.shijianjs.ktjs.demo.page.newPage
 import io.github.shijianjs.ktjs.demo.page.paragraph
 import io.github.shijianjs.ktjs.demo.page.row
 import io.github.shijianjs.ktjs.demo.page.sectionBlock
-import io.github.shijianjs.ktjs.demo.i18n.texts
 import io.github.shijianjs.ktjs.vaadin.themablemixin.addTheme
 import io.github.shijianjs.ktjs.vaadin.button.createButton
 import web.dom.clickEvent
+import web.html.HTMLElement
 import web.events.addHandler
 
 private class AttributeTexts(
@@ -29,6 +36,11 @@ private class AttributeTexts(
     val declaredHeading: String,
     val declaredHint: String,
     val declaredNote: String,
+    val wrapperHeading: String,
+    val wrapperHint: String,
+    val wrapperToggleLabel: String,
+    val wrapperRawLabel: String,
+    val wrapperNote: String,
 )
 
 private val attributeEnglish: AttributeTexts = AttributeTexts(
@@ -43,6 +55,13 @@ private val attributeEnglish: AttributeTexts = AttributeTexts(
     declaredHeading = "Declared once",
     declaredHint = "The default, the codec and the reaction to a change all live in one delegation.",
     declaredNote = "A different codec changes the property type, not the attribute name; nothing else in the component moves.",
+    wrapperHeading = "Someone else's element",
+    wrapperHint = "A wrapper element is an external class: declare an Attribute next to it and read or write the " +
+        "attribute through functions.",
+    wrapperToggleLabel = "toggle primary",
+    wrapperRawLabel = "write messy text",
+    wrapperNote = "The attribute is the state. Write it from anywhere — here with a deliberately messy " +
+        "setAttribute — and the next read already sees the normalised list.",
 )
 
 private val attributeChinese: AttributeTexts = AttributeTexts(
@@ -56,6 +75,11 @@ private val attributeChinese: AttributeTexts = AttributeTexts(
     declaredHeading = "只声明一处",
     declaredHint = "默认值、codec 和变化反应都在同一个委托里。",
     declaredNote = "换一个 codec 只改变属性类型，不改变属性名，组件里其他地方一行都不用动。",
+    wrapperHeading = "别人的元素",
+    wrapperHint = "wrapper 元素是 external 类：在它旁边声明一个 Attribute，再用函数读写属性。",
+    wrapperToggleLabel = "切换 primary",
+    wrapperRawLabel = "写入脏文本",
+    wrapperNote = "属性就是状态。谁都能写——这里故意用 setAttribute 写一段脏文本，下一次读取已经是规整的列表。",
 )
 
 private val attributeTexts: Translations<AttributeTexts> = texts(
@@ -75,6 +99,11 @@ internal class AttributePage : Page {
     private val badge = newStepBadge()
 
     private val readout = Readout()
+
+    /** The attribute this page toggles on a wrapper element; a plain definition, no registration. */
+    private val Theme = Attribute("theme", TokenListAttributeCodec)
+
+    private val wrapperReadout = Readout()
 
     override val node get() = page
 
@@ -111,7 +140,9 @@ internal class AttributePage : Page {
             exampleBox(null, row(codeText("var step: Int by attr(default = 1) { change -> /* repaint */ }")), texts.bind(paragraph(), { it.declaredNote })),
         )
 
-        page.body.append(demo.root, declared.root)
+        val wrapper = wrapperSection()
+
+        page.body.append(demo.root, declared.root, wrapper.root)
         showValue()
     }
 
@@ -123,6 +154,49 @@ internal class AttributePage : Page {
     }
 
     private fun showValue() {
-        readout.set("getter reads step = ${badge.step}, attribute says \"${badge.getAttribute("step")}\"")
+        val raw = badge.getAttribute("step")
+        readout.set("getter reads step = ${badge.step}, attribute says ${if (raw == null) "missing" else "\"$raw\""}")
+    }
+
+    /**
+     * A `vaadin-button` from the wrapper repository: an `external` class the kit has no say over.
+     * The attribute is still the whole state — one button toggles a token through [TokenList], the
+     * other writes messy text with a raw `setAttribute`, and both land in the same readout.
+     */
+    private fun wrapperSection(): SectionBlock {
+        val section = sectionBlock()
+        texts.bind(section.title, { it.wrapperHeading })
+        texts.bind(section.hint, { it.wrapperHint })
+
+        val target = createButton().apply { textContent = "vaadin-button" }
+
+        val toggle = texts.bind(createButton(), { it.wrapperToggleLabel }).addTheme("primary")
+        toggle.clickEvent.addHandler {
+            target.tokens(Theme).toggle("primary")
+            showWrapper(target)
+        }
+
+        val raw = texts.bind(createButton(), { it.wrapperRawLabel }).addTheme("tertiary")
+        raw.clickEvent.addHandler {
+            target.setAttribute("theme", "  primary   small primary ")
+            showWrapper(target)
+        }
+
+        section.body.append(
+            exampleBox(
+                null,
+                row(target, toggle, raw),
+                texts.bind(paragraph(), { it.wrapperNote }),
+                wrapperReadout.root,
+            ),
+        )
+        showWrapper(target)
+        return section
+    }
+
+    private fun showWrapper(target: HTMLElement) {
+        val tokens = target.tokens(Theme).values
+        val raw = target.getAttribute("theme")
+        wrapperReadout.set("tokens = $tokens, attribute = ${if (raw == null) "missing" else "\"$raw\""}")
     }
 }
