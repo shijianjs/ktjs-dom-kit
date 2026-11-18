@@ -33,7 +33,7 @@ fun interface AttributeWatch {
  * ```
  */
 fun HTMLElement.observeAttribute(name: String, onChange: (String?) -> Unit): AttributeWatch =
-    observeRawAttribute(this, name) { raw, _ -> onChange(raw) }
+    observeRawAttribute(this, name) { raw -> onChange(raw) }
 
 /**
  * The shared implementation: one `MutationObserver` per subscription, filtered to a single attribute.
@@ -45,7 +45,7 @@ fun HTMLElement.observeAttribute(name: String, onChange: (String?) -> Unit): Att
 internal fun observeRawAttribute(
     element: HTMLElement,
     name: String,
-    onChange: (raw: String?, oldRaw: String?) -> Unit,
+    onChange: (raw: String?) -> Unit,
 ): AttributeWatch {
     var last: String? = element.getAttribute(name)
     var reported = false
@@ -53,10 +53,9 @@ internal fun observeRawAttribute(
     val observer = MutationObserver { _, _ ->
         val current = element.getAttribute(name)
         if (reported && current == last) return@MutationObserver
-        val previous = if (reported) last else current
         last = current
         reported = true
-        onChange(current, previous)
+        onChange(current)
     }
     observer.observe(
         element,

@@ -1,12 +1,12 @@
 package io.github.shijianjs.ktjs.dom.attribute
 
-import io.github.shijianjs.ktjs.dom.element.createElement
 import js.array.jsArrayOf
 import js.reflect.unsafeCast
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
+import web.dom.document
 import web.html.HTMLElement
 import web.html.HtmlTagName
 
@@ -41,7 +41,7 @@ private val HTMLElement.items: JsonAttribute get() = jsonAttribute("items")
  */
 class WrapperAttributeCapabilityTest {
 
-    private fun element(): HTMLElement = HtmlTagName.div.createElement()
+    private fun element(): HTMLElement = document.createElement(HtmlTagName.div)
 
     @Test
     fun anAbsentAttributeIsNotAnEmptyOne() {

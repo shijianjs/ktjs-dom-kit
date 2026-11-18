@@ -77,28 +77,25 @@ class Attribute<T>(
     }
 
     /**
-     * Calls [onChange] whenever this attribute really changes, including writes from markup,
-     * devtools or another component — the reactivity `attr` gives the element's owner, without
-     * owning the element.
+     * Calls [onChange] with the new value whenever this attribute really changes, including writes
+     * from markup, devtools or another component — the reactivity `attr` gives the element's owner,
+     * without owning the element.
      *
      * Only real changes are reported: writing the same decoded value again, or a write that decodes
-     * to the same value (`"3"` → `"03"` on an `Int` attribute), does not fire. The first callback
-     * comes with `oldValue == newValue` and `oldRaw == newRaw`, matching the first report of `attr`.
+     * to the same value (`"3"` → `"03"` on an `Int` attribute), does not fire. A removal reports
+     * [AttributeCodec.absent].
+     *
+     * The callback gets the new value only. The old one and the raw text belong to `AttributeChange`,
+     * which is part of the *authoring* side of the kit (the `attr` delegate), not of the wrapper
+     * layer — a wrapper reacts to what the element is now. Use [observeAttribute] when the raw text
+     * matters.
      *
      * The returned watch holds a live `MutationObserver`: disconnect it when it is no longer needed
      * (normally in the owning component's `disconnectedCallback`).
      */
-    fun observe(onChange: (AttributeChange<T>) -> Unit): AttributeWatch =
-        observeRawAttribute(element, name) { raw, oldRaw ->
-            onChange(
-                AttributeChange(
-                    name = name,
-                    oldValue = oldRaw?.let(codec::decode) ?: codec.absent,
-                    newValue = raw?.let(codec::decode) ?: codec.absent,
-                    oldRaw = oldRaw,
-                    newRaw = raw,
-                ),
-            )
+    fun observe(onChange: (T) -> Unit): AttributeWatch =
+        observeRawAttribute(element, name) { raw ->
+            onChange(raw?.let(codec::decode) ?: codec.absent)
         }
 
     /** Removes the attribute. */

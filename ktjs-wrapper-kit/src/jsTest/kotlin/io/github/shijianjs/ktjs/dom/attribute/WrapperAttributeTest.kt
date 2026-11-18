@@ -1,11 +1,11 @@
 package io.github.shijianjs.ktjs.dom.attribute
 
-import io.github.shijianjs.ktjs.dom.element.createElement
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import web.dom.document
 import web.html.HTMLElement
 import web.html.HtmlTagName
 
@@ -25,7 +25,7 @@ private val HTMLElement.tags: TokenListAttribute get() = tokenListAttribute("dat
  */
 class WrapperAttributeTest {
 
-    private fun element(): HTMLElement = HtmlTagName.div.createElement()
+    private fun element(): HTMLElement = document.createElement(HtmlTagName.div)
 
     @Test
     fun anAttributeReadsAndWritesTheElement() {
