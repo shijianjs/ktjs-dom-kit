@@ -6,6 +6,9 @@ import io.github.shijianjs.ktjs.demo.Theme
 import io.github.shijianjs.ktjs.demo.ThemeMode
 import io.github.shijianjs.ktjs.vaadin.themablemixin.addTheme
 import io.github.shijianjs.ktjs.vaadin.themablemixin.setTheme
+import io.github.shijianjs.ktjs.vaadin.theme.HorizontalLayoutVariants
+import io.github.shijianjs.ktjs.vaadin.theme.MenuBarVariants
+import io.github.shijianjs.ktjs.vaadin.theme.VerticalLayoutVariants
 import io.github.shijianjs.ktjs.demo.i18n.Lang
 import io.github.shijianjs.ktjs.demo.i18n.LanguageState
 import io.github.shijianjs.ktjs.demo.i18n.SiteTexts
@@ -117,12 +120,12 @@ class DemoShell : CustomElementAdapter() {
 
     /** Left half of the navbar: toggle, optional mark, title, version and breadcrumbs on one line. */
     private val navbarStart: HorizontalLayoutElement = createHorizontalLayout {
-        addTheme("spacing")
+        addTheme(HorizontalLayoutVariants.spacing)
         classList.add(SHELL_TOPBAR_START, LumoUtility.AlignItems.CENTER)
     }
 
     private val navbar: HorizontalLayoutElement = createHorizontalLayout {
-        addTheme("spacing")
+        addTheme(HorizontalLayoutVariants.spacing)
         classList.add(SHELL_TOPBAR, LumoUtility.AlignItems.CENTER, LumoUtility.JustifyContent.BETWEEN)
         setAttribute("slot", "navbar")
     }
@@ -134,7 +137,7 @@ class DemoShell : CustomElementAdapter() {
     private val crumbPage: BreadcrumbsItemElement = createBreadcrumbsItem()
 
     private val actions: HorizontalLayoutElement = createHorizontalLayout {
-        addTheme("spacing")
+        addTheme(HorizontalLayoutVariants.spacing)
         classList.add(SHELL_ACTIONS, LumoUtility.AlignItems.CENTER)
     }
 
@@ -142,13 +145,13 @@ class DemoShell : CustomElementAdapter() {
      * Links are a menu, not a row of anchors: the site's own pages, the API reference and the
      * repository are three destinations of the same kind.
      */
-    private val docsMenu: MenuBarElement = createMenuBar { addTheme("dropdown-indicators") }
+    private val docsMenu: MenuBarElement = createMenuBar { addTheme(MenuBarVariants.dropdownIndicators) }
 
     /** One entry per [Lang]; the label of a language is always that language's own name. */
-    private val languageMenu: MenuBarElement = createMenuBar { addTheme("dropdown-indicators") }
+    private val languageMenu: MenuBarElement = createMenuBar { addTheme(MenuBarVariants.dropdownIndicators) }
 
     /** Light / dark / follow-the-browser. */
-    private val themeMenu: MenuBarElement = createMenuBar { addTheme("dropdown-indicators") }
+    private val themeMenu: MenuBarElement = createMenuBar { addTheme(MenuBarVariants.dropdownIndicators) }
 
     /**
      * The whole left column is one `vaadin-side-nav`, the component Vaadin builds for a drawer:
@@ -157,7 +160,9 @@ class DemoShell : CustomElementAdapter() {
      */
     private val sideNav = createSideNav()
 
-    private val content: VerticalLayoutElement = createVerticalLayout { setTheme("padding", "spacing") }
+    private val content: VerticalLayoutElement = createVerticalLayout {
+        setTheme(VerticalLayoutVariants.padding, VerticalLayoutVariants.spacing)
+    }
 
     private lateinit var catalog: Catalog
 

@@ -1,11 +1,12 @@
 package io.github.shijianjs.ktjs.demo.page
 
 import io.github.shijianjs.ktjs.demo.RESET
-import io.github.shijianjs.ktjs.vaadin.themablemixin.addTheme
 import io.github.shijianjs.ktjs.dom.element.createElement
 import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementAdapter
 import io.github.shijianjs.ktjs.dom.webcomponent.attachStyledShadow
 import io.github.shijianjs.ktjs.dom.webcomponent.defineIfMissing
+import io.github.shijianjs.ktjs.vaadin.themablemixin.addTheme
+import io.github.shijianjs.ktjs.vaadin.theme.VerticalLayoutVariants
 import io.github.shijianjs.ktjs.vaadin.verticallayout.VerticalLayoutElement
 import io.github.shijianjs.ktjs.vaadin.verticallayout.createVerticalLayout
 import web.components.CustomElementReference
@@ -43,7 +44,7 @@ class DemoPage : CustomElementAdapter() {
      * up touching (a card's bottom edge right against the next section's title). The gap belongs to the
      * container, so a page does not have to put a margin on every section it creates.
      */
-    val body: VerticalLayoutElement = createVerticalLayout { addTheme("spacing") }
+    val body: VerticalLayoutElement = createVerticalLayout { addTheme(VerticalLayoutVariants.spacing) }
 
     init {
         attachStyledShadow(RESET, PAGE_SHEET).append(titleElement, summaryElement, linksElement, body)

@@ -14,8 +14,9 @@ import io.github.shijianjs.ktjs.demo.page.paragraph
 import io.github.shijianjs.ktjs.demo.page.row
 import io.github.shijianjs.ktjs.demo.page.sectionBlock
 import io.github.shijianjs.ktjs.demo.i18n.texts
-import io.github.shijianjs.ktjs.vaadin.themablemixin.addTheme
 import io.github.shijianjs.ktjs.vaadin.button.createButton
+import io.github.shijianjs.ktjs.vaadin.themablemixin.addTheme
+import io.github.shijianjs.ktjs.vaadin.theme.ButtonVariants
 import web.dom.clickEvent
 import web.events.addHandler
 import web.html.HTMLElement
@@ -102,7 +103,7 @@ internal class ElementsPage : Page {
         texts.bind(collection.title, { it.collectionHeading })
         texts.bind(collection.hint, { it.collectionHint })
 
-        val addButton = texts.bind(createButton(), { it.addLabel }).addTheme("primary")
+        val addButton = texts.bind(createButton(), { it.addLabel }).addTheme(ButtonVariants.primary)
         addButton.clickEvent.addHandler { appendEntry() }
 
         collection.body.append(exampleBox(null, addButton, list, texts.bind(paragraph(), { it.collectionNote })))

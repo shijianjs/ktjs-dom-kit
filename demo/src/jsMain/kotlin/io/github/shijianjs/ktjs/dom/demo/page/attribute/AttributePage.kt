@@ -18,6 +18,8 @@ import io.github.shijianjs.ktjs.dom.demo.wrapper.themeAttr
 import io.github.shijianjs.ktjs.vaadin.button.createButton
 import io.github.shijianjs.ktjs.vaadin.themablemixin.ThemePropertyMixin
 import io.github.shijianjs.ktjs.vaadin.themablemixin.addTheme
+import io.github.shijianjs.ktjs.vaadin.theme.ButtonVariants
+import io.github.shijianjs.ktjs.vaadin.theme.name
 import web.dom.clickEvent
 import web.events.addHandler
 
@@ -105,13 +107,13 @@ internal class AttributePage : Page {
         texts.bind(demo.title, { it.demoHeading })
         texts.bind(demo.hint, { it.demoHint })
 
-        val increment = texts.bind(createButton(), { it.incrementLabel }).addTheme("primary")
+        val increment = texts.bind(createButton(), { it.incrementLabel }).addTheme(ButtonVariants.primary)
         increment.clickEvent.addHandler {
             badge.step += 1
             showValue()
         }
 
-        val external = texts.bind(createButton(), { it.externalLabel }).addTheme("tertiary")
+        val external = texts.bind(createButton(), { it.externalLabel }).addTheme(ButtonVariants.tertiary)
         external.clickEvent.addHandler {
             badge.setAttribute("step", "10")
             showValue()
@@ -164,13 +166,13 @@ internal class AttributePage : Page {
 
         val target = createButton().apply { textContent = "vaadin-button" }
 
-        val toggle = texts.bind(createButton(), { it.wrapperToggleLabel }).addTheme("primary")
+        val toggle = texts.bind(createButton(), { it.wrapperToggleLabel }).addTheme(ButtonVariants.primary)
         toggle.clickEvent.addHandler {
-            target.themeAttr.toggle("primary")
+            target.themeAttr.toggle(ButtonVariants.primary.name)
             showWrapper(target)
         }
 
-        val raw = texts.bind(createButton(), { it.wrapperRawLabel }).addTheme("tertiary")
+        val raw = texts.bind(createButton(), { it.wrapperRawLabel }).addTheme(ButtonVariants.tertiary)
         raw.clickEvent.addHandler {
             target.setAttribute("theme", "  primary   small primary ")
             showWrapper(target)

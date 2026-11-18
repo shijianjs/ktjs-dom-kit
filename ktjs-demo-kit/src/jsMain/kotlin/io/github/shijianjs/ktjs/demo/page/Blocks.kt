@@ -1,12 +1,14 @@
 package io.github.shijianjs.ktjs.demo.page
 
 import io.github.shijianjs.ktjs.demo.Palette
-import io.github.shijianjs.ktjs.vaadin.themablemixin.addTheme
 import io.github.shijianjs.ktjs.dom.element.createElement
 import io.github.shijianjs.ktjs.vaadin.card.CardElement
 import io.github.shijianjs.ktjs.vaadin.card.createCard
 import io.github.shijianjs.ktjs.vaadin.horizontallayout.HorizontalLayoutElement
 import io.github.shijianjs.ktjs.vaadin.horizontallayout.createHorizontalLayout
+import io.github.shijianjs.ktjs.vaadin.themablemixin.addTheme
+import io.github.shijianjs.ktjs.vaadin.theme.HorizontalLayoutVariants
+import io.github.shijianjs.ktjs.vaadin.theme.VerticalLayoutVariants
 import io.github.shijianjs.ktjs.vaadin.verticallayout.VerticalLayoutElement
 import io.github.shijianjs.ktjs.vaadin.verticallayout.createVerticalLayout
 import web.dom.Node
@@ -68,7 +70,7 @@ fun bulletList(items: List<String>): HTMLElement = HtmlTagName.ul.createElement 
 
 /** A horizontal group: the Vaadin layout supplies the gap, the site sheet centres the items. */
 fun row(vararg children: Node): HorizontalLayoutElement {
-    val layout = createHorizontalLayout { addTheme("spacing") }
+    val layout = createHorizontalLayout { addTheme(HorizontalLayoutVariants.spacing) }
     layout.classList.add(ROW)
     if (children.isNotEmpty()) layout.append(*children)
     return layout
@@ -76,7 +78,7 @@ fun row(vararg children: Node): HorizontalLayoutElement {
 
 /** A vertical group: the Vaadin layout supplies the gap. */
 fun col(vararg children: Node): VerticalLayoutElement {
-    val layout = createVerticalLayout { addTheme("spacing") }
+    val layout = createVerticalLayout { addTheme(VerticalLayoutVariants.spacing) }
     if (children.isNotEmpty()) layout.append(*children)
     return layout
 }
@@ -115,7 +117,7 @@ class SectionBlock(
 fun sectionBlock(): SectionBlock {
     val title = HtmlTagName.h2.createElement { classList.add(SECTION_TITLE) }
     val hint = HtmlTagName.p.createElement { classList.add(SECTION_HINT) }
-    val body = createVerticalLayout { addTheme("spacing") }
+    val body = createVerticalLayout { addTheme(VerticalLayoutVariants.spacing) }
     // Title, hint and body sit tight; the sheet supplies their margins, the body keeps the component's
     // spacing between its paragraphs and examples.
     val root = createVerticalLayout()
