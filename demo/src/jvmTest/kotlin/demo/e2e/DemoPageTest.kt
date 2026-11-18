@@ -414,7 +414,9 @@ class DemoPageTest(private val browser: Browser) {
     @Test
     fun `a wrapper element is driven by an Attribute and its token list`() {
         val page = open("#/attributes")
-        val readout = page.locator("ktjs-demo-page .readout").last()
+        // Third section: the wrapper element and its `theme` token list. (The fourth section is the
+        // typed one, so the readout is located inside the section rather than taken as `.last()`.)
+        val readout = page.locator("ktjs-demo-page .section").nth(2).locator(".readout").last()
 
         page.locator("vaadin-button:text-is('toggle primary')").click()
         val added = readout.textContent().orEmpty()

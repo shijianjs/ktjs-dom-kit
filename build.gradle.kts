@@ -31,7 +31,7 @@ val publishedPrefix = "ktjs-"
 // Libraries that wrap no npm package have no upstream version to follow, so they carry a
 // hand-written semantic version in their own build script instead of `{npm version}-kt.{revision}`.
 // Everything else derives its version from package.json and wrapper-revisions.properties.
-val semanticModules = setOf("ktjs-dom-kit", "ktjs-demo-kit")
+val semanticModules = setOf("ktjs-dom-kit", "ktjs-wrapper-kit", "ktjs-demo-kit")
 
 fun isPublished(module: String): Boolean = module.startsWith(publishedPrefix)
 

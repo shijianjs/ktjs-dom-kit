@@ -21,10 +21,20 @@
 模块、以 Maven 构件命名，构建按 `ktjs-` 前缀自动收集发布、Dokka 与版本报表。派生自
 [`shijianjs/ktjs-wrapper-template`](https://github.com/shijianjs/ktjs-wrapper-template)，通用约定保持同步。
 
-- `ktjs-dom-kit`：发布模块，也是本仓库的第一个库。它不包装 npm 包，版本是手写的语义版本 `0.1.0`（见
-  `semanticModules`）。内容：`CustomElementAdapter`、`attr` 委托、shadow root 辅助、`cssSheet { … }`、
-  `loadjs` 封装。包按关注点分：`dom.element`、`dom.webcomponent`、`dom.attribute`（编解码器在
-  `dom.attribute.types`）、`dom.css`（写样式表的语法糖在 `dom.css.dsl`）、`dom.loadjs`。
+- `ktjs-dom-kit`：发布模块，本仓库的第一个库。它不包装 npm 包，版本是手写的语义版本 `0.1.0`（见
+  `semanticModules`）。内容是**页面侧**的那一半：`cssSheet { … }`（经 `@emotion/serialize` + `stylis`）、
+  `loadjs` 封装。包按关注点分：`dom.css`（写样式表的语法糖在 `dom.css.dsl`）、`dom.loadjs`。它用
+  `api(project(":ktjs-wrapper-kit"))` 把 wrapper 那一半也交给页面代码，所以对外 API 仍是完整的一份。
+- `ktjs-wrapper-kit`：发布模块，**wrapper 侧**的那一半，也是各 wrapper 库（`ktjs-vaadin`、`ktjs-iconify`、
+  `ktjs-echarts` …）唯一该依赖的 DOM 库。内容：`dom.attribute`（`Attribute`、`TokenListAttribute`、
+  `JsonAttribute`、`AttributeWatch`、编解码器在 `dom.attribute.types`，`attr` 委托与 `CustomElementAdapter`
+  同在这里）、`dom.element`、`dom.webcomponent`。它**没有任何 npm 依赖**（只有 `kotlin-browser` /
+  `kotlin-csstype`），这正是拆分的理由：一个只要 `Card.headerAttr` 的消费方不该被拖进 emotion 与 loadjs。
+  包名与拆分前逐字相同，所以这是「构件拆分」不是「API 改名」。
+  - `Attribute<T>` 覆盖标量与可选：`valueOrNull` / `setOrClear` 区分「缺失」与「空串」，`literalAttribute`
+    把封闭词表（wrapper 生成的 `*Variants` 表）变成编译期检查，`jsonAttribute` 处理列表型属性
+    （`items`、`option`），`observe` 让不拥有该元素的调用方也能收到变化（`MutationObserver`，用完
+    `disconnect()`）。
 - **它曾经在 ktjs-docusaurus 仓库里**（2026-11-13 搬过来）。现在那个站点通过 Maven 坐标依赖它，不是
   project 依赖：两边各自发布，所以「站点的文档用站点框架写」不构成环。改动 API 后要发版，并在
   ktjs-docusaurus 的 `gradle.properties` 里把 `ktjs-dom-kit.version` 抬上去。

@@ -48,6 +48,10 @@ kotlin {
 
     sourceSets {
         jsMain.dependencies {
+            // The attribute layer, element helpers and the custom-element base live in
+            // `ktjs-wrapper-kit` so wrapper libraries can use them without pulling emotion/loadjs.
+            // `api`: this module is meant to hand out the whole DOM API to page code.
+            api(project(":ktjs-wrapper-kit"))
             // `api`: the public surface exposes kotlin-browser types (`HTMLElement`, `Element`, …)
             // and kotlin-csstype's `Properties`, the typed view of an element's inline style.
             api("org.jetbrains.kotlin-wrappers:kotlin-browser:2026.11.1")

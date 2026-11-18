@@ -1,6 +1,7 @@
 package demo.e2e
 
 import com.microsoft.playwright.Browser
+import com.microsoft.playwright.Locator
 import com.microsoft.playwright.Page
 import com.microsoft.playwright.junit.UsePlaywright
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -62,6 +63,24 @@ class ScreenshotTest(private val browser: Browser) {
         val file = results.resolve("$name.png").toAbsolutePath()
         page.screenshot(Page.ScreenshotOptions().setPath(file))
         return file
+    }
+
+    /**
+     * Waits until [locator]'s text contains [text].
+     *
+     * The pages repaint from `MutationObserver` callbacks, which the browser delivers on a microtask;
+     * reading the text once right after a click would measure timing instead of behaviour.
+     */
+    private fun waitForText(locator: Locator, text: String, timeoutMs: Long = 5_000) {
+        val deadline = System.currentTimeMillis() + timeoutMs
+        while (true) {
+            val current = locator.textContent() ?: ""
+            if (current.contains(text)) return
+            if (System.currentTimeMillis() > deadline) {
+                throw AssertionError("'$text' never appeared; the section says: $current")
+            }
+            Thread.sleep(100)
+        }
     }
 
     private fun openMenu(page: Page, menu: String) {
@@ -217,12 +236,12 @@ class ScreenshotTest(private val browser: Browser) {
     @Test
     fun `the attributes page shows the wrapper section in both themes`() {
         val page = open("#/attributes")
-        // Third section: a wrapper element driven by an Attribute. Two rows of buttons must fit on one
-        // line, and the readout must sit under them, inside the same card.
+        // Three sections drove the attribute layer before the wrapper capabilities arrived; the
+        // fourth is the typed one (optional, literal vocabulary, subscription).
         assertEquals(
-            3,
+            4,
             page.locator("ktjs-demo-page .section").count(),
-            "the page carries three sections",
+            "the page carries four sections",
         )
         assertEquals(
             "vaadin-button",
@@ -236,6 +255,35 @@ class ScreenshotTest(private val browser: Browser) {
         page.keyboard().press("Escape")
         page.waitForTimeout(500.0)
         shoot(page, "dark-attributes")
+        page.close()
+    }
+
+    /**
+     * The typed section is the wrapper capability in one screen: an absent attribute reads as `null`
+     * (not `""`), a literal attribute answers from its table, and the subscription repaints — which
+     * only happens when the browser's `MutationObserver` really delivered a change.
+     */
+    @Test
+    fun `the typed section distinguishes null, vocabulary and subscriptions`() {
+        val page = open("#/attributes")
+        val section = page.locator("ktjs-demo-page .section").last()
+        val initial = section.textContent()
+        assertTrue(initial.contains("aria-label = null"), "an absent attribute must read as null: $initial")
+        assertTrue(initial.contains("data-density = compact"), "the first vocabulary entry is the absent value: $initial")
+        assertTrue(initial.contains("observed = 0"), "nothing was written yet: $initial")
+
+        // Buttons of the typed section: 0 is the target, 1 sets the label, 2 clears it, 3 sets the density.
+        section.locator("vaadin-button").nth(1).click()
+        waitForText(section, "aria-label = \"Close\"")
+        waitForText(section, "observed = 1")
+
+        section.locator("vaadin-button").nth(3).click()
+        waitForText(section, "data-density = comfortable")
+
+        section.locator("vaadin-button").nth(2).click()
+        waitForText(section, "aria-label = null")
+        waitForText(section, "observed = 2")
+
         page.close()
     }
 

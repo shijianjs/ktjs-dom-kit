@@ -1,5 +1,9 @@
 package io.github.shijianjs.ktjs.dom.demo.page.attribute
 
+import io.github.shijianjs.ktjs.dom.attribute.Attribute
+import io.github.shijianjs.ktjs.dom.attribute.AttributeWatch
+import io.github.shijianjs.ktjs.dom.attribute.attribute
+import io.github.shijianjs.ktjs.dom.attribute.literalAttribute
 import io.github.shijianjs.ktjs.demo.i18n.Binder
 import io.github.shijianjs.ktjs.demo.i18n.Lang
 import io.github.shijianjs.ktjs.demo.i18n.Langs
@@ -22,6 +26,8 @@ import io.github.shijianjs.ktjs.vaadin.theme.ButtonVariants
 import io.github.shijianjs.ktjs.vaadin.theme.name
 import web.dom.clickEvent
 import web.events.addHandler
+import web.html.HTMLElement
+import js.reflect.unsafeCast
 
 private class AttributeTexts(
     val title: String,
@@ -39,6 +45,12 @@ private class AttributeTexts(
     val wrapperToggleLabel: String,
     val wrapperRawLabel: String,
     val wrapperNote: String,
+    val typedHeading: String,
+    val typedHint: String,
+    val labelSetLabel: String,
+    val labelClearLabel: String,
+    val densityLabel: String,
+    val typedNote: String,
 )
 
 private val attributeEnglish: AttributeTexts = AttributeTexts(
@@ -60,6 +72,14 @@ private val attributeEnglish: AttributeTexts = AttributeTexts(
     wrapperRawLabel = "write messy text",
     wrapperNote = "The attribute is the state. Write it from anywhere — here with a deliberately messy " +
         "setAttribute — and the next read already sees the normalised list.",
+    typedHeading = "Values a wrapper actually needs",
+    typedHint = "An absent attribute is not an empty one, and a closed vocabulary beats a bare string.",
+    labelSetLabel = "label: Close",
+    labelClearLabel = "clear label",
+    densityLabel = "density: comfortable",
+    typedNote = "aria-label absent reads as null while \"\" stays \"\"; the density vocabulary comes " +
+        "from a table, so a value outside it cannot be compiled; and observe fires for the click and " +
+        "for any raw setAttribute alike.",
 )
 
 private val attributeChinese: AttributeTexts = AttributeTexts(
@@ -78,12 +98,39 @@ private val attributeChinese: AttributeTexts = AttributeTexts(
     wrapperToggleLabel = "切换 primary",
     wrapperRawLabel = "写入脏文本",
     wrapperNote = "属性就是状态。谁都能写——这里故意用 setAttribute 写一段脏文本，下一次读取已经是规整的列表。",
+    typedHeading = "wrapper 真正需要的取值能力",
+    typedHint = "属性缺失不等于空串，封闭词表也比裸字符串靠谱。",
+    labelSetLabel = "设置 label",
+    labelClearLabel = "清除 label",
+    densityLabel = "密度：comfortable",
+    typedNote = "aria-label 缺失读作 null，而 \"\" 仍然是 \"\"；密度词表来自一张表，表外取值根本编译不过；" +
+        "observe 对点击和任何裸 setAttribute 一视同仁。",
 )
 
 private val attributeTexts: Translations<AttributeTexts> = texts(
     Langs.EN to attributeEnglish,
     Langs.ZH_HANS to attributeChinese,
 )
+
+/** A wrapper's vocabulary: upstream literals are `sealed external interface` values, not strings. */
+private sealed external interface Density
+
+private fun Density(token: String): Density = token.unsafeCast<Density>()
+
+private object Densities {
+    val compact: Density = Density("compact")
+    val comfortable: Density = Density("comfortable")
+    val all: List<Density> = listOf(compact, comfortable)
+}
+
+private val Density.token: String get() = unsafeCast<String>()
+
+/** `aria-label` is optional on every wrapper element: absent must stay distinguishable from `""`. */
+private val HTMLElement.ariaLabelAttr: Attribute<String> get() = attribute("aria-label")
+
+/** The typed form of a literal attribute: `literalAttribute` rejects anything outside [Densities.all]. */
+private val HTMLElement.densityAttr: Attribute<Density>
+    get() = literalAttribute("data-density", Densities.all) { it.token }
 
 /**
  * `attr { }`: a property backed by an HTML attribute. The demo drives the same attribute through two
@@ -99,6 +146,14 @@ internal class AttributePage : Page {
     private val readout = Readout()
 
     private val wrapperReadout = Readout()
+
+    private val typedReadout = Readout()
+
+    /**
+     * The `aria-label` subscription of the typed section. It lives as long as the page, which is the
+     * lifetime of the element it watches, so it is held here instead of being disconnected.
+     */
+    private var typedWatch: AttributeWatch? = null
 
     override val node get() = page
 
@@ -137,7 +192,9 @@ internal class AttributePage : Page {
 
         val wrapper = wrapperSection()
 
-        page.body.append(demo.root, declared.root, wrapper.root)
+        val typed = typedSection()
+
+        page.body.append(demo.root, declared.root, wrapper.root, typed.root)
         showValue()
     }
 
@@ -194,5 +251,57 @@ internal class AttributePage : Page {
         val theme = target.themeAttr
         val raw = theme.raw
         wrapperReadout.set("theme = ${theme.values}, attribute = ${if (raw == null) "missing" else "\"$raw\""}")
+    }
+
+    /**
+     * The three things a wrapper needs on top of "read and write a string": an optional attribute that
+     * distinguishes absent from empty, a literal attribute whose values come from a table, and a
+     * subscription that reports writes the component did not make.
+     *
+     * The readout is repainted from the subscription itself, so the count only moves when the
+     * browser really delivered a change: `observe` is a `MutationObserver`, not a hook on the setter.
+     */
+    private fun typedSection(): SectionBlock {
+        val section = sectionBlock()
+        texts.bind(section.title, { it.typedHeading })
+        texts.bind(section.hint, { it.typedHint })
+
+        val target = createButton().apply { textContent = "vaadin-button" }
+        var observed = 0
+
+        typedWatch = target.ariaLabelAttr.observe {
+            observed += 1
+            showTyped(target, observed)
+        }
+
+        val setLabel = texts.bind(createButton(), { it.labelSetLabel }).addTheme(ButtonVariants.primary)
+        setLabel.clickEvent.addHandler { target.ariaLabelAttr.value = "Close" }
+
+        val clearLabel = texts.bind(createButton(), { it.labelClearLabel }).addTheme(ButtonVariants.tertiary)
+        clearLabel.clickEvent.addHandler { target.ariaLabelAttr.setOrClear(null) }
+
+        val density = texts.bind(createButton(), { it.densityLabel }).addTheme(ButtonVariants.tertiary)
+        density.clickEvent.addHandler {
+            target.densityAttr.value = Densities.comfortable
+            showTyped(target, observed)
+        }
+
+        section.body.append(
+            exampleBox(
+                null,
+                row(target, setLabel, clearLabel, density),
+                texts.bind(paragraph(), { it.typedNote }),
+                typedReadout.root,
+            ),
+        )
+        showTyped(target, observed)
+        return section
+    }
+
+    private fun showTyped(target: HTMLElement, observed: Int) {
+        val label = target.ariaLabelAttr.valueOrNull?.let { "\"$it\"" } ?: "null"
+        typedReadout.set(
+            "aria-label = $label, data-density = ${target.densityAttr.value.token}, observed = $observed",
+        )
     }
 }

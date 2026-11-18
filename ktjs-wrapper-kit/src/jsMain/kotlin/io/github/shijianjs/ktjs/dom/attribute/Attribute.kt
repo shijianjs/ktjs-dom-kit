@@ -3,6 +3,7 @@ package io.github.shijianjs.ktjs.dom.attribute
 import io.github.shijianjs.ktjs.dom.attribute.types.BooleanAttributeCodec
 import io.github.shijianjs.ktjs.dom.attribute.types.DoubleAttributeCodec
 import io.github.shijianjs.ktjs.dom.attribute.types.IntAttributeCodec
+import io.github.shijianjs.ktjs.dom.attribute.types.LiteralAttributeCodec
 import io.github.shijianjs.ktjs.dom.attribute.types.StringAttributeCodec
 import web.html.HTMLElement
 
@@ -29,8 +30,9 @@ import web.html.HTMLElement
  * devtools or a raw `setAttribute` is visible on the next read; and creating one costs nothing, which
  * is why the extension property can build one per access.
  *
- * What is deliberately *not* here: registration, observers, `default` and change callbacks. Those
- * belong to the element's owner (`attr`), not to the attribute. "Missing" reads as [AttributeCodec.absent].
+ * What is deliberately *not* here: registration, `default` and change callbacks that belong to an
+ * element's owner. Those are `attr`'s job. A wrapper gets the same reactivity from [observe] instead
+ * of a delegate, and the absent-versus-empty distinction from [valueOrNull] / [setOrClear].
  */
 class Attribute<T>(
     /** The element whose attribute this object reads and writes. */
@@ -45,13 +47,18 @@ class Attribute<T>(
     var value: T
         get() = element.getAttribute(name)?.let(codec::decode) ?: codec.absent
         set(value) {
-            val encoded = codec.encode(value)
-            if (encoded == null) {
-                element.removeAttribute(name)
-            } else {
-                element.setAttribute(name, encoded)
-            }
+            write(codec.encode(value))
         }
+
+    /**
+     * The current value, or `null` when the attribute is absent — **or** when its text is not
+     * something [codec] can read.
+     *
+     * Wrapper attributes are mostly optional, and absent is not the same as empty:
+     * `aria-label=""` and no `aria-label` are different states. [value] cannot express that (it
+     * answers [AttributeCodec.absent]), so the distinction lives here; pair it with [setOrClear].
+     */
+    val valueOrNull: T? get() = element.getAttribute(name)?.let(codec::decode)
 
     /** The attribute text exactly as the browser stores it, `null` when the attribute is absent. */
     val raw: String? get() = element.getAttribute(name)
@@ -59,9 +66,48 @@ class Attribute<T>(
     /** Whether the element carries the attribute at all. */
     val present: Boolean get() = element.hasAttribute(name)
 
+    /**
+     * Sets [value], or removes the attribute when it is `null`.
+     *
+     * The nullable counterpart of the [value] setter: `setOrClear(null)` is [clear], anything else is
+     * an ordinary write.
+     */
+    fun setOrClear(value: T?) {
+        if (value == null) clear() else this.value = value
+    }
+
+    /**
+     * Calls [onChange] whenever this attribute really changes, including writes from markup,
+     * devtools or another component — the reactivity `attr` gives the element's owner, without
+     * owning the element.
+     *
+     * Only real changes are reported: writing the same decoded value again, or a write that decodes
+     * to the same value (`"3"` → `"03"` on an `Int` attribute), does not fire. The first callback
+     * comes with `oldValue == newValue` and `oldRaw == newRaw`, matching the first report of `attr`.
+     *
+     * The returned watch holds a live `MutationObserver`: disconnect it when it is no longer needed
+     * (normally in the owning component's `disconnectedCallback`).
+     */
+    fun observe(onChange: (AttributeChange<T>) -> Unit): AttributeWatch =
+        observeRawAttribute(element, name) { raw, oldRaw ->
+            onChange(
+                AttributeChange(
+                    name = name,
+                    oldValue = oldRaw?.let(codec::decode) ?: codec.absent,
+                    newValue = raw?.let(codec::decode) ?: codec.absent,
+                    oldRaw = oldRaw,
+                    newRaw = raw,
+                ),
+            )
+        }
+
     /** Removes the attribute. */
     fun clear() {
         element.removeAttribute(name)
+    }
+
+    private fun write(encoded: String?) {
+        if (encoded == null) element.removeAttribute(name) else element.setAttribute(name, encoded)
     }
 }
 
@@ -79,6 +125,18 @@ fun HTMLElement.doubleAttribute(name: String): Attribute<Double> = Attribute(thi
 
 /** This element's attribute [name] read through an arbitrary [codec] (an enum, a timestamp, JSON …). */
 fun <T> HTMLElement.attribute(name: String, codec: AttributeCodec<T>): Attribute<T> = Attribute(this, name, codec)
+
+/**
+ * This element's attribute [name], limited to [values] — the typed form of a literal attribute like
+ * `slot="navbar"` or `orientation="horizontal"`.
+ *
+ * [token] is how each value spells itself in the markup; wrapper libraries pass the table they
+ * generate for their own vocabulary (`literalAttribute("theme", ButtonVariants.all, { it.name })`),
+ * which is what turns a typo into a compile error instead of a silently ignored string. Decoding is
+ * case-insensitive, and unknown text reads as the first value — see [LiteralAttributeCodec.absent].
+ */
+fun <T> HTMLElement.literalAttribute(name: String, values: List<T>, token: (T) -> String): Attribute<T> =
+    Attribute(this, name, LiteralAttributeCodec(values, token))
 
 /** This element's space-separated token attribute [name]; see [TokenListAttribute]. */
 fun HTMLElement.tokenListAttribute(name: String): TokenListAttribute = TokenListAttribute(this, name)
