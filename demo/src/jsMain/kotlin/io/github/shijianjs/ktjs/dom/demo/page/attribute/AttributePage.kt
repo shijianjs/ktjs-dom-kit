@@ -1,10 +1,6 @@
 package io.github.shijianjs.ktjs.dom.demo.page.attribute
 
-import io.github.shijianjs.ktjs.dom.attribute.Attribute
-import io.github.shijianjs.ktjs.dom.attribute.readAttribute
 import io.github.shijianjs.ktjs.dom.attribute.tokens
-import io.github.shijianjs.ktjs.dom.attribute.writeAttribute
-import io.github.shijianjs.ktjs.dom.attribute.types.TokenListAttributeCodec
 import io.github.shijianjs.ktjs.demo.i18n.Binder
 import io.github.shijianjs.ktjs.demo.i18n.Lang
 import io.github.shijianjs.ktjs.demo.i18n.Langs
@@ -56,8 +52,8 @@ private val attributeEnglish: AttributeTexts = AttributeTexts(
     declaredHint = "The default, the codec and the reaction to a change all live in one delegation.",
     declaredNote = "A different codec changes the property type, not the attribute name; nothing else in the component moves.",
     wrapperHeading = "Someone else's element",
-    wrapperHint = "A wrapper element is an external class: declare an Attribute next to it and read or write the " +
-        "attribute through functions.",
+    wrapperHint = "A wrapper element is an external class: give it an extension property that hands out the " +
+        "attribute object, then operate on that object.",
     wrapperToggleLabel = "toggle primary",
     wrapperRawLabel = "write messy text",
     wrapperNote = "The attribute is the state. Write it from anywhere — here with a deliberately messy " +
@@ -76,7 +72,7 @@ private val attributeChinese: AttributeTexts = AttributeTexts(
     declaredHint = "默认值、codec 和变化反应都在同一个委托里。",
     declaredNote = "换一个 codec 只改变属性类型，不改变属性名，组件里其他地方一行都不用动。",
     wrapperHeading = "别人的元素",
-    wrapperHint = "wrapper 元素是 external 类：在它旁边声明一个 Attribute，再用函数读写属性。",
+    wrapperHint = "wrapper 元素是 external 类：给它一个扩展属性、把属性对象交出来，然后在这个对象上操作。",
     wrapperToggleLabel = "切换 primary",
     wrapperRawLabel = "写入脏文本",
     wrapperNote = "属性就是状态。谁都能写——这里故意用 setAttribute 写一段脏文本，下一次读取已经是规整的列表。",
@@ -99,9 +95,6 @@ internal class AttributePage : Page {
     private val badge = newStepBadge()
 
     private val readout = Readout()
-
-    /** The attribute this page toggles on a wrapper element; a plain definition, no registration. */
-    private val Theme = Attribute("theme", TokenListAttributeCodec)
 
     private val wrapperReadout = Readout()
 
@@ -160,8 +153,9 @@ internal class AttributePage : Page {
 
     /**
      * A `vaadin-button` from the wrapper repository: an `external` class the kit has no say over.
-     * The attribute is still the whole state — one button toggles a token through [TokenList], the
-     * other writes messy text with a raw `setAttribute`, and both land in the same readout.
+     * The attribute is still the whole state — one button toggles a token through
+     * [io.github.shijianjs.ktjs.dom.attribute.TokenListAttribute], the other writes messy text with a
+     * raw `setAttribute`, and both land in the same readout.
      */
     private fun wrapperSection(): SectionBlock {
         val section = sectionBlock()
@@ -172,7 +166,7 @@ internal class AttributePage : Page {
 
         val toggle = texts.bind(createButton(), { it.wrapperToggleLabel }).addTheme("primary")
         toggle.clickEvent.addHandler {
-            target.tokens(Theme).toggle("primary")
+            target.tokens("theme").toggle("primary")
             showWrapper(target)
         }
 
@@ -195,7 +189,7 @@ internal class AttributePage : Page {
     }
 
     private fun showWrapper(target: HTMLElement) {
-        val tokens = target.tokens(Theme).values
+        val tokens = target.tokens("theme").values
         val raw = target.getAttribute("theme")
         wrapperReadout.set("tokens = $tokens, attribute = ${if (raw == null) "missing" else "\"$raw\""}")
     }

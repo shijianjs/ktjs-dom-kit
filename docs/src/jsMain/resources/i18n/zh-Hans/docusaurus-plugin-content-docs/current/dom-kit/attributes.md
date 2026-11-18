@@ -54,7 +54,7 @@ var titleText: String by attr("title") { change -> heading.textContent = change.
 | `BooleanAttributeCodec` | `Boolean` | 存在性语义，和 `hidden` 一样——`<x flagged>` 与 `<x flagged="false">` 都是 `true`；`true` 写成裸属性，`false` 删掉它 |
 | `IntAttributeCodec` | `Int` | `toIntOrNull`；否则回退到 `default`（或 `0`） |
 | `DoubleAttributeCodec` | `Double` | `toDoubleOrNull`；回退到 `default`（或 `0.0`） |
-| `TokenListAttributeCodec` | `List<String>` | 空格分隔的词列表（`theme="primary small"`）；写入时去重，空列表即删掉属性 |
+| `TokenListAttributeCodec` | `List<String>` | 空格分隔的词列表（`theme="primary small"`）；写入时去重，空列表即删掉属性。wrapper 元素上用 `tokens(name)`，见下文 |
 
 其它类型就是一个 `AttributeCodec<T>` 实现——三个函数，不引序列化库：
 
@@ -78,57 +78,67 @@ enum class ActionKind { Primary, Secondary }
 var kind: ActionKind by attr(codec = enumAttributeCodec(ActionKind.entries), default = ActionKind.Primary)
 ```
 
-## 别人的元素：`Attribute` 加三个函数
+## 别人的元素：一个绑定到元素的属性对象
 
 `attr` 是给**自己的组件**用的：它自己注册、上报变化、持有默认值。别人仓库 wrapper 出来的元素
-（`createButton()` → `ButtonElement`）是 `external` 类，你没法给它加成员，这种元素——以及任何你不想
-给委托的元素——改用 `Attribute` 声明，配三个函数读写。
+（`createButton()` → `ButtonElement`）是 `external` 类，你没法给它加成员，所以那里把属性做成**绑定到该元素的
+对象**，由扩展属性把它交出去：
 
 ```kotlin
-object ThemeAttribute : Attribute<List<String>>("theme", TokenListAttributeCodec)
-object StepsAttribute : Attribute("steps", IntAttributeCodec)
+val ButtonElement.labelText: Attribute<String> get() = attribute("aria-label")
 
-val button = createButton()
-button.writeAttribute(ThemeAttribute, listOf("primary", "small"))   // theme="primary small"
-assertEquals(listOf("primary", "small"), button.readAttribute(ThemeAttribute))
-
-button.setAttribute("steps", "12")                                  // 别处写的
-assertEquals(12, button.readAttribute(StepsAttribute))
+button.labelText.value = "Close"   // aria-label="Close"
+button.labelText.value             // "Close"
+button.labelText.present           // true
+button.labelText.raw               // "Close"
+button.labelText.clear()           // 属性被删掉
 ```
 
-`Attribute` 只有名字和编解码器：**不注册、不监听、没有默认值、没有回调**。每次读都真的走
-`getAttribute`，所以别的组件、devtools、裸 `setAttribute` 写进去的值下一次读就能看到——不存在可能跑偏
-的缓存副本。「缺失时算什么」「变化了做什么」是元素主人的业务，不是定义的事，所以这两项在这里没有，而不是
-像 `attr` 那样给默认。
+内置类型各有工厂，调用点不必写类型参数：
 
-这里**故意没有 `by` 版本**：wrapper 元素是 `external` 类，能在它上面声明的东西只有扩展属性，而 Kotlin
-的扩展属性不能委托。某个调用点确实更适合属性写法，就在那里自己写两个访问器：
+| 调用 | 取值类型 | 缺失时读作 |
+| --- | --- | --- |
+| `attribute(name)` | `String` | `""` |
+| `booleanAttribute(name)` | `Boolean` | `false` |
+| `intAttribute(name)` | `Int` | `0` |
+| `doubleAttribute(name)` | `Double` | `0.0` |
+
+其它类型用 `attribute(name, codec)`，编解码器与 `attr` 共用一套——枚举、时间戳、JSON 都行：
 
 ```kotlin
-val ButtonElement.labelText: String
-    get() = readAttribute(LabelAttribute)
-    set(value) = writeAttribute(LabelAttribute, value)
+val kind: Attribute<ActionKind> get() = attribute("kind", enumAttributeCodec(ActionKind.entries))
 ```
+
+类保留泛型，是因为编解码器只有一个体系（`enumAttributeCodec`、自定义 codec、`attr` 说的都是
+`AttributeCodec`）；但调用点永远不用写 `<String>`——工厂已经知道类型。一个对象就是两个字段，扩展属性每次
+访问新建一个也不花钱。
+
+它**不持有状态、也不注册**：`value` 读走 `getAttribute`、写走 `setAttribute`，所以别的组件、devtools、裸
+`setAttribute` 写进去的值下一次读就能看到——不存在可能跑偏的缓存副本。「缺失时算什么」「变化了做什么」是元素
+主人的业务，不是属性的事，所以这两项在这里没有，而不是像 `attr` 那样给默认。
+
+**这里没有 `by` 版本，这也正是它做成对象的原因**：wrapper 元素是 `external`，能在它上面声明的只有扩展属性，
+而 Kotlin 的扩展属性不能委托。于是扩展属性交出「操作对象」，而不是替身成「值」。
 
 ### 词列表（token list）
 
-`TokenListAttributeCodec` 对应 `classList` 那种形态——取值是一组空格分隔的词（`theme`、
-`aria-describedby`、`data-tags`）。写整个列表会规整化：去空白、去重、保持顺序；写空列表就删掉属性，
-于是「没有词」和「属性缺失」是同一个状态，跟空 `class` 一样。
-
-一次只改一个词比交出一整个列表顺手，`tokens(attribute)` 给出一层小视图：
+取值是一组空格分隔词的属性（`theme`、`aria-describedby`、`data-tags`）有自己的对象，用
+`element.tokens(name)` 取：
 
 ```kotlin
-val tokens = button.tokens(ThemeAttribute)
-tokens.add("primary")        // theme="primary"
-tokens.toggle("small")       // theme="primary small"
-tokens.toggle("small")       // theme="primary"
-tokens.remove("primary")     // 属性被删掉
-tokens.clear()               // 属性被删掉
+val theme = button.tokens("theme")
+theme.add("primary")        // theme="primary"
+theme.toggle("small")       // theme="primary small"
+theme.contains("small")     // true
+theme.remove("primary")     // theme="small"
+theme.value = listOf("a", "b")   // 整体替换
+theme.clear()               // 属性被删掉
 ```
 
-每次调用都直接读写属性本身（按属性里的顺序）：没有要在内存里同步的集合，也不会像 `DOMTokenList` 那样对
-异常语法抛错（不合法的片段就只是不算一个词）；`tokens.values` / `tokens.raw` 表示浏览器里真实存的内容。
+写入会规整化：单空格、去重、保持顺序；写空列表即删属性，于是「没有词」和「属性缺失」是同一个状态，跟空
+`class` 一样。每次调用都直接读写属性本身——没有要在内存里同步的集合，也不会像 `DOMTokenList` 那样对异常语法
+抛错（不合法的片段就只是不算一个词）；`values` / `raw` 表示浏览器里真实存的内容。`TokenListAttributeCodec`
+留给 `attr` 那一侧：那里你要的是被委托的 `List<String>` 属性。
 
 ## `AttributeChange`
 
