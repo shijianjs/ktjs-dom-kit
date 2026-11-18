@@ -6,9 +6,9 @@ import io.github.shijianjs.ktjs.demo.Theme
 import io.github.shijianjs.ktjs.demo.ThemeMode
 import io.github.shijianjs.ktjs.vaadin.themablemixin.addTheme
 import io.github.shijianjs.ktjs.vaadin.themablemixin.setTheme
-import io.github.shijianjs.ktjs.vaadin.theme.HorizontalLayoutVariants
-import io.github.shijianjs.ktjs.vaadin.theme.MenuBarVariants
-import io.github.shijianjs.ktjs.vaadin.theme.VerticalLayoutVariants
+import io.github.shijianjs.ktjs.vaadin.horizontallayout.HorizontalLayoutVariants
+import io.github.shijianjs.ktjs.vaadin.menubar.MenuBarVariants
+import io.github.shijianjs.ktjs.vaadin.verticallayout.VerticalLayoutVariants
 import io.github.shijianjs.ktjs.demo.i18n.Lang
 import io.github.shijianjs.ktjs.demo.i18n.LanguageState
 import io.github.shijianjs.ktjs.demo.i18n.SiteTexts
@@ -32,6 +32,7 @@ import io.github.shijianjs.ktjs.vaadin.applayout.createDrawerToggle
 import io.github.shijianjs.ktjs.vaadin.breadcrumbs.BreadcrumbsItemElement
 import io.github.shijianjs.ktjs.vaadin.breadcrumbs.createBreadcrumbs
 import io.github.shijianjs.ktjs.vaadin.breadcrumbs.createBreadcrumbsItem
+import io.github.shijianjs.ktjs.vaadin.button.ButtonVariants
 import io.github.shijianjs.ktjs.vaadin.horizontallayout.HorizontalLayoutElement
 import io.github.shijianjs.ktjs.vaadin.horizontallayout.createHorizontalLayout
 import io.github.shijianjs.ktjs.vaadin.lumostyles.registerLumoIcons
@@ -110,7 +111,17 @@ class ShellConfig(
 class DemoShell : CustomElementAdapter() {
     private val appLayout = createAppLayout()
 
-    private val drawerToggle = createDrawerToggle { ariaLabelProperty = "Toggle navigation" }
+    /**
+     * The drawer toggle, styled as an icon button: Lumo's default button padding leaves ~10px of blank
+     * box on each side of a 24px glyph, which reads as a gap between the toggle and the wordmark rather
+     * than as part of it. `theme="icon"` is the button's own variant for exactly one glyph, and
+     * [SHELL_TOGGLE] removes the box the variant still keeps around it.
+     */
+    private val drawerToggle = createDrawerToggle {
+        ariaLabelProperty = "Toggle navigation"
+        addTheme(ButtonVariants.icon)
+        classList.add(SHELL_TOGGLE)
+    }
 
     /**
      * The site title: an `h1` in the navbar the way every app-layout example puts it, not a box

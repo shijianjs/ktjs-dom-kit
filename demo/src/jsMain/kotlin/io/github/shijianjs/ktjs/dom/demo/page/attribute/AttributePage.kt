@@ -22,7 +22,7 @@ import io.github.shijianjs.ktjs.dom.demo.wrapper.themeAttr
 import io.github.shijianjs.ktjs.vaadin.button.createButton
 import io.github.shijianjs.ktjs.vaadin.themablemixin.ThemePropertyMixin
 import io.github.shijianjs.ktjs.vaadin.themablemixin.addTheme
-import io.github.shijianjs.ktjs.vaadin.theme.ButtonVariants
+import io.github.shijianjs.ktjs.vaadin.button.ButtonVariants
 import io.github.shijianjs.ktjs.vaadin.theme.name
 import web.dom.clickEvent
 import web.events.addHandler

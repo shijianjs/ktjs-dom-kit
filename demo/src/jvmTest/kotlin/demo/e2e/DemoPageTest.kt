@@ -131,6 +131,51 @@ class DemoPageTest(private val browser: Browser) {
     }
 
     /**
+     * The toggle and the wordmark read as one left cluster: the toggle sits at the bar's inset (the
+     * component's own 8px margins and 44px box would otherwise push the mark a layout gap further away),
+     * and the mark keeps a small gap from the title instead of touching it.
+     *
+     * Lumo's `drawer-toggle` is a 44px icon box with `margin: 0 var(--lumo-space-s)`; kept as shipped it
+     * leaves ~35px of blank between the hamburger glyph and the logo, which reads as the bar having an
+     * empty slot rather than as the toggle belonging to the wordmark.
+     */
+    @Test
+    fun `the drawer toggle hugs the bar inset and the mark`() {
+        val page = open("")
+
+        val gaps = page.evaluate(
+            """
+            () => {
+              const shell = document.querySelector('ktjs-demo-shell');
+              const nav = shell.shadowRoot.querySelector("[slot='navbar']");
+              const box = (node) => node.getBoundingClientRect();
+              const toggle = nav.querySelector('vaadin-drawer-toggle');
+              const logo = nav.querySelector('.shell__logo');
+              const title = nav.querySelector('.shell__title');
+              return {
+                toggle: [box(toggle).x, box(toggle).width],
+                glyph: [box(toggle.shadowRoot.querySelector("[part='icon']")).x],
+                toggleToLogo: box(logo).x - (box(toggle).x + box(toggle).width),
+                logoToTitle: box(title).x - (box(logo).x + box(logo).width),
+              };
+            }
+            """.trimIndent(),
+        ) as Map<*, *>
+
+        fun pair(key: String): List<Double> =
+            (gaps[key] as List<*>).map { (it as Number).toDouble() }
+
+        val toggle = pair("toggle")
+        assertTrue(toggle[0] in 4.0..12.0, "the toggle starts at ${toggle[0]}px, expected the bar inset")
+        // One layout gap, not the gap plus the component's own margins (which measured 24px before).
+        val toggleToLogo = (gaps["toggleToLogo"] as Number).toDouble()
+        assertTrue(toggleToLogo in 8.0..17.0, "toggle to mark is ${toggleToLogo}px, expected one layout gap")
+        val logoToTitle = (gaps["logoToTitle"] as Number).toDouble()
+        assertTrue(logoToTitle in 6.0..12.0, "mark to title is ${logoToTitle}px, expected a small gap")
+        assertNoErrors()
+    }
+
+    /**
      * The wordmark is the site's way home: an `<a href="#/">` around the mark and the title, not a click
      * handler on the `h1`. Link behaviour therefore stays intact (middle-click, copy address, keyboard
      * activation), and `#/` parses to the router's default route without the shell hard-coding a slug.

@@ -79,4 +79,5 @@ docusaurus {
     // cannot carry a task dependency, hence the explicit `map`.
     browserBundle = "ktjs-docusaurus-kit-browser.js"
     browserBundleFiles.from(extractKitBundle.map { kitBundleDir.get().asFile })
+    startArguments = listOf("--locale", "zh-Hans")
 }

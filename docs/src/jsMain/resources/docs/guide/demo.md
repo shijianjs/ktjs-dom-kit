@@ -47,6 +47,10 @@ The shell is one `vaadin-app-layout`:
   `theme="light-dark"` on the document element, so Lumo resolves `prefers-color-scheme` itself and the
   site repaints when the visitor's system preference changes — there is no `matchMedia` listener in the
   shell;
+- the drawer toggle is an icon button: Lumo ships it as a 44px box with `margin: 0 var(--lumo-space-s)`,
+  which puts a blank slot between the hamburger and the mark. The shell keeps the component's size (a
+  real tap target) but drops its margins, and takes the bar's left inset itself, so the glyph, the
+  toggle and the mark read as one cluster;
 - an entry that is not on our side of `menu-bar`'s shadow boundary (the submenu content) is sized and
   emphasised inline, because a class declared in the shell's sheet cannot reach it;
 - Lumo's `utility.css` is a document-level stylesheet, so its classes cannot reach into a shadow tree.

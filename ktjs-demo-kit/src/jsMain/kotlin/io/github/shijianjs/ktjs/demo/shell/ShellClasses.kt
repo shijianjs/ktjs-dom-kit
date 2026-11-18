@@ -25,6 +25,12 @@ internal val SHELL_VERSION: ClassName = ClassName("shell__version")
 /** The navbar as a whole: title and breadcrumbs on the left, actions on the right. */
 internal val SHELL_TOPBAR: ClassName = ClassName("shell__topbar")
 
+/**
+ * The drawer toggle: the component's own margin/padding are dropped so its glyph sits at the bar's
+ * inset instead of inside a 44px box with blanks on both sides.
+ */
+internal val SHELL_TOGGLE: ClassName = ClassName("shell__toggle")
+
 /** The left half of the navbar; vertical centring comes from a Lumo utility class, not from here. */
 internal val SHELL_TOPBAR_START: ClassName = ClassName("shell__topbar-start")
 

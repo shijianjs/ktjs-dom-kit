@@ -8,8 +8,8 @@ import io.github.shijianjs.ktjs.vaadin.card.createCard
 import io.github.shijianjs.ktjs.vaadin.horizontallayout.HorizontalLayoutElement
 import io.github.shijianjs.ktjs.vaadin.horizontallayout.createHorizontalLayout
 import io.github.shijianjs.ktjs.vaadin.themablemixin.addTheme
-import io.github.shijianjs.ktjs.vaadin.theme.HorizontalLayoutVariants
-import io.github.shijianjs.ktjs.vaadin.theme.VerticalLayoutVariants
+import io.github.shijianjs.ktjs.vaadin.horizontallayout.HorizontalLayoutVariants
+import io.github.shijianjs.ktjs.vaadin.verticallayout.VerticalLayoutVariants
 import io.github.shijianjs.ktjs.vaadin.verticallayout.VerticalLayoutElement
 import io.github.shijianjs.ktjs.vaadin.verticallayout.createVerticalLayout
 import web.dom.Node

@@ -40,7 +40,7 @@ kotlin {
             // `theme` variants. Versions here stay SNAPSHOT until the release batch: every module is
             // published to mavenLocal and consumed from there, so nothing reaches Central before the
             // user signs off on the whole migration.
-            api("io.github.shijianjs:ktjs-vaadin-web-components:25.3.5-kt.7-SNAPSHOT")
+            api("io.github.shijianjs:ktjs-vaadin-web-components:25.3.5-kt.8-SNAPSHOT")
             // Icons in the sidebar are `<iconify-icon>` elements. The type never leaves this module
             // (the catalog only carries icon-name strings), so a plain implementation is enough.
             implementation("io.github.shijianjs:ktjs-iconify-icon:3.0.5-kt.6-SNAPSHOT")

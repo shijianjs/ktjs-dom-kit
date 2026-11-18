@@ -17,7 +17,7 @@ import io.github.shijianjs.ktjs.demo.page.sectionBlock
 import io.github.shijianjs.ktjs.demo.i18n.texts
 import io.github.shijianjs.ktjs.vaadin.button.createButton
 import io.github.shijianjs.ktjs.vaadin.themablemixin.addTheme
-import io.github.shijianjs.ktjs.vaadin.theme.ButtonVariants
+import io.github.shijianjs.ktjs.vaadin.button.ButtonVariants
 import web.dom.clickEvent
 import web.cssom.ClassName
 import web.events.addHandler

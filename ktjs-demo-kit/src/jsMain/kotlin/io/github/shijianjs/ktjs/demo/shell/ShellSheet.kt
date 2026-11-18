@@ -80,6 +80,9 @@ val SHELL_SHEET: CSSStyleSheet = cssSheet {
     SHELL_TITLE_LINK {
         display = Display.flex
         alignItems = AlignItems.center
+        // The mark and the wordmark are one lock-up, but not one glyph pair: a small gap keeps them
+        // readable as two elements of the same brand instead of a logo glued to the first letter.
+        columnGap = 8.px
         textDecorationLine = None.none
         color = Palette.text
         flexShrink = number(0.0)
@@ -126,10 +129,20 @@ val SHELL_SHEET: CSSStyleSheet = cssSheet {
 
     SHELL_TOPBAR {
         width = 100.pct
-        // The bar spans the window, but its content must not touch the right edge: the last menu would
-        // otherwise sit flush against the scrollbar. The drawer toggle already carries its own inset on
-        // the left, so only the end side gets padding here.
+        // The bar spans the window, but its content must not touch the edges: the last menu would sit
+        // flush against the scrollbar, and the drawer toggle flush against the window frame.
+        paddingLeft = 8.px
         paddingRight = 12.px
+    }
+
+    // The toggle is a 36px icon-button box around a 21px glyph: Lumo's own 9px padding and 8px margin
+    // around it read as a blank gap between the toggle and the wordmark, on top of the layout's gap.
+    // Both are dropped here; the inset comes from [SHELL_TOPBAR], the separation from the layout gap.
+    SHELL_TOGGLE {
+        marginInlineStart = 0.px
+        marginInlineEnd = 0.px
+        paddingInlineStart = 0.px
+        paddingInlineEnd = 0.px
     }
 
     // The left cluster may be narrower than the title plus the full breadcrumb trail; letting it
