@@ -13,8 +13,11 @@ import web.html.HTMLElement
 class Binder<T : Any>(private val translations: Translations<T>) {
     private val bindings: MutableList<Pair<HTMLElement, (T) -> String>> = mutableListOf()
 
-    /** Registers [node] to show [field] of the text class; returns the node so it can be appended. */
-    fun bind(node: HTMLElement, field: (T) -> String): HTMLElement {
+    /**
+     * Registers [node] to show [field] of the text class; returns the node unchanged, still typed as
+     * the concrete element, so a binding can be chained into the API of that element.
+     */
+    fun <E : HTMLElement> bind(node: E, field: (T) -> String): E {
         bindings += node to field
         return node
     }

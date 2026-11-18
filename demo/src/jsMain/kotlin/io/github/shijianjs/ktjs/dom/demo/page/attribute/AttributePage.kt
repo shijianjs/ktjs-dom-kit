@@ -13,7 +13,7 @@ import io.github.shijianjs.ktjs.demo.page.paragraph
 import io.github.shijianjs.ktjs.demo.page.row
 import io.github.shijianjs.ktjs.demo.page.sectionBlock
 import io.github.shijianjs.ktjs.demo.i18n.texts
-import io.github.shijianjs.ktjs.demo.withTheme
+import io.github.shijianjs.ktjs.vaadin.themablemixin.addTheme
 import io.github.shijianjs.ktjs.vaadin.button.createButton
 import web.dom.clickEvent
 import web.events.addHandler
@@ -83,13 +83,13 @@ internal class AttributePage : Page {
         texts.bind(demo.title, { it.demoHeading })
         texts.bind(demo.hint, { it.demoHint })
 
-        val increment = texts.bind(createButton(), { it.incrementLabel }).withTheme("primary")
+        val increment = texts.bind(createButton(), { it.incrementLabel }).addTheme("primary")
         increment.clickEvent.addHandler {
             badge.step += 1
             showValue()
         }
 
-        val external = texts.bind(createButton(), { it.externalLabel }).withTheme("tertiary")
+        val external = texts.bind(createButton(), { it.externalLabel }).addTheme("tertiary")
         external.clickEvent.addHandler {
             badge.setAttribute("step", "10")
             showValue()

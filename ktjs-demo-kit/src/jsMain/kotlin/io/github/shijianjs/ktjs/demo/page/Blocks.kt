@@ -1,8 +1,7 @@
 package io.github.shijianjs.ktjs.demo.page
 
 import io.github.shijianjs.ktjs.demo.Palette
-import io.github.shijianjs.ktjs.demo.setHidden
-import io.github.shijianjs.ktjs.demo.withTheme
+import io.github.shijianjs.ktjs.vaadin.themablemixin.addTheme
 import io.github.shijianjs.ktjs.dom.element.createElement
 import io.github.shijianjs.ktjs.vaadin.card.CardElement
 import io.github.shijianjs.ktjs.vaadin.card.createCard
@@ -69,7 +68,7 @@ fun bulletList(items: List<String>): HTMLElement = HtmlTagName.ul.createElement 
 
 /** A horizontal group: the Vaadin layout supplies the gap, the site sheet centres the items. */
 fun row(vararg children: Node): HorizontalLayoutElement {
-    val layout = createHorizontalLayout { withTheme("spacing") }
+    val layout = createHorizontalLayout { addTheme("spacing") }
     layout.classList.add(ROW)
     if (children.isNotEmpty()) layout.append(*children)
     return layout
@@ -77,7 +76,7 @@ fun row(vararg children: Node): HorizontalLayoutElement {
 
 /** A vertical group: the Vaadin layout supplies the gap. */
 fun col(vararg children: Node): VerticalLayoutElement {
-    val layout = createVerticalLayout { withTheme("spacing") }
+    val layout = createVerticalLayout { addTheme("spacing") }
     if (children.isNotEmpty()) layout.append(*children)
     return layout
 }
@@ -108,7 +107,7 @@ class SectionBlock(
     fun setText(title: String, hintText: String = "") {
         this.title.textContent = title
         this.hint.textContent = hintText
-        this.hint.setHidden(hintText.isEmpty())
+        this.hint.toggleAttribute("hidden", hintText.isEmpty())
     }
 }
 
@@ -116,7 +115,7 @@ class SectionBlock(
 fun sectionBlock(): SectionBlock {
     val title = HtmlTagName.h2.createElement { classList.add(SECTION_TITLE) }
     val hint = HtmlTagName.p.createElement { classList.add(SECTION_HINT) }
-    val body = createVerticalLayout { withTheme("spacing") }
+    val body = createVerticalLayout { addTheme("spacing") }
     // Title, hint and body sit tight; the sheet supplies their margins, the body keeps the component's
     // spacing between its paragraphs and examples.
     val root = createVerticalLayout()

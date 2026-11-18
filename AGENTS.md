@@ -41,11 +41,14 @@
   `baseUrl` 加载。Node 会读配置文件，所以这个 bundle 绝不能进 `docs` 的 Kotlin 依赖图。
 - **有这个仓库自己的 demo**：`ktjs-demo-kit`（外壳、路由、i18n 容器、主题）+ `demo`（本站五个页面）。示例既
   是集成测试也是浏览器验收：`./gradlew :demo:e2eTest`（Playwright，含截图与几何断言）。
-  - 包按归属切（`io.github.shijianjs.ktjs.demo`）：根包只放跨 owner 的东西（`Palette`、`RESET`、`Theme`、
-    `Elements.kt` 里那两个平台适配 helper：`withTheme`（Vaadin 的 `theme` 是空格拼接属性）与 `setHidden`
-    （原生 `hidden` 是 `Hidden` 枚举而非 `Boolean`））；`i18n/`（`Lang`、`LanguageState`、`Translations`、`SiteTexts`、
-    `Binder`）、`nav/`（`Catalog` 的 `Page`/`Group`/`Entry` 与 `Router`）、`page/`（`DemoPage`、`Blocks`、
-    `PageSheet`、`PageClasses`）、`shell/`（`DemoShell`、`ShellSheet`、`ShellClasses`）。
+  - 包按归属切（`io.github.shijianjs.ktjs.demo`）：根包只放跨 owner 的东西（`Palette`、`RESET`、`Theme`）；
+    `i18n/`（`Lang`、`LanguageState`、`Translations`、`SiteTexts`、`Binder`）、`nav/`（`Catalog` 的
+    `Page`/`Group`/`Entry` 与 `Router`）、`page/`（`DemoPage`、`Blocks`、`PageSheet`、`PageClasses`）、
+    `shell/`（`DemoShell`、`ShellSheet`、`ShellClasses`）。
+  - 没有「元素 helper」层：建节点直接用 `TagName<T>.createElement { }`；`theme` 用 wrapper 的
+    `addTheme` / `setTheme` / `removeTheme`（挂在上游 `ThemePropertyMixin` 上，只有组件渲染这个属性）；
+    显示与隐藏用原生 `toggleAttribute("hidden", …)`。**不要**再在 `HTMLElement` 上挂 `withTheme` 这类
+    给所有元素凭空加能力的扩展。
   - **样式表与 `ClassName` 常量跟着 owner 走**：不要再合成一份 `Sheets.kt` / `Classes.kt`，也不要建 `style/`；
     只有「每棵树都要 adopt」的 reset 与「整站一起变」的调色板可以跨包。
   - 默认跑的是 production bundle；要验收 development bundle（`jsBrowserDevelopmentRun` 用的那种、不做 DCE），

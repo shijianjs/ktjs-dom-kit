@@ -4,8 +4,8 @@ import io.github.shijianjs.ktjs.demo.Palette
 import io.github.shijianjs.ktjs.demo.RESET
 import io.github.shijianjs.ktjs.demo.Theme
 import io.github.shijianjs.ktjs.demo.ThemeMode
-import io.github.shijianjs.ktjs.demo.setHidden
-import io.github.shijianjs.ktjs.demo.withTheme
+import io.github.shijianjs.ktjs.vaadin.themablemixin.addTheme
+import io.github.shijianjs.ktjs.vaadin.themablemixin.setTheme
 import io.github.shijianjs.ktjs.demo.i18n.Lang
 import io.github.shijianjs.ktjs.demo.i18n.LanguageState
 import io.github.shijianjs.ktjs.demo.i18n.SiteTexts
@@ -117,12 +117,12 @@ class DemoShell : CustomElementAdapter() {
 
     /** Left half of the navbar: toggle, optional mark, title, version and breadcrumbs on one line. */
     private val navbarStart: HorizontalLayoutElement = createHorizontalLayout {
-        withTheme("spacing")
+        addTheme("spacing")
         classList.add(SHELL_TOPBAR_START, LumoUtility.AlignItems.CENTER)
     }
 
     private val navbar: HorizontalLayoutElement = createHorizontalLayout {
-        withTheme("spacing")
+        addTheme("spacing")
         classList.add(SHELL_TOPBAR, LumoUtility.AlignItems.CENTER, LumoUtility.JustifyContent.BETWEEN)
         setAttribute("slot", "navbar")
     }
@@ -134,7 +134,7 @@ class DemoShell : CustomElementAdapter() {
     private val crumbPage: BreadcrumbsItemElement = createBreadcrumbsItem()
 
     private val actions: HorizontalLayoutElement = createHorizontalLayout {
-        withTheme("spacing")
+        addTheme("spacing")
         classList.add(SHELL_ACTIONS, LumoUtility.AlignItems.CENTER)
     }
 
@@ -142,13 +142,13 @@ class DemoShell : CustomElementAdapter() {
      * Links are a menu, not a row of anchors: the site's own pages, the API reference and the
      * repository are three destinations of the same kind.
      */
-    private val docsMenu: MenuBarElement = createMenuBar { withTheme("dropdown-indicators") }
+    private val docsMenu: MenuBarElement = createMenuBar { addTheme("dropdown-indicators") }
 
     /** One entry per [Lang]; the label of a language is always that language's own name. */
-    private val languageMenu: MenuBarElement = createMenuBar { withTheme("dropdown-indicators") }
+    private val languageMenu: MenuBarElement = createMenuBar { addTheme("dropdown-indicators") }
 
     /** Light / dark / follow-the-browser. */
-    private val themeMenu: MenuBarElement = createMenuBar { withTheme("dropdown-indicators") }
+    private val themeMenu: MenuBarElement = createMenuBar { addTheme("dropdown-indicators") }
 
     /**
      * The whole left column is one `vaadin-side-nav`, the component Vaadin builds for a drawer:
@@ -157,7 +157,7 @@ class DemoShell : CustomElementAdapter() {
      */
     private val sideNav = createSideNav()
 
-    private val content: VerticalLayoutElement = createVerticalLayout { withTheme("padding", "spacing") }
+    private val content: VerticalLayoutElement = createVerticalLayout { setTheme("padding", "spacing") }
 
     private lateinit var catalog: Catalog
 
@@ -235,7 +235,7 @@ class DemoShell : CustomElementAdapter() {
         buildLogo()
 
         titleVersion.textContent = config.siteVersion
-        titleVersion.setHidden(config.siteVersion.isEmpty())
+        titleVersion.toggleAttribute("hidden", config.siteVersion.isEmpty())
 
         buildGroups()
         buildActions()
@@ -431,7 +431,7 @@ class DemoShell : CustomElementAdapter() {
             entries += menuEntry("docs:source", "lucide:github", current.sourceLabel) { openLink(url) }
         }
 
-        docsMenu.setHidden(entries.isEmpty())
+        docsMenu.toggleAttribute("hidden", entries.isEmpty())
         if (entries.isEmpty()) return
 
         docsMenu.items = arrayOf(
