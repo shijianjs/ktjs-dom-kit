@@ -69,15 +69,26 @@ import web.window._blank
 import web.window.window
 
 /**
- * The site's identity and destination URLs — everything the frame needs that is **not** a translated
- * string.
+ * Everything the frame needs to render a site, in one object: the pages and the runtime state it drives
+ * ([catalog], [language], [theme], [texts]), plus the site's identity and destination URLs.
  *
- * The site title itself lives in [SiteTexts], because it changes with the language; the version tag
- * and the targets do not. Every URL is optional: a site with only a repository gets a menu with one
- * entry, and a site with none hides the menu entirely. [logoSrc] is a plain image URL, so a site
- * reuses the very file its documentation and README show instead of inventing a second mark.
+ * One object rather than five parameters on [DemoShell.mount]: a method whose argument list keeps growing
+ * is a config class waiting to be written, and a shell gaining a sixth knob (a base path, a feedback
+ * link) then costs no call-site change. The site title itself is not here — it lives in [SiteTexts],
+ * because it changes with the language; the version tag and the targets do not. Every URL is optional:
+ * a site with only a repository gets a menu with one entry, and a site with none hides the menu
+ * entirely. [logoSrc] is a plain image URL, so a site reuses the very file its documentation and README
+ * show instead of inventing a second mark.
  */
 class ShellConfig(
+    /** The site's pages, grouped as the drawer groups them; also the router's source of truth. */
+    val catalog: Catalog,
+    /** The languages the site offers, and the one selected now; the language menu is built from it. */
+    val language: LanguageState,
+    /** Light / dark / follow-the-browser state; the shell owns the menu, this object owns the value. */
+    val theme: Theme,
+    /** One translation table per language, declared with `texts(...)`. */
+    val texts: Translations<SiteTexts>,
     /** Shown next to the title in the navbar, e.g. `Kotlin/JS 2.4.21`; empty hides the line. */
     val siteVersion: String = "",
     /** Documentation site, usually the root the demo is published under. */
@@ -245,23 +256,18 @@ class DemoShell : CustomElementAdapter() {
     /**
      * Builds the drawer, the navbar and the router, then shows the route already in the URL.
      *
-     * [texts] is the application's translation table: one [SiteTexts] per language, declared with
-     * `texts(Langs.EN to …, Langs.ZH_HANS to …)`. The shell carries no copy of its own and lists the
-     * language menu from [LanguageState.languages], so registering a language is entirely the
-     * application's call.
+     * The single argument is a [ShellConfig], so this method stays one line no matter how many knobs
+     * the shell grows. `texts` inside it is the application's translation table: one [SiteTexts] per
+     * language, declared with `texts(Langs.EN to …, Langs.ZH_HANS to …)`. The shell carries no copy of
+     * its own and lists the language menu from [LanguageState.languages], so registering a language is
+     * entirely the application's call.
      */
-    fun mount(
-        catalog: Catalog,
-        language: LanguageState,
-        theme: Theme,
-        config: ShellConfig,
-        texts: Translations<SiteTexts>,
-    ) {
-        this.catalog = catalog
-        this.language = language
-        this.theme = theme
+    fun mount(config: ShellConfig) {
+        this.catalog = config.catalog
+        this.language = config.language
+        this.theme = config.theme
         this.config = config
-        this.texts = texts
+        this.texts = config.texts
 
         registerLumoIcons()
         buildLogo()

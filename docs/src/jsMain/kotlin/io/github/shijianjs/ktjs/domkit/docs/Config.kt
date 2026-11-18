@@ -175,6 +175,18 @@ fun docusaurusConfig(): Config = unsafeJso {
                     position = NavbarItemPositions.left
                 },
                 unsafeJso<NavbarItem> {
+                    type = NavbarItemTypes.docSidebar
+                    sidebarId = "wrapperKit"
+                    label = "Wrapper kit"
+                    position = NavbarItemPositions.left
+                },
+                unsafeJso<NavbarItem> {
+                    type = NavbarItemTypes.docSidebar
+                    sidebarId = "demoKit"
+                    label = "Demo kit"
+                    position = NavbarItemPositions.left
+                },
+                unsafeJso<NavbarItem> {
                     type = NavbarItemTypes.localeDropdown
                     position = NavbarItemPositions.right
                 },
@@ -288,6 +300,26 @@ fun sidebars(): SidebarsConfig = unsafeJso<Sidebars> {
             id = "dom-kit/css-sheet"
         },
     )
+    wrapperKit = arrayOf<SidebarItem>(
+        unsafeJso {
+            type = SidebarItemTypes.doc
+            id = "wrapper-kit/overview"
+        },
+        unsafeJso {
+            type = SidebarItemTypes.doc
+            id = "wrapper-kit/attributes"
+        },
+    )
+    demoKit = arrayOf<SidebarItem>(
+        unsafeJso {
+            type = SidebarItemTypes.doc
+            id = "demo-kit/overview"
+        },
+        unsafeJso {
+            type = SidebarItemTypes.doc
+            id = "demo-kit/pages"
+        },
+    )
 }.unsafeCast<SidebarsConfig>()
 
 /** The locale record the site declares; keys must match the ids in `Config.i18n.locales`. */
@@ -312,4 +344,8 @@ private external interface Sidebars {
     var guide: Array<SidebarItem>?
 
     var domKit: Array<SidebarItem>?
+
+    var wrapperKit: Array<SidebarItem>?
+
+    var demoKit: Array<SidebarItem>?
 }

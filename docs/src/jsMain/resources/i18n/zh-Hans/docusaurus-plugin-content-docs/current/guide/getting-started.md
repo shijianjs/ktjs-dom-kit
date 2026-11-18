@@ -4,6 +4,19 @@ sidebar_position: 1
 
 # 快速开始
 
+## 三个模块，一个依赖
+
+本仓库发布三个产物，多数项目只要其中一个：
+
+| 产物 | 给谁用 | 文档 |
+| --- | --- | --- |
+| `ktjs-dom-kit` | 用 Kotlin/JS 写组件 | [DOM kit](../dom-kit/overview.md) |
+| `ktjs-wrapper-kit` | 给 npm 组件的元素配类型化属性 | [Wrapper kit](../wrapper-kit/overview.md) |
+| `ktjs-demo-kit` | 搭一个库的可运行演示站 | [Demo kit](../demo-kit/overview.md) |
+
+依赖是单向的：`ktjs-dom-kit` 再导出 `ktjs-wrapper-kit`，`ktjs-demo-kit` 再导出这两者。只描述 npm 组件的
+项目可以只依赖 `ktjs-wrapper-kit`，完全避开 DOM kit 那一边的 emotion / stylis / loadjs。
+
 ## 加依赖
 
 ```kotlin

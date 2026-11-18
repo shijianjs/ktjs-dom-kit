@@ -4,6 +4,20 @@ sidebar_position: 1
 
 # Getting started
 
+## Three modules, one dependency
+
+This repository publishes three artifacts. Most projects want one of them:
+
+| Artifact | For | Docs |
+| --- | --- | --- |
+| `ktjs-dom-kit` | writing components in Kotlin/JS | [DOM kit](../dom-kit/overview.md) |
+| `ktjs-wrapper-kit` | giving an npm component's element typed attributes | [Wrapper kit](../wrapper-kit/overview.md) |
+| `ktjs-demo-kit` | building the live demo site of a library | [Demo kit](../demo-kit/overview.md) |
+
+Dependencies point one way: `ktjs-dom-kit` re-exports `ktjs-wrapper-kit`, and `ktjs-demo-kit` re-exports
+both. A project that only describes npm components can depend on `ktjs-wrapper-kit` alone and stay clear
+of the emotion/stylis/loadjs side of the DOM kit.
+
 ## Add the dependency
 
 ```kotlin

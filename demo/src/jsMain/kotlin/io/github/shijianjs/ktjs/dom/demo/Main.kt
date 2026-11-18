@@ -26,10 +26,11 @@ fun main() {
         ?: error("index.html has no <ktjs-demo-shell id=\"demo\">")
 
     shell.mount(
-        siteCatalog(),
-        language,
-        theme,
         ShellConfig(
+            catalog = siteCatalog(),
+            language = language,
+            theme = theme,
+            texts = siteTexts,
             siteVersion = KIT_VERSION,
             docsUrl = DOCS_URL,
             apiUrl = API_URL,
@@ -37,6 +38,5 @@ fun main() {
             // The same file the documentation and the README show; the demo build scales it down.
             logoSrc = "img/ktjs-dom-kit-logo.png",
         ),
-        siteTexts,
     )
 }

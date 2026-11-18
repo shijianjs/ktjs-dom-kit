@@ -11,9 +11,10 @@ import io.github.shijianjs.ktjs.dom.attribute.AttributeCodec
  * Kotlin/JS has no way to invent one — is what an unknown or missing attribute reads as.
  *
  * ```kotlin
- * val codec = LiteralAttributeCodec(ButtonVariants.all, { it.name })
- * codec.encode(ButtonVariants.primary)   // "primary"
- * codec.decode("PRIMARY")                // ButtonVariants.primary
+ * val slots = listOf("header", "content", "footer")
+ * val codec = LiteralAttributeCodec(slots) { it }
+ * codec.encode("content")   // "content"
+ * codec.decode("CONTENT")   // "content"
  * ```
  *
  * An empty [values] list is not a supported vocabulary: it has no `absent` value to answer with, so
