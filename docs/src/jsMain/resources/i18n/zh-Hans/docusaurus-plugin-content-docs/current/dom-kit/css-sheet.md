@@ -119,10 +119,10 @@ supports(
 | `maxWidth / minWidth / width / height / orientation / prefersColorScheme / prefersReducedMotion / …` | `web.cssom.atrule/*.fun.kt` | 媒体特性（一整个目录，约 30 个） |
 | `var / env / rgb / many / array / important / linearGradient / stop / Content() / NamedColor / PropertyName / translatex` | `web.cssom` 的 `*.functions.kt`、`*.ext.kt`、`*.fun.kt` | 取值与函数 |
 
-**目前确实还是字符串的**：应用级自定义属性名（`CustomPropertyName("--brand")`），以及 CSS 本身就没有类型的实参
-——`:nth-child(2n+1)` 这种公式、`::part(label)` 这种标识符。选择器本身不再是字符串：`*`、`&` 是 `Selectors`
-的常量，`:host` / `:root` / `:scope` 是 `Pseudos` 的常量（它们本来就是伪类，所以同一个值也能当 `pseudo(…)`
-的实参）。
+**目前确实还是字符串的**：应用级自定义属性名（`CustomPropertyName("--brand")`），以及 CSS 本身就没有类型的裸
+token——`An+B` 公式、`::part` 的名字、语言标签，它们走各自类型的工厂（`ident("2n+1")`）。选择器本身不再是
+字符串：`*`、`&` 是 `Selectors` 的常量，`:host` / `:root` / `:scope` 是 `Pseudos` 的常量（它们本来就是伪类，
+所以同一个值也能当 `pseudo(…)` 的实参），HTML 属性名则全在 `web.cssom.HtmlAttributes` 里。
 
 ### 拼接选择器：`compound` + 组合器
 
@@ -132,25 +132,32 @@ supports(
 ```kotlin
 private val ROW = ClassName("row")
 private val SELECTED = ClassName("is-selected")
+private val BUTTON: TagName<HTMLButtonElement> = TagName("vaadin-button")
 
 val selected = compound(className(ROW), className(SELECTED))         // .row.is-selected
 val cell = className(ROW) child className(CLASS_LABEL)               // .row > .label
-val hostButton = pseudo(Pseudos.host, attributeSelector("collapsed")) child tag("button")
-                                                                     // :host([collapsed]) > button
+val hostDisabled = pseudo(Pseudos.host, attributeSelector(HtmlAttributes.disabled)) child tag(BUTTON)
+                                                                     // :host([disabled]) > vaadin-button
 
 cssSheet { selected { display = Display.block } }
 ```
 
 | 节点类型 | 工厂 |
 | --- | --- |
-| 类型选择器 | `tag(HtmlTagName.div)` / `tag("vaadin-button")` |
+| 类型选择器 | `tag(HtmlTagName.div)` / `tag(BUTTON)`——收 `TagName`，不收字符串 |
 | class、id | `className(ClassName("x"))`、`id("main")` |
-| 属性 | `attributeSelector(name, value, operator, quote, caseFlag)`，value 可省，`[part="label"]` |
-| 伪类、伪元素 | `pseudo(Pseudos.hover)`、`pseudo(Pseudos.before)`、`pseudo(pseudoElement("part"), "label")`、`pseudo(pseudoClass("not"), className(HIDDEN))` |
+| 属性 | `attributeSelector(HtmlAttributes.disabled)` / `attributeSelector(HtmlAttributes.type, "text")`——走生成的属性目录；字符串形式只留给目录外的名字（`aria-current`、`data-*`） |
+| 伪类、伪元素 | `pseudo(Pseudos.hover)`、`pseudo(Pseudos.before)`、`pseudo(pseudoElement("part"), ident("label"))`、`pseudo(pseudoClass("not"), className(HIDDEN))` |
 | `*`、`&` | `Selectors.universal`、`Selectors.nesting` |
 | 复合（同一个元素） | `compound(vararg parts)` |
 | 组合器 | `descendant`、`child`、`nextSibling`、`subsequentSibling`、`column`（infix） |
 | 选择器列表 | `selectorList(vararg selectors)`，逗号连接 |
+
+**属性名从目录里取。** `web.cssom.HtmlAttributes` 是 210 个常量的 sealed interface，每个常量装的就是带方括号的
+选择器片段（`HtmlAttributes.type` 是 `"[type]"`），它没有构造函数——所以 `attributeSelector(…)` 收常量而不收名字。
+有值时值当第二个实参（`attributeSelector(HtmlAttributes.type, "text")` → `[type="text"]`），仍留在字符串形式的
+只有目录外的名字（ARIA、`data-*`、项目自造的）。`tag(…)` 与 `className(…)` 也只收 `TagName` / `ClassName`，
+新名字一律在声明处写成 `val`。
 
 `Pseudos` 里的变体**本身就是它看起来的那个选择器零件**——`Pseudo` 只装 `:hover` 这样的文本，`&` 属于挂载它的
 作用域。所以同一个常量既能当外层规则的状态（`Pseudos.hover { … }` → `&:hover`），也能当一个独立选择器的零件

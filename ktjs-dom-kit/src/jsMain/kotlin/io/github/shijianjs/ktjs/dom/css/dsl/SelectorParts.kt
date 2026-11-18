@@ -1,6 +1,8 @@
 package io.github.shijianjs.ktjs.dom.css.dsl
 
 import web.cssom.ClassName
+import web.cssom.HtmlAttributes
+import web.cssom.Ident
 import web.dom.TagName
 
 /**
@@ -11,23 +13,50 @@ import web.dom.TagName
  * job ([compound], [selectorList], the combinators), so the two never drift into two half-DSLs.
  */
 
-/** `vaadin-button` — a type selector. The typed `TagName` constants are the intended argument. */
+/** `vaadin-button` — a type selector. The name has to be a [TagName], not a string. */
 fun tag(tagName: TagName<*>): CssSelector = CssSelector("$tagName")
-
-/** `vaadin-button` — the same selector when the name is not available as a `TagName` constant. */
-fun tag(name: String): CssSelector = CssSelector(name)
 
 /** `.card` — a class selector; pass the constant the sheet and the DOM both use. */
 fun className(className: ClassName): CssSelector = CssSelector(".$className")
-
-/** `.card` — the same selector for a name that is not a constant yet. */
-fun className(name: String): CssSelector = CssSelector(".$name")
 
 /** `#main` — an id selector. */
 fun id(value: String): CssSelector = CssSelector("#$value")
 
 /**
- * `[part="label"]` — an attribute selector.
+ * `[disabled]` — an attribute selector for a name the generated catalogue knows
+ * (`web.cssom.HtmlAttributes`, 210 entries: `class`, `part`, `type`, `disabled`, …).
+ *
+ * The catalogue value already carries the brackets (`HtmlAttributes.type` is `"[type]"`), so this
+ * form is the bare presence test and nothing is re-derived.
+ */
+fun attributeSelector(name: HtmlAttributes): CssSelector = CssSelector("$name")
+
+/**
+ * `[type="text"]` — the same catalogue entry, with a value.
+ *
+ * The brackets are stripped and handed to the string-based form below, which owns quoting,
+ * [AttributeOperator] and the case flag — one implementation of the bracket grammar, not two.
+ */
+fun attributeSelector(
+    name: HtmlAttributes,
+    value: String,
+    operator: AttributeOperator = AttributeOperator.equals,
+    quote: Boolean = true,
+    caseFlag: AttributeCase? = null,
+): CssSelector = attributeSelector(
+    name = "$name".removeSurrounding("[", "]"),
+    value = value,
+    operator = operator,
+    quote = quote,
+    caseFlag = caseFlag,
+)
+
+/**
+ * `[part="label"]` — an attribute selector for a name the catalogue does not carry.
+ *
+ * That is the whole point of this overload: ARIA (`aria-current`, `aria-expanded`), `data-*` and any
+ * namespace of a project's own are not HTML attributes, so there is no generated constant to pass. Every
+ * name that *is* an HTML attribute should go through [HtmlAttributes] instead.
  *
  * [value] is the only optional part: without it the selector is the bare `[name]` presence test.
  * [operator] matches the six CSS comparison forms; [quote] chooses `[name="value"]` over
@@ -55,15 +84,15 @@ fun attributeSelector(
  * `pseudoClass` / `pseudoElement` (and by the constants in [Pseudos]), never by a flag at the call
  * site — CSS fixes the kind per name.
  *
- * Two forms take an argument: a string for what CSS does not type (an `:nth-child` formula, a
- * `::part(name)` identifier) and a [CssSelector] for what it does — `:not(.is-hidden)`,
- * `:is(.a, .b)`, `:host([collapsed])`.
+ * Two forms take an argument: an [Ident] for the bare token CSS does not type — the `label` of
+ * `::part(label)`, the `2n+1` of `:nth-child(2n+1)` — and a [CssSelector] for what it does —
+ * `:not(.is-hidden)`, `:is(.a, .b)`, `:host([collapsed])`.
  */
 fun pseudo(pseudo: Pseudo): CssSelector = CssSelector("$pseudo")
 
 fun pseudo(
     pseudo: Pseudo,
-    argument: String,
+    argument: Ident,
 ): CssSelector = CssSelector("$pseudo($argument)")
 
 fun pseudo(

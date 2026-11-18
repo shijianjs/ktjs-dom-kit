@@ -79,6 +79,11 @@
     当规则键；`:host` / `*` / `&` 用 `Selectors`。`CssSelector("…")` 只给 CSS 本身无类型的片段当出口（公式、
     `::part` 名），不是「粘贴整条选择器」的入口。`vararg` 工厂不能接尾随块，先 `val key = compound(…)`
     再 `key { … }`。
+  - **属性名走目录，不走字符串**：HTML 属性一律 `attributeSelector(HtmlAttributes.disabled)` /
+    `attributeSelector(HtmlAttributes.type, "text")`（`web.cssom.HtmlAttributes` 的 210 个常量，带值时把值当第二个
+    实参）；字符串形式只剩目录外的名字——ARIA（`aria-current`）、`data-*`、项目自造的。`tag(…)` 只收 `TagName`、
+    `className(…)` 只收 `ClassName`，新名字在声明处写成 `val`；伪类的裸 token（`An+B` 公式、`::part` 的名字）
+    用 `ident("…")`。
   - 默认跑的是 production bundle；要验收 development bundle（`jsBrowserDevelopmentRun` 用的那种、不做 DCE），
     先 `./gradlew :demo:jsBrowserDevelopmentDistribution`，再
     `./gradlew :demo:e2eTest -Ddemo.dist=<repo>/demo/build/dist/js/developmentExecutable`（`e2eTest` 的

@@ -13,9 +13,19 @@ import web.cssom.Selector
  * pseudo, and the nesting selector `&`; combinators join them.
  *
  * ```kotlin
- * // .row.is-selected > vaadin-button::part(label)
+ * // .row.is-selected > vaadin-button[disabled]::part(label)
+ * private val ROW = ClassName("row")
+ * private val SELECTED = ClassName("is-selected")
+ * private val BUTTON: TagName<HTMLButtonElement> = TagName("vaadin-button")
+ *
  * compound(className(ROW), className(SELECTED))
- *     .child(compound(tag("vaadin-button"), pseudo(pseudoElement("part"), "label")))
+ *     .child(
+ *         compound(
+ *             tag(BUTTON),
+ *             attributeSelector(HtmlAttributes.disabled),
+ *             pseudo(pseudoElement("part"), ident("label")),
+ *         ),
+ *     )
  * ```
  *
  * Every part is a value, so a selector can be a field, passed to a function, or stored in a catalog.

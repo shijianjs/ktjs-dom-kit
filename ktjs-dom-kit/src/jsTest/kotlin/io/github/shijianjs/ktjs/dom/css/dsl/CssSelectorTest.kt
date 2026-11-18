@@ -6,7 +6,9 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import web.cssom.ClassName
 import web.cssom.Display
+import web.cssom.HtmlAttributes
 import web.cssom.Margin
+import web.cssom.ident
 import web.cssom.px
 import web.dom.TagName
 import web.html.HtmlTagName
@@ -20,16 +22,15 @@ class CssSelectorTest {
     private val ROW: ClassName = ClassName("row")
     private val SELECTED: ClassName = ClassName("is-selected")
     private val LABEL: ClassName = ClassName("label")
+    private val DEEP: ClassName = ClassName("deep")
 
     private val BUTTON: TagName<web.html.HTMLButtonElement> = TagName("vaadin-button")
 
     @Test
     fun simpleSelectorsRenderTheirToken() {
         assertEquals("vaadin-button", "${tag(BUTTON)}")
-        assertEquals("vaadin-button", "${tag("vaadin-button")}")
         assertEquals("div", "${tag(HtmlTagName.div)}")
         assertEquals(".row", "${className(ROW)}")
-        assertEquals(".row", "${className("row")}")
         assertEquals("#main", "${id("main")}")
         assertEquals("*", "${Selectors.universal}")
         assertEquals("&", "${Selectors.nesting}")
@@ -40,32 +41,43 @@ class CssSelectorTest {
     }
 
     @Test
+    fun attributesComeFromTheCatalogueOrFromTheirOwnName() {
+        // HTML attributes are a generated catalogue: the value it holds already is `[disabled]`.
+        assertEquals("[disabled]", "${attributeSelector(HtmlAttributes.disabled)}")
+        assertEquals("[type=\"text\"]", "${attributeSelector(HtmlAttributes.type, "text")}")
+        assertEquals(
+            "[class*=\"wide\"]",
+            "${attributeSelector(HtmlAttributes.`class`, "wide", AttributeOperator.substring)}",
+        )
+        // `part` is in the catalogue too, so a `::part` sheet reads the same way as `[part="label"]`.
+        assertEquals("[part=\"label\"]", "${attributeSelector(HtmlAttributes.part, "label")}")
+        // Names outside the catalogue keep their own: ARIA, `data-*`, and a project's own vocabulary.
+        assertEquals("[aria-current]", "${attributeSelector("aria-current")}")
+        assertEquals("[data-route=\"grid\" i]", "${attributeSelector("data-route", "grid", caseFlag = AttributeCase.insensitive)}")
+    }
+
+    @Test
     fun attributesCarryOperatorQuoteAndCaseFlag() {
-        assertEquals("[part]", "${attributeSelector("part")}")
-        assertEquals("[part=\"label\"]", "${attributeSelector("part", "label")}")
+        assertEquals("[lang|=\"en\"]", "${attributeSelector(HtmlAttributes.lang, value = "en", operator = AttributeOperator.dashMatch)}")
+        assertEquals("[href^=\"https\"]", "${attributeSelector(HtmlAttributes.href, value = "https", operator = AttributeOperator.prefix)}")
+        assertEquals("[href\$=\".pdf\"]", "${attributeSelector(HtmlAttributes.href, value = ".pdf", operator = AttributeOperator.suffix)}")
         // Unquoted values are legal CSS, and some tools print them that way.
-        assertEquals("[part=label]", "${attributeSelector("part", "label", quote = false)}")
-        assertEquals("[part~=\"label\"]", "${attributeSelector("part", value = "label", operator = AttributeOperator.includes)}")
-        assertEquals("[lang|=\"en\"]", "${attributeSelector("lang", value = "en", operator = AttributeOperator.dashMatch)}")
-        assertEquals("[href^=\"https\"]", "${attributeSelector("href", value = "https", operator = AttributeOperator.prefix)}")
-        assertEquals("[href\$=\".pdf\"]", "${attributeSelector("href", value = ".pdf", operator = AttributeOperator.suffix)}")
-        assertEquals("[class*=\"wide\"]", "${attributeSelector("class", value = "wide", operator = AttributeOperator.substring)}")
-        assertEquals("[data-route=\"grid\" i]", "${attributeSelector("data-route", value = "grid", caseFlag = AttributeCase.insensitive)}")
-        assertEquals("[data-route=\"Grid\" s]", "${attributeSelector("data-route", value = "Grid", caseFlag = AttributeCase.sensitive)}")
+        assertEquals("[part=label]", "${attributeSelector(HtmlAttributes.part, "label", quote = false)}")
+        assertEquals("[data-route=\"Grid\" s]", "${attributeSelector("data-route", "Grid", caseFlag = AttributeCase.sensitive)}")
     }
 
     @Test
     fun quotedAttributeValuesEscapeTheQuoteAndTheBackslash() {
-        assertEquals("[title=\"say \\\"hi\\\"\"]", "${attributeSelector("title", "say \"hi\"")}")
+        assertEquals("[title=\"say \\\"hi\\\"\"]", "${attributeSelector(HtmlAttributes.title, "say \"hi\"")}")
         assertEquals("[path=\"a\\\\b\"]", "${attributeSelector("path", "a\\b")}")
     }
 
     @Test
-    fun pseudosTakeAStringOrASelectorArgument() {
+    fun pseudosTakeAnIdentOrASelectorArgument() {
         assertEquals(":hover", "${pseudo(Pseudos.hover)}")
         assertEquals("::before", "${pseudo(Pseudos.before)}")
-        assertEquals(":nth-child(2n+1)", "${pseudo(pseudoClass("nth-child"), "2n+1")}")
-        assertEquals("::part(label)", "${pseudo(pseudoElement("part"), "label")}")
+        assertEquals(":nth-child(2n+1)", "${pseudo(pseudoClass("nth-child"), ident("2n+1"))}")
+        assertEquals("::part(label)", "${pseudo(pseudoElement("part"), ident("label"))}")
         assertEquals(":not(.is-selected)", "${pseudo(pseudoClass("not"), className(SELECTED))}")
         assertEquals(
             ":is(.row,.label)",
@@ -97,7 +109,7 @@ class CssSelectorTest {
         assertEquals(".row || .label", "${row column cell}")
 
         // Infix is left-associative, so a chain reads like the selector it produces.
-        assertEquals(".row > .label .deep", "${row child cell descendant className("deep")}")
+        assertEquals(".row > .label .deep", "${row child cell descendant className(DEEP)}")
     }
 
     @Test
@@ -111,11 +123,11 @@ class CssSelectorTest {
 
     @Test
     fun hostWithAnAttributeIsOneCompound() {
-        // `:host([collapsed]) > button` — the shape a Vaadin component writes by hand today. The
+        // `:host([disabled]) > button` — the shape a Vaadin component writes by hand today. The
         // attribute sits *inside* the pseudo's parentheses, so it is the pseudo's argument, not a
         // sibling simple selector.
-        val hostCollapsed = pseudo(Pseudos.host, attributeSelector("collapsed"))
-        assertEquals(":host([collapsed]) > button", "${hostCollapsed child tag("button")}")
+        val hostDisabled = pseudo(Pseudos.host, attributeSelector(HtmlAttributes.disabled))
+        assertEquals(":host([disabled]) > button", "${hostDisabled child tag(HtmlTagName.button)}")
     }
 
     @Test

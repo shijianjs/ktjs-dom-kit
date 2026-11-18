@@ -135,10 +135,11 @@ What the wrappers already provide (look for these in the IDE before writing your
 | `var / env / rgb / many / array / important / linearGradient / stop / Content() / NamedColor / PropertyName / translatex` | `web.cssom`'s `*.functions.kt`, `*.ext.kt`, `*.fun.kt` | values and functions |
 
 **What is still a string**: application-level custom property names (`CustomPropertyName("--brand")`),
-and the arguments CSS itself does not type — an `:nth-child(2n+1)` formula, a `::part(label)` name. The
-selectors themselves are no longer strings: `*` and `&` are constants of `Selectors`, and `:host` /
-`:root` / `:scope` are constants of `Pseudos` (they are pseudo-classes, so the same value also works as
-an argument to `pseudo(…)`).
+and the bare tokens CSS itself does not type — an `An+B` formula, a `::part` name, a language tag; those
+take the factory of the type they belong to (`ident("2n+1")`). The selectors themselves are no longer
+strings: `*` and `&` are constants of `Selectors`, `:host` / `:root` / `:scope` are constants of
+`Pseudos` (they are pseudo-classes, so the same value also works as an argument to `pseudo(…)`), and
+every HTML attribute name is a constant of `web.cssom.HtmlAttributes`.
 
 ### Selectors you build: `compound` + combinators
 
@@ -149,25 +150,34 @@ pass to a function, and finally use as a rule key.
 ```kotlin
 private val ROW = ClassName("row")
 private val SELECTED = ClassName("is-selected")
+private val BUTTON: TagName<HTMLButtonElement> = TagName("vaadin-button")
 
 val selected = compound(className(ROW), className(SELECTED))         // .row.is-selected
 val cell = className(ROW) child className(CLASS_LABEL)               // .row > .label
-val hostButton = pseudo(Pseudos.host, attributeSelector("collapsed")) child tag("button")
-                                                                     // :host([collapsed]) > button
+val hostDisabled = pseudo(Pseudos.host, attributeSelector(HtmlAttributes.disabled)) child tag(BUTTON)
+                                                                     // :host([disabled]) > vaadin-button
 
 cssSheet { selected { display = Display.block } }
 ```
 
 | Node kind | Factory |
 | --- | --- |
-| type selector | `tag(HtmlTagName.div)` / `tag("vaadin-button")` |
+| type selector | `tag(HtmlTagName.div)` / `tag(BUTTON)` — a `TagName`, never a string |
 | class, id | `className(ClassName("x"))`, `id("main")` |
-| attribute | `attributeSelector(name, value, operator, quote, caseFlag)` — value optional, `[part="label"]` |
-| pseudo-class, pseudo-element | `pseudo(Pseudos.hover)`, `pseudo(Pseudos.before)`, `pseudo(pseudoElement("part"), "label")`, `pseudo(pseudoClass("not"), className(HIDDEN))` |
+| attribute | `attributeSelector(HtmlAttributes.disabled)` / `attributeSelector(HtmlAttributes.type, "text")` — the generated catalogue; the string form is only for names outside it (`aria-current`, `data-*`) |
+| pseudo-class, pseudo-element | `pseudo(Pseudos.hover)`, `pseudo(Pseudos.before)`, `pseudo(pseudoElement("part"), ident("label"))`, `pseudo(pseudoClass("not"), className(HIDDEN))` |
 | `*`, `&` | `Selectors.universal`, `Selectors.nesting` |
 | compound (one element) | `compound(vararg parts)` |
 | combinators | `descendant`, `child`, `nextSibling`, `subsequentSibling`, `column` (infix) |
 | selector list | `selectorList(vararg selectors)` — commas |
+
+**Attribute names come from the catalogue.** `web.cssom.HtmlAttributes` is a sealed interface of 210
+constants, each holding the selector fragment with its brackets (`HtmlAttributes.type` is `"[type]"`);
+there is no constructor, which is why `attributeSelector(…)` takes the constant and not a name. A value
+is the second argument (`attributeSelector(HtmlAttributes.type, "text")` → `[type="text"]`), and the two
+forms without a catalogue entry — ARIA, `data-*`, a project's own names — are the only ones left on the
+string form. `tag(…)` and `className(…)` take `TagName` / `ClassName` only, so a new name is always a
+`val` at the point it is declared.
 
 A variant from `Pseudos` already *is* the selector part it looks like — `Pseudo` holds `:hover`, `&`
 belongs to the scope that attaches it. So the same constant is both a state of the enclosing rule
