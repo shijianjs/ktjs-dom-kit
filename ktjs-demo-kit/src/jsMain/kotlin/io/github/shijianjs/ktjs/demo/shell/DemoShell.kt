@@ -60,6 +60,7 @@ import web.events.EventHandler
 import web.events.EventType
 import web.events.addHandler
 import web.events.addEventListener
+import web.html.HTMLAnchorElement
 import web.html.HTMLElement
 import web.html.HtmlTagName
 import web.window.WindowTarget
@@ -112,10 +113,24 @@ class DemoShell : CustomElementAdapter() {
     private val drawerToggle = createDrawerToggle { ariaLabelProperty = "Toggle navigation" }
 
     /**
-     * The site title, in the navbar the way every app-layout example puts it: an `h1` that is a direct
-     * child of the navbar, not a box stacked back into the drawer.
+     * The site title: an `h1` in the navbar the way every app-layout example puts it, not a box
+     * stacked back into the drawer.
      */
     private val siteTitle: HTMLElement = HtmlTagName.h1 { classList.add(SHELL_TITLE) }
+
+    /**
+     * The mark and the title together are the site's home link.
+     *
+     * A real `<a href="#/">` rather than a click handler on the `h1`: the browser keeps link behaviour
+     * (middle-click, "copy link address", keyboard activation), and the fragment change is exactly what
+     * [Router] listens for. `#/` parses to the router's default route, so the link means "home" for any
+     * site without knowing which page that is.
+     */
+    private val siteLink: HTMLAnchorElement = HtmlTagName.a {
+        classList.add(SHELL_TITLE_LINK)
+        setAttribute("href", "#/")
+        append(siteTitle)
+    }
 
     private val titleVersion: HTMLElement = HtmlTagName.span { classList.add(SHELL_VERSION) }
 
@@ -202,7 +217,7 @@ class DemoShell : CustomElementAdapter() {
         sideNav.setAttribute("slot", "drawer")
 
         breadcrumbs.append(crumbGroup, crumbPage)
-        navbarStart.append(drawerToggle, siteTitle, titleVersion, breadcrumbs)
+        navbarStart.append(drawerToggle, siteLink, titleVersion, breadcrumbs)
         navbar.append(navbarStart, actions)
 
         docsMenu.dataset["menu"] = "docs"
@@ -264,7 +279,7 @@ class DemoShell : CustomElementAdapter() {
 
     private fun titleOf(entry: Entry, lang: Lang): String = textsFor(lang).pageTitles[entry.id] ?: entry.id
 
-    /** The mark sits immediately left of the name, so it reads as one lock-up with the title. */
+    /** The mark sits immediately left of the name inside the home link, so it reads as one lock-up. */
     private fun buildLogo() {
         val src = config.logoSrc ?: return
         val logo = HtmlTagName.img {
@@ -273,7 +288,7 @@ class DemoShell : CustomElementAdapter() {
             setAttribute("alt", "")
             setAttribute("aria-hidden", "true")
         }
-        navbarStart.insertBefore(logo, siteTitle)
+        siteLink.insertBefore(logo, siteTitle)
     }
 
     private fun buildGroups() {

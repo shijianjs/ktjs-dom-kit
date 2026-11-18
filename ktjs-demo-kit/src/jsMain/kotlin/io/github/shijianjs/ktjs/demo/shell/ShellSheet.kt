@@ -19,6 +19,7 @@ import web.cssom.Display
 import web.cssom.JustifyContent
 import web.cssom.Length
 import web.cssom.Margin
+import web.cssom.None
 import web.cssom.PropertyName
 import web.cssom.WhiteSpace
 import web.cssom.deg
@@ -71,6 +72,19 @@ val SHELL_SHEET: CSSStyleSheet = cssSheet {
 
     // The title and its version tag live in the navbar. Sizes follow the app-layout examples:
     // `font-size: 1.125rem; margin: 0` for the h1, a muted 11px tag beside it.
+    //
+    // The link keeps the browser's link behaviour but none of its look: the `h1` inside carries the
+    // wordmark (colour, weight, gradient), so the anchor only removes the underline and the visited
+    // colour. `display: flex` makes the mark and the `h1` one flex row, so the anchor stays the same
+    // height as the plain `h1` did and the navbar's centre line does not move.
+    SHELL_TITLE_LINK {
+        display = Display.flex
+        alignItems = AlignItems.center
+        textDecorationLine = None.none
+        color = Palette.text
+        flexShrink = number(0.0)
+    }
+
     SHELL_TITLE {
         margin = Margin(0.px, 0.px)
         fontSize = 18.px

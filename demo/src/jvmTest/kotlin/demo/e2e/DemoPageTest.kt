@@ -131,6 +131,31 @@ class DemoPageTest(private val browser: Browser) {
     }
 
     /**
+     * The wordmark is the site's way home: an `<a href="#/">` around the mark and the title, not a click
+     * handler on the `h1`. Link behaviour therefore stays intact (middle-click, copy address, keyboard
+     * activation), and `#/` parses to the router's default route without the shell hard-coding a slug.
+     */
+    @Test
+    fun `the wordmark links back to the home page`() {
+        val home = open("")
+        val homeTitle = home.locator("ktjs-demo-page .page__title").textContent()
+        home.close()
+
+        val page = open("#/stylesheets")
+        page.waitForSelector("ktjs-demo-page .page__title:text-is('Stylesheets')")
+
+        val link = page.locator("ktjs-demo-shell [slot='navbar'] a.shell__title-link")
+        assertEquals(1, link.count(), "the title is wrapped in one link")
+        assertEquals("#/", link.getAttribute("href"))
+        assertEquals("ktjs-dom-kit", link.locator(".shell__title").textContent())
+
+        link.click()
+        page.waitForSelector("ktjs-demo-page .page__title:text-is('$homeTitle')")
+        assertEquals("#/", page.evaluate("location.hash") as String, "the link went home through the router")
+        assertNoErrors()
+    }
+
+    /**
      * The action row is the last thing in the bar, so it needs an inset of its own: without it the
      * theme menu sits flush against the window edge (and the scrollbar).
      */

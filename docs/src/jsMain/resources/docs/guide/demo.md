@@ -33,6 +33,10 @@ The shell is one `vaadin-app-layout`:
 - the site mark, the title (`<h1>`), the version tag, the drawer toggle and the breadcrumbs sit in the
   navbar, the way the official `app-layout` drawer example does it; the grouped `vaadin-side-nav` sits
   in the drawer, one parent item per group and one child item per page;
+- the mark and the title are one home link, `<a href="#/">` around them: a reader who wandered into a
+  page gets back by clicking the wordmark, and the browser keeps link behaviour (middle-click, copy
+  address, keyboard activation). `#/` parses to the router's default route, so the link means "home"
+  without the shell knowing which slug that is;
 - every navigation entry carries an `iconify-icon` (`lucide:*`), so the demo doubles as a check that
   `ktjs-iconify` and the shell work together;
 - the action row is three `vaadin-menu-bar` drop-downs — **Docs** (documentation, API reference,

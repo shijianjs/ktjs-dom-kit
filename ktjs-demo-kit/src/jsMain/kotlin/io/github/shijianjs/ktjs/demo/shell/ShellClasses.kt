@@ -10,8 +10,11 @@ import web.cssom.ClassName
  * not a class at all — a test selects the element by its role (`[slot='drawer']`, `vaadin-app-layout`,
  * …).
  */
-/** The site title, an `h1` that sits directly in the navbar's `slot="navbar"`. */
+/** The site title, an `h1` inside the home link; the `h1` itself is not the navigation target. */
 internal val SHELL_TITLE: ClassName = ClassName("shell__title")
+
+/** The home link around the mark and the title; a real `<a href="#/">`, so the wordmark leads home. */
+internal val SHELL_TITLE_LINK: ClassName = ClassName("shell__title-link")
 
 /** The site mark, immediately left of the title; an `<img>`, sized by the sheet, not by attributes. */
 internal val SHELL_LOGO: ClassName = ClassName("shell__logo")
