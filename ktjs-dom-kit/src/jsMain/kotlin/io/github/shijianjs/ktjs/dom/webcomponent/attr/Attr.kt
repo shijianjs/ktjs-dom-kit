@@ -1,5 +1,6 @@
-package io.github.shijianjs.ktjs.dom.attribute
+package io.github.shijianjs.ktjs.dom.webcomponent.attr
 
+import io.github.shijianjs.ktjs.dom.attribute.AttributeCodec
 import io.github.shijianjs.ktjs.dom.attribute.types.BooleanAttributeCodec
 import io.github.shijianjs.ktjs.dom.attribute.types.DoubleAttributeCodec
 import io.github.shijianjs.ktjs.dom.attribute.types.IntAttributeCodec

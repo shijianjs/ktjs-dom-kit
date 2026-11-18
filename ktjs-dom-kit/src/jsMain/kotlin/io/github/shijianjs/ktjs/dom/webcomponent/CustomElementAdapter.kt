@@ -1,8 +1,8 @@
 package io.github.shijianjs.ktjs.dom.webcomponent
 
-import io.github.shijianjs.ktjs.dom.attribute.AttributeDelegate
-import io.github.shijianjs.ktjs.dom.attribute.AttributeProvider
-import io.github.shijianjs.ktjs.dom.attribute.attr
+import io.github.shijianjs.ktjs.dom.webcomponent.attr.AttributeDelegate
+import io.github.shijianjs.ktjs.dom.webcomponent.attr.AttributeProvider
+import io.github.shijianjs.ktjs.dom.webcomponent.attr.attr
 import js.objects.unsafeJso
 import kotlin.js.JsAny
 import kotlin.js.JsName

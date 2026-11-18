@@ -2,7 +2,7 @@ package io.github.shijianjs.ktjs.dom.demo.page.attribute
 
 import io.github.shijianjs.ktjs.demo.Palette
 import io.github.shijianjs.ktjs.demo.RESET
-import io.github.shijianjs.ktjs.dom.attribute.attr
+import io.github.shijianjs.ktjs.dom.webcomponent.attr.attr
 import io.github.shijianjs.ktjs.dom.css.cssSheet
 import io.github.shijianjs.ktjs.dom.element.createElement
 import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementAdapter

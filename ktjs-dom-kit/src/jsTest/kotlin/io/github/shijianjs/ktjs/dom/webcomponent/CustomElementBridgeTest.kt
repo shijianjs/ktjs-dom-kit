@@ -1,6 +1,6 @@
 package io.github.shijianjs.ktjs.dom.webcomponent
 
-import io.github.shijianjs.ktjs.dom.attribute.newProbe
+import io.github.shijianjs.ktjs.dom.webcomponent.attr.newProbe
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull

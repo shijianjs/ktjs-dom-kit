@@ -1,4 +1,4 @@
-package io.github.shijianjs.ktjs.dom.attribute
+package io.github.shijianjs.ktjs.dom.webcomponent.attr
 
 /**
  * `maxCount` → `max-count`: the attribute name a property gets when `attr` is not told one.

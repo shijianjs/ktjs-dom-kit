@@ -1,4 +1,4 @@
-package io.github.shijianjs.ktjs.dom.attribute
+package io.github.shijianjs.ktjs.dom.webcomponent.attr
 
 import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementAdapter
 
