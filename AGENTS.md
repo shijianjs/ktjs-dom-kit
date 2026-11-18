@@ -485,6 +485,13 @@ registry 是全局的，将来真要 `npm publish` 某个包时得显式 `--regi
 `kotlin-js-plain-objects` 固定到 Maven Central；新增 wrapper 依赖时如遇 `Could not find ... .klib`，把
 对应 group/module 加进去。
 
+`mavenLocal()` 只对本账号的 SNAPSHOT 包开放（`content { includeGroupByRegex("io\\.github\\.shijianjs(\\..*)?") }`），
+不要写成裸的 `mavenLocal()`。本机 `~/.m2` 里除了 `publishToMavenLocal` 的产物，还有非 Gradle 工具（mvn、
+发布中枢）留下的 POM-only 副本，缺 `.module` 就没有变体元数据；`kotlin-stdlib` 一旦从这种副本解析，JS
+变体直接消失，编译表现是几百条 `Unresolved reference 'String'` / `Missing stdlib class`，而不是「找不到依赖」。
+取证办法：`--debug` 里翻 `Kotlin compiler args` 的 `-libraries`，若只有 wrapper 的 klib、没有
+`kotlin-stdlib-js-<版本>.klib`，先查这一条，别去怀疑 daemon 或缓存（清 build、`--stop`、换 JDK 都治不好）。
+
 ## CI 与依赖更新
 
 - `.github/workflows/ci.yml` 只在**所有 PR** 和手动触发时运行 `./gradlew build`（JDK 21，Ubuntu），

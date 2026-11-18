@@ -22,8 +22,14 @@ pluginManagement {
 
 dependencyResolutionManagement {
     repositories {
-        // Same reasoning as above: the wrapper klib of a SNAPSHOT version comes from `mavenLocal`.
-        mavenLocal()
+        // `mavenLocal` is only here for this account's own SNAPSHOT wrappers, and it is limited to
+        // them on purpose: `~/.m2` also collects POM-only copies from non-Gradle tools, and a copy
+        // without the `.module` file has no variant metadata. `kotlin-stdlib` resolved from such a
+        // copy loses its JS variant, so the JS compile ends with "Missing stdlib class" / hundreds of
+        // unresolved `kotlin.*` references instead of an honest "artifact not found".
+        mavenLocal {
+            content { includeGroupByRegex("io\\.github\\.shijianjs(\\..*)?") }
+        }
         // Maven Central is the source of truth for kotlin-wrappers: the Aliyun mirror lags behind
         // and sometimes serves metadata without the corresponding klibs. Gradle does not fall back
         // to the next repository once metadata is found, so pin these modules to Central even when
