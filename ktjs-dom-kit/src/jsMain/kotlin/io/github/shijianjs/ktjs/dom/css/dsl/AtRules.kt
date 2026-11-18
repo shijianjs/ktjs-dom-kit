@@ -1,6 +1,5 @@
 package io.github.shijianjs.ktjs.dom.css.dsl
 
-import io.github.shijianjs.ktjs.dom.css.SupportsQuery
 import csstype.RuleBuilder
 import web.cssom.AtRules
 
@@ -10,7 +9,7 @@ import web.cssom.AtRules
  * `csstype.RuleBuilder` already has `@media(query) { … }` (plus `@container`, `@font-face`,
  * `@view-transition`), so those are used directly; `web.cssom.AtRules` types every at-rule keyword
  * (`media`, `supports`, `layer`, `page`, …) as an `AtRules` constant. cssom has no supports-condition
- * type, so `SupportsQuery` (in `dom.css`) mirrors `MediaQuery`: typed declarations plus
+ * type, so `SupportsQuery` (in this package) mirrors `MediaQuery`: typed declarations plus
  * `and` / `or` / `not`.
  *
  * ```kotlin

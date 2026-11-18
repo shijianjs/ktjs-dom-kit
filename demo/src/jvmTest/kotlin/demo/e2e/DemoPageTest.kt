@@ -466,6 +466,35 @@ class DemoPageTest(private val browser: Browser) {
         assertTrue(messy.contains("[primary, small]"), "readout was: $messy")
         assertNoErrors()
     }
+
+    /**
+     * The last section of the styling page builds its rule keys from parts instead of pasting them:
+     * `.selector-chip.is-selected` (a compound) and `.selector-strip__row > [aria-current]` (a child
+     * combinator). A rule that only *looks* right would leave the three chips identical.
+     */
+    @Test
+    fun `a selector built from parts paints the chip it names`() {
+        val page = open("#/stylesheets")
+        val chips = page.locator("ktjs-demo-page demo-selector-strip span")
+        assertEquals(3, chips.count(), "the strip carries three chips")
+
+        fun computed(locator: Locator, property: String): String =
+            locator.evaluate("(node, name) => getComputedStyle(node)[name]", property) as String
+
+        val plain = chips.nth(0)
+        val selected = chips.nth(1)
+        assertTrue(
+            computed(plain, "color") != computed(selected, "color"),
+            "the compound rule must change the selected chip's colour: " +
+                "plain=${computed(plain, "color")} selected=${computed(selected, "color")}",
+        )
+        assertEquals("600", computed(selected, "fontWeight"), "the compound rule sets the weight")
+        assertTrue(
+            computed(selected, "backgroundColor") != "rgba(0, 0, 0, 0)",
+            "the row's `[aria-current]` rule must paint the selected chip, not leave it transparent",
+        )
+        assertNoErrors()
+    }
 }
 
 /** Relative luminance of an `rgb(…)`/`rgba(…)` colour; used to tell a light page from a dark one. */

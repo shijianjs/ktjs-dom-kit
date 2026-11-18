@@ -3,18 +3,17 @@ package io.github.shijianjs.ktjs.dom.css
 import csstype.fallback
 import io.github.shijianjs.ktjs.dom.css.dsl.Pseudo
 import io.github.shijianjs.ktjs.dom.css.dsl.Pseudos
-import io.github.shijianjs.ktjs.dom.css.RadialGradientShape
+import io.github.shijianjs.ktjs.dom.css.dsl.RadialGradientShape
 import io.github.shijianjs.ktjs.dom.css.dsl.pseudo
 import io.github.shijianjs.ktjs.dom.css.dsl.pseudos
-import io.github.shijianjs.ktjs.dom.css.colorStop
-import io.github.shijianjs.ktjs.dom.css.pointerEventsNone
-import io.github.shijianjs.ktjs.dom.css.and as supportsAnd
+import io.github.shijianjs.ktjs.dom.css.dsl.colorStop
+import io.github.shijianjs.ktjs.dom.css.dsl.and as supportsAnd
 import io.github.shijianjs.ktjs.dom.css.dsl.invoke
-import io.github.shijianjs.ktjs.dom.css.not as supportsNot
-import io.github.shijianjs.ktjs.dom.css.or as supportsOr
-import io.github.shijianjs.ktjs.dom.css.radialGradient
+import io.github.shijianjs.ktjs.dom.css.dsl.not as supportsNot
+import io.github.shijianjs.ktjs.dom.css.dsl.or as supportsOr
+import io.github.shijianjs.ktjs.dom.css.dsl.radialGradient
 import io.github.shijianjs.ktjs.dom.css.dsl.supports
-import io.github.shijianjs.ktjs.dom.css.supportsDeclaration
+import io.github.shijianjs.ktjs.dom.css.dsl.supportsDeclaration
 import io.github.shijianjs.ktjs.dom.css.dsl.webkitBackgroundClip
 import io.github.shijianjs.ktjs.dom.css.dsl.webkitBackgroundClipName
 import kotlin.test.Test
@@ -25,6 +24,7 @@ import web.cssom.ClassName
 import web.cssom.Color
 import web.cssom.Display
 import web.cssom.NamedColor
+import web.cssom.None
 import web.cssom.Position
 import web.cssom.PropertyName
 import web.cssom.and
@@ -176,7 +176,10 @@ class CssSheetTest {
         val text = cssText {
             cardClass {
                 position = Position.absolute
-                pointerEvents = pointerEventsNone
+                // cssom types `pointer-events` as `PointerEvents?`, whose companions are the SVG
+                // keywords; `none` is typed separately as `web.cssom.None`, a subtype of both
+                // `NoneType` and `PointerEvents`.
+                pointerEvents = None.none
                 background = radialGradient(
                     RadialGradientShape.Circle,
                     colorStop(`var`(CustomPropertyName<Color>("--glow"), NamedColor.black)),

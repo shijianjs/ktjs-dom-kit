@@ -111,9 +111,51 @@ supports(
 | `maxWidth / minWidth / width / height / orientation / prefersColorScheme / prefersReducedMotion / …` | `web.cssom.atrule/*.fun.kt` | 媒体特性（一整个目录，约 30 个） |
 | `var / env / rgb / many / array / important / linearGradient / stop / Content() / NamedColor / PropertyName / translatex` | `web.cssom` 的 `*.functions.kt`、`*.ext.kt`、`*.fun.kt` | 取值与函数 |
 
-**目前确实还是字符串的**：`:host` 与 `*` 这类顶层选择器、应用级自定义属性名。伪类键和 `@supports`
-条件都已经不再手写——前者由 `Pseudos` + `pseudo` / `pseudos` 覆盖，后者由 `css/Supports.kt` 照
-`MediaQuery` 补的 `SupportsQuery` 覆盖。
+**目前确实还是字符串的**：应用级自定义属性名（`CustomPropertyName("--brand")`），以及 CSS 本身就没有类型的实参
+——`:nth-child(2n+1)` 这种公式、`::part(label)` 这种标识符。选择器本身不再是字符串：`:host`、`*`、`&` 都是
+`Selectors` 的常量。
+
+### 拼接选择器：`compound` + 组合器
+
+`css/dsl/CssSelector.kt` 是一个选择器表达式引擎：每种节点一个工厂，组合器是 infix 函数，产出的 `CssSelector`
+是一个值——能存字段、能传函数、最后才当规则键。
+
+```kotlin
+private val ROW = ClassName("row")
+private val SELECTED = ClassName("is-selected")
+
+val selected = compound(className(ROW), className(SELECTED))         // .row.is-selected
+val cell = className(ROW) child className(CLASS_LABEL)               // .row > .label
+val hostButton = pseudo("host", attributeSelector("collapsed")) child tag("button")
+                                                                     // :host([collapsed]) > button
+
+cssSheet { selected { display = Display.block } }
+```
+
+| 节点类型 | 工厂 |
+| --- | --- |
+| 类型选择器 | `tag(HtmlTagName.div)` / `tag("vaadin-button")` |
+| class、id | `className(ClassName("x"))`、`id("main")` |
+| 属性 | `attributeSelector(name, value, operator, quote, caseFlag)`，value 可省，`[part="label"]` |
+| 伪类、伪元素 | `pseudo("hover")`、`pseudo("before", element = true)`、`pseudo("not", className(HIDDEN))` |
+| `*`、`&`、`:host`、`:root`、`:scope` | `Selectors.universal / nesting / host / root / scope` |
+| 复合（同一个元素） | `compound(vararg parts)` |
+| 组合器 | `descendant`、`child`、`nextSibling`、`subsequentSibling`、`column`（infix） |
+| 选择器列表 | `selectorList(vararg selectors)`，逗号连接 |
+
+`Pseudos` 里的变体是 `Pseudo`，带着把它挂到父规则上的 `&`；`Pseudos.hover.asCssSelector()` 去掉这个标记，
+所以变体也能当一个独立选择器的组成部分。
+
+引擎刻意不做的三件事：
+
+- **不解析**。`CssSelector(text)` 只接收交给它的那一段文本，给 CSS 没有类型的地方用；它不是「粘贴整条选择器」
+  的入口——那条字符串正是这套 API 要替代的东西。
+- **不转义标识符**。class 名里带空格或引号是调用点的 bug，不靠静默转义掩盖。
+- **渲染后不再重排**。组合器按 CSS 的写法带空格（`.row > .label`），stylis 在样式表里会压成 `.row>.label`，
+  所以断言文本要比对样式表产物，而不是比选择器。
+
+`vararg` 工厂（`compound(…)`、`selectorList(…)`）不能直接接尾随块：lambda 会被当成多一个实参。先把值命名
+（`val selected = compound(…)` 再 `selected { … }`），或者加括号——和 `many(…)` 是同一个坑。
 
 ### 自定义属性：具名常量 + `var(name, fallback)`
 
@@ -142,20 +184,24 @@ cssom 没有应用级属性名的常量，字符串在这里出现一次；具�
 `PropertyName.borderColor` 能当过渡属性名，是因为 `PropertyName<T> : Ident`，而 `IdentType` 里包含
 `TransitionProperty`——所以 `TransitionProperty` 只暴露 `all` 并不妨碍使用，**不需要 cast**。
 
-### cssom 没覆盖的部分：在 `io.github.shijianjs.ktjs.dom.css` 里补
+### cssom 没覆盖的部分：在 `io.github.shijianjs.ktjs.dom.css.dsl` 里补
 
 不要因为「cssom 没有」就把整条规则退回文本，也不要让 `unsafeCast` 散到调用点。缺什么就在本模块的
-`css` 包里按官方风格（`unsafeCast` 拼一次、值仍然类型化）补一个，调用点照常写类型：
+`css.dsl` 包里按官方风格（`unsafeCast` 拼一次、值仍然类型化）补一个，调用点照常写类型：
 
 | 缺的东西 | 补在哪 | 调用点形态 |
 | --- | --- | --- |
-| `radial-gradient(…)` | `css/Gradients.kt` | `radialGradient(RadialGradientShape.Circle, colorStop(glow), stop(Color.transparent, 70.pct))` |
-| 无位置的颜色停靠点 | `css/Gradients.kt` | `colorStop(color)`——cssom 的 `stop` 总要带位置 |
+| `radial-gradient(…)` | `css/dsl/Gradients.kt` | `radialGradient(RadialGradientShape.Circle, colorStop(glow), stop(Color.transparent, 70.pct))` |
+| 无位置的颜色停靠点 | `css/dsl/Gradients.kt` | `colorStop(color)`——cssom 的 `stop` 总要带位置 |
 | `-webkit-background-clip`（属性 + 名字） | `css/dsl/VendorProperties.kt` | `webkitBackgroundClip(BackgroundClip.text)`、`webkitBackgroundClipName` 给 supports 条件用 |
-| `pointer-events: none` | `css/Values.kt` | `pointerEventsNone`（`PointerEvents` 生成出来只有 SVG 那批值） |
-| `@supports` 条件类型 | `css/Supports.kt` | `SupportsQuery` + `supportsDeclaration(PropertyName<T>, T)` + `and/or/not`，照 `web.cssom.MediaQuery` 的形态 |
+| `@supports` 条件类型 | `css/dsl/Supports.kt` | `SupportsQuery` + `supportsDeclaration(PropertyName<T>, T)` + `and/or/not`，照 `web.cssom.MediaQuery` 的形态 |
 | `@supports` 块（唯一缺的 at-rule helper） | `css/dsl/AtRules.kt` | `supports(query) { … }`，关键字取 `AtRules.supports` |
 | 伪类/伪元素常量 + 组合态 | `css/dsl/Pseudos.kt` | `Pseudos.hover` / `pseudo(…)` / `pseudos(…)`（64 个常量） |
+| 用零件拼选择器 | `css/dsl/CssSelector.kt` | `compound(…)`、`selectorList(…)`、`className` / `tag` / `attributeSelector` / `pseudo`、各个组合器 |
+
+有两处 cssom **其实已经覆盖**，不要再自造：`pointer-events: none` 一度在这里当过常量，但 cssom 生成的是
+`web.cssom.None.none`（`None : NoneType`，而 `NoneType` 是 `PointerEvents` 的父类型，直接赋给属性即可）。
+先搜符号再补常量——这条就是下面「找不到类先怀疑自己」的另一面。
 
 补的规矩：**值仍然类型化**（枚举、工具类型、`Length`），只有「属性名」这种没法类型化的东西才写成字符串；
 一个缺口一个函数或常量，不要提供 `putRaw(name, value)` 这类通用逃生口——那等于把字符串又请回来。

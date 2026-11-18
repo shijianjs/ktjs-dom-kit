@@ -25,7 +25,8 @@
   `semanticModules`）。内容：**页面侧**那一半（`cssSheet { … }` 经 `@emotion/serialize` + `stylis`、
   `loadjs` 封装），加上**写自定义元素**那一半（`dom.webcomponent` 的 `CustomElementAdapter` 与 shadow
   root、`dom.element` 的 `createElement` / `invoke` / `unaryPlus` 与 `inlineStyle`、`dom.webcomponent.attr`
-  里的 `attr` 委托与 `AttributeChange`）。包按关注点分：`dom.css`（语法糖在 `dom.css.dsl`）、
+  里的 `attr` 委托与 `AttributeChange`）。包按关注点分：`dom.css`（只剩 `cssSheet`，语法糖全在
+  `dom.css.dsl`：伪类、at-rule、渐变、`@supports`、以及拼选择器的 `CssSelector` 引擎）、
   `dom.loadjs`、`dom.element`、`dom.webcomponent`（`attr` 委托是它的子包：只给自定义元素作者用，对外的
   公开面基本就是 `attr`）。
   它用 `api(project(":ktjs-wrapper-kit"))` 把 wrapper 那一半也交给页面代码，所以对外 API 仍是完整的一份。
@@ -73,6 +74,11 @@
     给所有元素凭空加能力的扩展。
   - **样式表与 `ClassName` 常量跟着 owner 走**：不要再合成一份 `Sheets.kt` / `Classes.kt`，也不要建 `style/`；
     只有「每棵树都要 adopt」的 reset 与「整站一起变」的调色板可以跨包。
+  - **选择器用 `css.dsl` 的引擎拼，不要拼字符串**：`className(ROW) child attributeSelector("aria-current")`、
+    `compound(className(CHIP), className(SELECTED))`、`selectorList(…)` 这类调用产出 `CssSelector` 值，可直接
+    当规则键；`:host` / `*` / `&` 用 `Selectors`。`CssSelector("…")` 只给 CSS 本身无类型的片段当出口（公式、
+    `::part` 名），不是「粘贴整条选择器」的入口。`vararg` 工厂不能接尾随块，先 `val key = compound(…)`
+    再 `key { … }`。
   - 默认跑的是 production bundle；要验收 development bundle（`jsBrowserDevelopmentRun` 用的那种、不做 DCE），
     先 `./gradlew :demo:jsBrowserDevelopmentDistribution`，再
     `./gradlew :demo:e2eTest -Ddemo.dist=<repo>/demo/build/dist/js/developmentExecutable`（`e2eTest` 的

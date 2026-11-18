@@ -125,10 +125,56 @@ What the wrappers already provide (look for these in the IDE before writing your
 | `maxWidth / minWidth / width / height / orientation / prefersColorScheme / prefersReducedMotion / …` | `web.cssom.atrule/*.fun.kt` | media features (a whole directory, about 30 of them) |
 | `var / env / rgb / many / array / important / linearGradient / stop / Content() / NamedColor / PropertyName / translatex` | `web.cssom`'s `*.functions.kt`, `*.ext.kt`, `*.fun.kt` | values and functions |
 
-**What is still a string**: the top-level selectors `:host` and `*`, and application-level custom
-property names. Pseudo-class keys and `@supports` conditions are not — the former are covered by
-`Pseudos` + `pseudo` / `pseudos`, the latter by `css/Supports.kt`'s `SupportsQuery`, modelled after
-`MediaQuery`.
+**What is still a string**: application-level custom property names (`CustomPropertyName("--brand")`),
+and the arguments CSS itself does not type — an `:nth-child(2n+1)` formula, a `::part(label)` name. The
+selectors themselves are no longer strings: `:host`, `*`, `&` are constants of `Selectors`.
+
+### Selectors you build: `compound` + combinators
+
+`css/dsl/CssSelector.kt` is an expression engine for selectors: every node kind is a factory, the
+combinators are infix functions, and the result is a `CssSelector` — a value you can hold in a field,
+pass to a function, and finally use as a rule key.
+
+```kotlin
+private val ROW = ClassName("row")
+private val SELECTED = ClassName("is-selected")
+
+val selected = compound(className(ROW), className(SELECTED))         // .row.is-selected
+val cell = className(ROW) child className(CLASS_LABEL)               // .row > .label
+val hostButton = pseudo("host", attributeSelector("collapsed")) child tag("button")
+                                                                     // :host([collapsed]) > button
+
+cssSheet { selected { display = Display.block } }
+```
+
+| Node kind | Factory |
+| --- | --- |
+| type selector | `tag(HtmlTagName.div)` / `tag("vaadin-button")` |
+| class, id | `className(ClassName("x"))`, `id("main")` |
+| attribute | `attributeSelector(name, value, operator, quote, caseFlag)` — value optional, `[part="label"]` |
+| pseudo-class, pseudo-element | `pseudo("hover")`, `pseudo("before", element = true)`, `pseudo("not", className(HIDDEN))` |
+| `*`, `&`, `:host`, `:root`, `:scope` | `Selectors.universal / nesting / host / root / scope` |
+| compound (one element) | `compound(vararg parts)` |
+| combinators | `descendant`, `child`, `nextSibling`, `subsequentSibling`, `column` (infix) |
+| selector list | `selectorList(vararg selectors)` — commas |
+
+A variant from `Pseudos` is a `Pseudo` and carries the `&` that attaches it to its parent rule;
+`Pseudos.hover.asCssSelector()` drops that marker, so a variant also works as a part of a standalone
+selector.
+
+What the engine deliberately does not do:
+
+- **No parsing.** `CssSelector(text)` takes whatever it is handed, for the one piece CSS does not type.
+  It is not an entry point for a pasted selector — that is the string this API exists to replace.
+- **No escaping of identifiers.** A class name that contains a space or a quote is a bug at the call
+  site, not something to hide.
+- **No re-formatting after rendering.** Combinators render with the spaces CSS writes
+  (`.row > .label`); stylis compacts them inside the sheet (`.row>.label`), so a test that compares text
+  compares the sheet.
+
+A `vararg` factory (`compound(…)`, `selectorList(…)`) cannot take a trailing block: the lambda reads as
+one more argument. Name the value (`val selected = compound(…)` and then `selected { … }`) or add
+parentheses — the same trap as `many(…)`.
 
 ### Custom properties: a named constant + `var(name, fallback)`
 
@@ -159,21 +205,26 @@ appears once, in a named constant, instead of scattered through the sheets.
 `IdentType` includes `TransitionProperty` — so the fact that `TransitionProperty` only exposes `all`
 does not get in the way, and **no cast is needed**.
 
-### What cssom does not cover: fill the gap in `io.github.shijianjs.ktjs.dom.css`
+### What cssom does not cover: fill the gap in `io.github.shijianjs.ktjs.dom.css.dsl`
 
 Do not fall back to a text rule because "cssom does not have it", and do not scatter `unsafeCast`
-into the call sites. Add the missing piece to this module's `css` package in the official style (one
+into the call sites. Add the missing piece to this module's `css.dsl` package in the official style (one
 `unsafeCast`, values stay typed) and keep writing typed code at the call site:
 
 | Missing | Added in | Call site |
 | --- | --- | --- |
-| `radial-gradient(…)` | `css/Gradients.kt` | `radialGradient(RadialGradientShape.Circle, colorStop(glow), stop(Color.transparent, 70.pct))` |
-| a colour stop with no position | `css/Gradients.kt` | `colorStop(color)` — cssom's `stop` always takes a position |
+| `radial-gradient(…)` | `css/dsl/Gradients.kt` | `radialGradient(RadialGradientShape.Circle, colorStop(glow), stop(Color.transparent, 70.pct))` |
+| a colour stop with no position | `css/dsl/Gradients.kt` | `colorStop(color)` — cssom's `stop` always takes a position |
 | `-webkit-background-clip` (property and name) | `css/dsl/VendorProperties.kt` | `webkitBackgroundClip(BackgroundClip.text)` (camelCase key, emotion hyphenates it), and `webkitBackgroundClipName` for the `@supports` condition |
-| `pointer-events: none` | `css/Values.kt` | `pointerEventsNone` (the generated `PointerEvents` lists only the SVG values) |
-| typed `@supports` conditions | `css/Supports.kt` | `SupportsQuery` + `supportsDeclaration(PropertyName<T>, T)` + `and`/`or`/`not`, modelled after `web.cssom.MediaQuery` |
+| typed `@supports` conditions | `css/dsl/Supports.kt` | `SupportsQuery` + `supportsDeclaration(PropertyName<T>, T)` + `and`/`or`/`not`, modelled after `web.cssom.MediaQuery` |
 | an `@supports` block (the only at-rule helper that was missing) | `css/dsl/AtRules.kt` | `supports(query) { … }`, with the keyword from `AtRules.supports` |
 | pseudo-class / pseudo-element constants and combined states | `css/dsl/Pseudos.kt` | `Pseudos.hover` / `pseudo(…)` / `pseudos(…)` (64 constants) |
+| building selectors out of parts | `css/dsl/CssSelector.kt` | `compound(…)`, `selectorList(…)`, `className` / `tag` / `attributeSelector` / `pseudo`, the combinators |
+
+Two gaps cssom does *not* leave: `pointer-events: none` was a local constant for a while, but cssom
+already types it as `web.cssom.None.none` (`None : NoneType`, and `NoneType` is a supertype of
+`PointerEvents`, so it assigns to the property directly). Check the generated types before adding a
+constant — search the symbol first, as the rule below says.
 
 The rule for the additions: **values stay typed** (enums, utility types, `Length`); only the things
 that cannot be typed — a property name — stay strings. One gap, one function or constant. Do not add

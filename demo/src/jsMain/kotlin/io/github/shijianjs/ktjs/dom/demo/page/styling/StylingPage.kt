@@ -24,6 +24,11 @@ private class StylingTexts(
     val inlineStep: String,
     val sheetStep: String,
     val sharedStep: String,
+    val selectorHeading: String,
+    val selectorHint: String,
+    val selectorNote: String,
+    val chipPlain: String,
+    val chipSelected: String,
 )
 
 private val stylingEnglish: StylingTexts = StylingTexts(
@@ -38,6 +43,13 @@ private val stylingEnglish: StylingTexts = StylingTexts(
     inlineStep = "Inline: layout that never changes with state — display, gaps, padding, radius.",
     sheetStep = "Component sheet: :hover, :focus-visible, ::before, @media — what inline cannot express.",
     sharedStep = "Shared sheet: the reset (box-sizing, :host display) and the theme tokens every component needs.",
+    selectorHeading = "A selector you build",
+    selectorHint = "The middle chip is painted by `.selector-chip.is-selected` and by the row's `[aria-current]` " +
+        "rule — both keys came from parts, not from a pasted string.",
+    selectorNote = "A class name that is spelled wrong — or renamed later — breaks the build here instead of " +
+        "producing a rule that silently never matches.",
+    chipPlain = "plain",
+    chipSelected = "selected",
 )
 
 private val stylingChinese: StylingTexts = StylingTexts(
@@ -52,6 +64,12 @@ private val stylingChinese: StylingTexts = StylingTexts(
     inlineStep = "行内：不随状态变化的布局——display、间距、内边距、圆角。",
     sheetStep = "组件样式表：:hover、:focus-visible、::before、@media，这些行内表达不了。",
     sharedStep = "共享样式表：reset（box-sizing、:host display）与所有组件都要用的主题 token。",
+    selectorHeading = "选择器是拼出来的",
+    selectorHint = "中间那枚 chip 由 `.selector-chip.is-selected` 和整行的 `[aria-current]` 两条规则共同上色——" +
+        "两个键都是用零件拼的，不是贴过来的字符串。",
+    selectorNote = "class 名拼错、或者以后改了名，会在这里编译失败；不会变成一条悄悄永不匹配的规则。",
+    chipPlain = "普通",
+    chipSelected = "选中",
 )
 
 private val stylingTexts: Translations<StylingTexts> = texts(
@@ -69,6 +87,8 @@ internal class StylingPage : Page {
     private val texts = Binder(stylingTexts)
 
     private val hoverBox = newHoverBox()
+
+    private val selectorStrip = newSelectorStrip()
 
     override val node get() = page
 
@@ -90,7 +110,17 @@ internal class StylingPage : Page {
             exampleBox(null, texts.bind(paragraph(), { it.sharedStep })),
         )
 
-        page.body.append(adopted.root, ladder.root)
+        val selector = sectionBlock()
+        texts.bind(selector.title, { it.selectorHeading })
+        texts.bind(selector.hint, { it.selectorHint })
+        selector.body.append(
+            exampleBox(null, selectorStrip),
+            texts.bind(paragraph(), { it.selectorNote }),
+            row(codeText("compound(className(CHIP), className(SELECTED))")),
+            row(codeText("className(ROW) child attributeSelector(\"aria-current\")")),
+        )
+
+        page.body.append(adopted.root, ladder.root, selector.root)
     }
 
     override fun applyTranslation(lang: Lang) {
@@ -99,5 +129,6 @@ internal class StylingPage : Page {
         page.setSummary(current.summary)
         texts.apply(lang)
         hoverBox.labelText = current.hoverLabel
+        selectorStrip.setLabels(current.chipPlain, current.chipSelected)
     }
 }

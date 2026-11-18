@@ -1,13 +1,13 @@
 package io.github.shijianjs.ktjs.demo.shell
 
 import io.github.shijianjs.ktjs.demo.Palette
-import io.github.shijianjs.ktjs.dom.css.colorStop
 import io.github.shijianjs.ktjs.dom.css.cssSheet
+import io.github.shijianjs.ktjs.dom.css.dsl.colorStop
+import io.github.shijianjs.ktjs.dom.css.dsl.or
 import io.github.shijianjs.ktjs.dom.css.dsl.supports
+import io.github.shijianjs.ktjs.dom.css.dsl.supportsDeclaration
 import io.github.shijianjs.ktjs.dom.css.dsl.webkitBackgroundClip
 import io.github.shijianjs.ktjs.dom.css.dsl.webkitBackgroundClipName
-import io.github.shijianjs.ktjs.dom.css.or
-import io.github.shijianjs.ktjs.dom.css.supportsDeclaration
 import io.github.shijianjs.ktjs.vaadin.lumoutility.LumoUtility
 import web.cssom.AlignItems
 import web.cssom.Auto

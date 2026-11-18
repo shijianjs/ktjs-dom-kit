@@ -288,6 +288,19 @@ class ScreenshotTest(private val browser: Browser) {
     }
 
     @Test
+    fun `the styling page shows the built-selector section`() {
+        val page = open("#/stylesheets")
+        assertEquals(
+            3,
+            page.locator("ktjs-demo-page .section").count(),
+            "adopted sheets, the three-step ladder, and the built selector",
+        )
+        assertNoHorizontalOverflow(page)
+        shoot(page, "light-styling")
+        page.close()
+    }
+
+    @Test
     fun `sidebar headings are labels and the counter uses a Lumo button`() {
         val page = open("#/custom-elements")
 
