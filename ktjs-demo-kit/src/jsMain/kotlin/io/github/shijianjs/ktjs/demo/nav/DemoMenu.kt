@@ -11,7 +11,7 @@ import web.html.HTMLElement
  * opened. Text that is derived from data (a member signature, a resource path) is not translated.
  */
 interface Page {
-    /** Root node the shell mounts. */
+    /** Root node the layout mounts. */
     val node: HTMLElement
 
     /** Rewrites every string this page owns to [lang]. */
@@ -29,7 +29,7 @@ class Group(val id: String, val icon: String? = null)
 /**
  * One page of the site.
  *
- * [create] builds the page once; the shell caches the result per route, so component state survives
+ * [create] builds the page once; the layout caches the result per route, so component state survives
  * a trip to another page and back. [icon] is an Iconify name drawn before the page title in the
  * sidebar.
  */
@@ -44,7 +44,7 @@ class Entry(
  * The whole site: entries in navigation order. Groups are derived from them, so adding a page means
  * adding one entry and nothing else.
  */
-class Catalog(val entries: List<Entry>) {
+class DemoMenu(val entries: List<Entry>) {
     val groups: List<Group> = entries.map { it.group }.distinct()
 
     fun entry(id: String): Entry? = entries.firstOrNull { it.id == id }

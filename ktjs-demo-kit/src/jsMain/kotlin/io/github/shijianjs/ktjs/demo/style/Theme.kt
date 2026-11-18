@@ -24,7 +24,7 @@ class Theme(private val storageKey: String = "ktjs-demo-theme") {
     var mode: ThemeMode = readStored() ?: ThemeMode.SYSTEM
         private set
 
-    /** Applies the stored mode; call once before building the shell. */
+    /** Applies the stored mode; call once before building the layout. */
     fun applyStored() {
         apply(mode)
     }

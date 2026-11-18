@@ -33,7 +33,7 @@ private class StylingTexts(
 
 private val stylingEnglish: StylingTexts = StylingTexts(
     title = "Stylesheets",
-    summary = "A component carries its own sheet and adopts it once; the page and the shell each carry theirs. " +
+    summary = "A component carries its own sheet and adopts it once; the page and the layout each carry theirs. " +
         "Nothing is adopted on document, and colours come through as inherited custom properties.",
     adoptedHeading = "A class, a sheet, one adopt",
     adoptedHint = "Two elements of the same kind share one parsed sheet: static rules are not rebuilt per instance.",

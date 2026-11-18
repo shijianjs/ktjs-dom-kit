@@ -1,8 +1,8 @@
 package io.github.shijianjs.ktjs.dom.demo
 
-import io.github.shijianjs.ktjs.demo.shell.DemoShell
+import io.github.shijianjs.ktjs.demo.layout.DemoLayout
 import io.github.shijianjs.ktjs.demo.i18n.LanguageState
-import io.github.shijianjs.ktjs.demo.shell.ShellConfig
+import io.github.shijianjs.ktjs.demo.layout.LayoutConfig
 import io.github.shijianjs.ktjs.demo.style.Theme
 import web.dom.ElementId
 import web.dom.document
@@ -10,8 +10,8 @@ import web.dom.document
 /**
  * Entry point of the demo page.
  *
- * The `<ktjs-demo-shell>` comes from `index.html`: the markup names it, this file defines the tag and
- * mounts the catalog into the already-connected element. Creating a second shell here would leave the
+ * The `<ktjs-demo-layout>` comes from `index.html`: the markup names it, this file defines the tag and
+ * mounts the menu into the already-connected element. Creating a second layout here would leave the
  * declared one empty and the site with two sidebars.
  */
 fun main() {
@@ -21,13 +21,13 @@ fun main() {
     val theme = Theme()
     theme.applyStored()
 
-    DemoShell.define()
-    val shell = document.getElementById(ElementId("demo")) as? DemoShell
-        ?: error("index.html has no <ktjs-demo-shell id=\"demo\">")
+    DemoLayout.define()
+    val layout = document.getElementById(ElementId("demo")) as? DemoLayout
+        ?: error("index.html has no <ktjs-demo-layout id=\"demo\">")
 
-    shell.mount(
-        ShellConfig(
-            catalog = siteCatalog(),
+    layout.mount(
+        LayoutConfig(
+            menu = siteMenu(),
             language = language,
             theme = theme,
             texts = siteTexts,

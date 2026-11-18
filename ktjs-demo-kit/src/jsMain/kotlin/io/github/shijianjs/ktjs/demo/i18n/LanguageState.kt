@@ -6,7 +6,7 @@ import web.storage.localStorage
 /**
  * The active language of the site.
  *
- * One instance per site, created in `main` and handed to the shell. [languages] is the site's own
+ * One instance per site, created in `main` and handed to the layout. [languages] is the site's own
  * registration list — the kit starts with [Langs.EN] and [Langs.ZH_HANS], and a site adds any other
  * `Lang(tag)` it has copy for; the language menu and the stored value are both checked against it.
  *

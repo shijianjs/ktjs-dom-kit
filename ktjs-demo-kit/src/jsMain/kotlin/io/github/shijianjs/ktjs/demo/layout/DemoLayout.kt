@@ -1,4 +1,4 @@
-package io.github.shijianjs.ktjs.demo.shell
+package io.github.shijianjs.ktjs.demo.layout
 
 import io.github.shijianjs.ktjs.demo.style.Palette
 import io.github.shijianjs.ktjs.demo.style.RESET
@@ -14,7 +14,7 @@ import io.github.shijianjs.ktjs.demo.i18n.LanguageState
 import io.github.shijianjs.ktjs.demo.i18n.SiteTexts
 import io.github.shijianjs.ktjs.demo.i18n.Translations
 import io.github.shijianjs.ktjs.demo.i18n.code
-import io.github.shijianjs.ktjs.demo.nav.Catalog
+import io.github.shijianjs.ktjs.demo.nav.DemoMenu
 import io.github.shijianjs.ktjs.demo.nav.Entry
 import io.github.shijianjs.ktjs.demo.nav.Page
 import io.github.shijianjs.ktjs.demo.nav.Router
@@ -70,22 +70,22 @@ import web.window.window
 
 /**
  * Everything the frame needs to render a site, in one object: the pages and the runtime state it drives
- * ([catalog], [language], [theme], [texts]), plus the site's identity and destination URLs.
+ * ([menu], [language], [theme], [texts]), plus the site's identity and destination URLs.
  *
- * One object rather than five parameters on [DemoShell.mount]: a method whose argument list keeps growing
- * is a config class waiting to be written, and a shell gaining a sixth knob (a base path, a feedback
+ * One object rather than five parameters on [DemoLayout.mount]: a method whose argument list keeps growing
+ * is a config class waiting to be written, and a layout gaining a sixth knob (a base path, a feedback
  * link) then costs no call-site change. The site title itself is not here — it lives in [SiteTexts],
  * because it changes with the language; the version tag and the targets do not. Every URL is optional:
  * a site with only a repository gets a menu with one entry, and a site with none hides the menu
  * entirely. [logoSrc] is a plain image URL, so a site reuses the very file its documentation and README
  * show instead of inventing a second mark.
  */
-class ShellConfig(
+class LayoutConfig(
     /** The site's pages, grouped as the drawer groups them; also the router's source of truth. */
-    val catalog: Catalog,
+    val menu: DemoMenu,
     /** The languages the site offers, and the one selected now; the language menu is built from it. */
     val language: LanguageState,
-    /** Light / dark / follow-the-browser state; the shell owns the menu, this object owns the value. */
+    /** Light / dark / follow-the-browser state; the layout owns the menu, this object owns the value. */
     val theme: Theme,
     /** One translation table per language, declared with `texts(...)`. */
     val texts: Translations<SiteTexts>,
@@ -102,13 +102,13 @@ class ShellConfig(
 )
 
 /**
- * `<ktjs-demo-shell>`: the site frame, built from Vaadin's app layout.
+ * `<ktjs-demo-layout>`: the site frame, built from Vaadin's app layout.
  *
- * The layout owns the geometry that a hand-rolled shell always gets wrong: the navbar spans the whole
+ * The layout owns the geometry that a hand-rolled layout always gets wrong: the navbar spans the whole
  * width on top, the drawer sits under it and scrolls on its own, and the content column scrolls inside
  * the layout — so the page never grows a second scrollbar next to the navigation, and no panel has to
  * fake a sticky position. The drawer width and both bar backgrounds are app-layout custom properties
- * set once in [SHELL_SHEET].
+ * set once in [LAYOUT_SHEET].
  *
  * Navigation swaps the single child of the content column and keeps the built pages cached, so state
  * inside a page (typed input, selected rows, opened panels) survives a trip to another page and back.
@@ -119,26 +119,26 @@ class ShellConfig(
  * browser creates custom elements itself; the element is configured while detached, before it is
  * appended.
  */
-class DemoShell : CustomElementAdapter() {
+class DemoLayout : CustomElementAdapter() {
     private val appLayout = createAppLayout()
 
     /**
      * The drawer toggle, styled as an icon button: Lumo's default button padding leaves ~10px of blank
      * box on each side of a 24px glyph, which reads as a gap between the toggle and the wordmark rather
      * than as part of it. `theme="icon"` is the button's own variant for exactly one glyph, and
-     * [SHELL_TOGGLE] removes the box the variant still keeps around it.
+     * [LAYOUT_TOGGLE] removes the box the variant still keeps around it.
      */
     private val drawerToggle = createDrawerToggle {
         ariaLabelProperty = "Toggle navigation"
         addTheme(ButtonVariants.icon)
-        classList.add(SHELL_TOGGLE)
+        classList.add(LAYOUT_TOGGLE)
     }
 
     /**
      * The site title: an `h1` in the navbar the way every app-layout example puts it, not a box
      * stacked back into the drawer.
      */
-    private val siteTitle: HTMLElement = HtmlTagName.h1 { classList.add(SHELL_TITLE) }
+    private val siteTitle: HTMLElement = HtmlTagName.h1 { classList.add(LAYOUT_TITLE) }
 
     /**
      * The mark and the title together are the site's home link.
@@ -149,22 +149,22 @@ class DemoShell : CustomElementAdapter() {
      * site without knowing which page that is.
      */
     private val siteLink: HTMLAnchorElement = HtmlTagName.a {
-        classList.add(SHELL_TITLE_LINK)
+        classList.add(LAYOUT_TITLE_LINK)
         setAttribute("href", "#/")
         append(siteTitle)
     }
 
-    private val titleVersion: HTMLElement = HtmlTagName.span { classList.add(SHELL_VERSION) }
+    private val titleVersion: HTMLElement = HtmlTagName.span { classList.add(LAYOUT_VERSION) }
 
     /** Left half of the navbar: toggle, optional mark, title, version and breadcrumbs on one line. */
     private val navbarStart: HorizontalLayoutElement = createHorizontalLayout {
         addTheme(HorizontalLayoutVariants.spacing)
-        classList.add(SHELL_TOPBAR_START, LumoUtility.AlignItems.CENTER)
+        classList.add(LAYOUT_TOPBAR_START, LumoUtility.AlignItems.CENTER)
     }
 
     private val navbar: HorizontalLayoutElement = createHorizontalLayout {
         addTheme(HorizontalLayoutVariants.spacing)
-        classList.add(SHELL_TOPBAR, LumoUtility.AlignItems.CENTER, LumoUtility.JustifyContent.BETWEEN)
+        classList.add(LAYOUT_TOPBAR, LumoUtility.AlignItems.CENTER, LumoUtility.JustifyContent.BETWEEN)
         setAttribute("slot", "navbar")
     }
 
@@ -176,7 +176,7 @@ class DemoShell : CustomElementAdapter() {
 
     private val actions: HorizontalLayoutElement = createHorizontalLayout {
         addTheme(HorizontalLayoutVariants.spacing)
-        classList.add(SHELL_ACTIONS, LumoUtility.AlignItems.CENTER)
+        classList.add(LAYOUT_ACTIONS, LumoUtility.AlignItems.CENTER)
     }
 
     /**
@@ -202,13 +202,13 @@ class DemoShell : CustomElementAdapter() {
         setTheme(VerticalLayoutVariants.padding, VerticalLayoutVariants.spacing)
     }
 
-    private lateinit var catalog: Catalog
+    private lateinit var menu: DemoMenu
 
     private lateinit var language: LanguageState
 
     private lateinit var theme: Theme
 
-    private lateinit var config: ShellConfig
+    private lateinit var config: LayoutConfig
 
     private lateinit var texts: Translations<SiteTexts>
 
@@ -250,20 +250,20 @@ class DemoShell : CustomElementAdapter() {
         attachSelection(themeMenu)
 
         appLayout.append(navbar, sideNav, content)
-        attachStyledShadow(RESET, SHELL_SHEET).append(appLayout)
+        attachStyledShadow(RESET, LAYOUT_SHEET).append(appLayout)
     }
 
     /**
      * Builds the drawer, the navbar and the router, then shows the route already in the URL.
      *
-     * The single argument is a [ShellConfig], so this method stays one line no matter how many knobs
-     * the shell grows. `texts` inside it is the application's translation table: one [SiteTexts] per
-     * language, declared with `texts(Langs.EN to …, Langs.ZH_HANS to …)`. The shell carries no copy of
+     * The single argument is a [LayoutConfig], so this method stays one line no matter how many knobs
+     * the layout grows. `texts` inside it is the application's translation table: one [SiteTexts] per
+     * language, declared with `texts(Langs.EN to …, Langs.ZH_HANS to …)`. The layout carries no copy of
      * its own and lists the language menu from [LanguageState.languages], so registering a language is
      * entirely the application's call.
      */
-    fun mount(config: ShellConfig) {
-        this.catalog = config.catalog
+    fun mount(config: LayoutConfig) {
+        this.menu = config.menu
         this.language = config.language
         this.theme = config.theme
         this.config = config
@@ -280,7 +280,7 @@ class DemoShell : CustomElementAdapter() {
 
         language.onChange { applyLanguage() }
 
-        val defaultRoute = catalog.entries.firstOrNull()?.id ?: "overview"
+        val defaultRoute = menu.entries.firstOrNull()?.id ?: "overview"
         router = Router(defaultRoute) { show(it) }
         appLayout.drawerOpened = true
         applyLanguage()
@@ -300,7 +300,7 @@ class DemoShell : CustomElementAdapter() {
     private fun buildLogo() {
         val src = config.logoSrc ?: return
         val logo = HtmlTagName.img {
-            classList.add(SHELL_LOGO)
+            classList.add(LAYOUT_LOGO)
             setAttribute("src", src)
             setAttribute("alt", "")
             setAttribute("aria-hidden", "true")
@@ -310,7 +310,7 @@ class DemoShell : CustomElementAdapter() {
 
     private fun buildGroups() {
         val current = textsFor(language.current)
-        catalog.groups.forEach { group ->
+        menu.groups.forEach { group ->
             // A group is a parent item without a path: Vaadin renders it as a collapsible section, and
             // a click toggles the children instead of navigating. It starts expanded so every page
             // stays one click away, the same as the old always-visible group heading.
@@ -320,7 +320,7 @@ class DemoShell : CustomElementAdapter() {
             group.icon?.let { groupItem.append(navIcon(it)) }
             groupItem.append(groupLabel)
 
-            catalog.entriesOf(group).forEach { entry ->
+            menu.entriesOf(group).forEach { entry ->
                 // No `path`: the component matches `location.pathname`, which cannot see a `#/…` hash,
                 // and a `#/…` path would make *every* item look current. The row is therefore a plain
                 // item that the frame turns into a link and highlights itself.
@@ -347,7 +347,7 @@ class DemoShell : CustomElementAdapter() {
      * A sidebar icon: `<iconify-icon>` in the item's `prefix` slot.
      *
      * The icon name is an Iconify id (`lucide:layers`), so the site carries no SVG of its own; the size
-     * is [SHELL_NAV_ICON] via the frame's sheet and never a `width`/`height` attribute (the element
+     * is [LAYOUT_NAV_ICON] via the frame's sheet and never a `width`/`height` attribute (the element
      * renders an `<svg width="1em">`, which those attributes would only stretch).
      *
      * `noobserver` is not about size, it is what keeps the glyph alive: `iconify-icon` drops its own
@@ -357,12 +357,12 @@ class DemoShell : CustomElementAdapter() {
      * "visible again", but the element reset `_visible` to `true` when it disconnected, so nothing
      * sees a change and nothing re-renders: the icon is gone from the second open on. The same trap
      * applies to sidebar icons inside a collapsed group. `noobserver` is iconify-icon's own opt-out;
-     * every icon in this shell lives as long as its owner, so it should stay rendered.
+     * every icon in this layout lives as long as its owner, so it should stay rendered.
      */
     private fun navIcon(name: String): IconifyIconElement =
         createIconifyIcon(name) {
             setAttribute("slot", "prefix")
-            classList.add(SHELL_NAV_ICON)
+            classList.add(LAYOUT_NAV_ICON)
             setAttribute("aria-hidden", "true")
             setAttribute("noobserver", "")
         }
@@ -376,7 +376,7 @@ class DemoShell : CustomElementAdapter() {
      * current entry of a menu has its label emphasised.
      *
      * Everything here is inline on purpose: an entry is teleported into the menu's overlay, which
-     * lives in the menu-bar's own shadow tree, so a class declared in [SHELL_SHEET] cannot reach it.
+     * lives in the menu-bar's own shadow tree, so a class declared in [LAYOUT_SHEET] cannot reach it.
      * The inline declarations travel with the element; this is the documented exception for nodes
      * that leave their owner's tree.
      */
@@ -527,7 +527,7 @@ class DemoShell : CustomElementAdapter() {
     }
 
     private fun show(route: String) {
-        val entry = catalog.entry(route) ?: catalog.entries.firstOrNull() ?: return
+        val entry = menu.entry(route) ?: menu.entries.firstOrNull() ?: return
         val page = pages.getOrPut(entry.id) {
             entry.create().also { it.applyTranslation(language.current) }
         }
@@ -554,7 +554,7 @@ class DemoShell : CustomElementAdapter() {
         crumbGroup.textContent = current.groupTitles[entry.group.id] ?: entry.group.id
         // The group is a real destination: the first page of that group. The page itself is the
         // current item, rendered without a path so breadcrumbs marks it `aria-current="page"`.
-        catalog.entriesOf(entry.group).firstOrNull()?.let { crumbGroup.path = "#/${it.id}" }
+        menu.entriesOf(entry.group).firstOrNull()?.let { crumbGroup.path = "#/${it.id}" }
         crumbPage.textContent = titleOf(entry, language.current)
         crumbPage.removeAttribute("path")
     }
@@ -563,17 +563,17 @@ class DemoShell : CustomElementAdapter() {
         val current = textsFor(language.current)
         siteTitle.textContent = current.siteTitle
 
-        catalog.groups.forEach { group ->
+        menu.groups.forEach { group ->
             groupLabels[group.id]?.textContent = current.groupTitles[group.id] ?: group.id
         }
-        catalog.entries.forEach { entry ->
+        menu.entries.forEach { entry ->
             navLabels[entry.id]?.textContent = titleOf(entry, language.current)
         }
 
         rebuildMenus()
         pages.values.forEach { it.applyTranslation(language.current) }
 
-        val entry = shownRoute?.let { catalog.entry(it) }
+        val entry = shownRoute?.let { menu.entry(it) }
         if (entry != null) {
             setBreadcrumb(entry)
             document.title = "${titleOf(entry, language.current)} · ${current.siteTitle}"
@@ -582,8 +582,8 @@ class DemoShell : CustomElementAdapter() {
         }
     }
 
-    companion object : CustomElementReference<DemoShell>(DemoShell::class.js) {
-        val NAME: TagName<DemoShell> = TagName("ktjs-demo-shell")
+    companion object : CustomElementReference<DemoLayout>(DemoLayout::class.js) {
+        val NAME: TagName<DemoLayout> = TagName("ktjs-demo-layout")
 
         fun define() {
             defineIfMissing(NAME, this)
@@ -591,8 +591,8 @@ class DemoShell : CustomElementAdapter() {
     }
 }
 
-/** Creates a detached shell; configure it with [DemoShell.mount] and then append it to the body. */
-fun newShell(): DemoShell {
-    DemoShell.define()
-    return DemoShell.NAME()
+/** Creates a detached layout; configure it with [DemoLayout.mount] and then append it to the body. */
+fun newLayout(): DemoLayout {
+    DemoLayout.define()
+    return DemoLayout.NAME()
 }

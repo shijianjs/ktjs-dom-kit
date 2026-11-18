@@ -59,13 +59,15 @@
   `ktjs-client/ktjs-docusaurus-kit-browser.js`，`docs/build.gradle.kts` 用 `extractKitBundle` 从 klib
   解出来交给插件放到 `static/ktjs-client/`，再由 `ClientModule.kt` 在 hydrate 之后按 locale 的
   `baseUrl` 加载。Node 会读配置文件，所以这个 bundle 绝不能进 `docs` 的 Kotlin 依赖图。
-- **有这个仓库自己的 demo**：`ktjs-demo-kit`（外壳、路由、i18n 容器、主题）+ `demo`（本站五个页面）。示例既
+- **有这个仓库自己的 demo**：`ktjs-demo-kit`（布局、路由、i18n 容器、主题）+ `demo`（本站五个页面）。示例既
   是集成测试也是浏览器验收：`./gradlew :demo:e2eTest`（Playwright，含截图与几何断言）。
   - 包按归属切（`io.github.shijianjs.ktjs.demo`）：根包不再放文件，全部按 owner 分包——
     `style/`（`Palette`、`RESET`、`Theme`——站点自己那套「一起变」的视觉，别处都不许重写）、
-    `i18n/`（`Lang`、`LanguageState`、`Translations`、`SiteTexts`、`Binder`）、`nav/`（`Catalog` 的
+    `i18n/`（`Lang`、`LanguageState`、`Translations`、`SiteTexts`、`Binder`）、`nav/`（`DemoMenu` 的
     `Page`/`Group`/`Entry` 与 `Router`）、`page/`（`DemoPage`、`Blocks`、`PageSheet`、`PageClasses`）、
-    `shell/`（`DemoShell`、`ShellSheet`、`ShellClasses`）。
+    `layout/`（`DemoLayout`、`LayoutSheet`、`LayoutClasses`）。
+  - 名字别用 `shell`：开发语境里 shell 是命令行；这个类是站点布局（`DemoLayout`），配置对象是
+    `LayoutConfig`，样式表是 `LAYOUT_SHEET`。同理整站导航菜单叫 `DemoMenu`，不叫 catalog。
   - 没有「元素 helper」层：建节点直接用 `TagName<T>` 的三种写法——父节点已决定就用
     `HtmlTagName.p { … }`（`invoke`），在父块的里面就写 `+HtmlTagName.li { … }`（带 context 参数的
     `unaryPlus`，返回值是子节点），只有要传 `Document` 或链式更好读时才写 `createElement { }`。

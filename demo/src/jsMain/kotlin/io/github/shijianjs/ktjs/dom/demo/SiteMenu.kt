@@ -1,6 +1,6 @@
 package io.github.shijianjs.ktjs.dom.demo
 
-import io.github.shijianjs.ktjs.demo.nav.Catalog
+import io.github.shijianjs.ktjs.demo.nav.DemoMenu
 import io.github.shijianjs.ktjs.demo.nav.Entry
 import io.github.shijianjs.ktjs.demo.nav.Group
 import io.github.shijianjs.ktjs.dom.demo.page.attribute.AttributePage
@@ -34,7 +34,7 @@ private val COMPONENTS: Group = Group("components", "lucide:package")
  * The icon is an Iconify name drawn in the sidebar row; the group's icon is drawn on the collapsible
  * parent row. Pages without a natural icon simply omit it.
  */
-fun siteCatalog(): Catalog = Catalog(
+fun siteMenu(): DemoMenu = DemoMenu(
     listOf(
         Entry("overview", OVERVIEW, "lucide:sparkles") { OverviewPage() },
         Entry("elements", DOM, "lucide:code-xml") { ElementsPage() },

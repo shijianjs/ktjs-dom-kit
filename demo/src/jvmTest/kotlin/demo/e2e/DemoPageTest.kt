@@ -33,10 +33,10 @@ class DemoPageTest(private val browser: Browser) {
             if (message.type() == "error") consoleErrors += message.text()
         }
         page.navigate(DemoServer.baseUrl + path.trimStart('#').let { if (path.startsWith("#")) "#$it" else it })
-        page.waitForSelector("ktjs-demo-shell vaadin-app-layout")
-        // The shell builds its menus in mount(), one task after the element itself upgrades;
+        page.waitForSelector("ktjs-demo-layout vaadin-app-layout")
+        // The layout builds its menus in mount(), one task after the element itself upgrades;
         // measuring or clicking before they exist makes a test depend on timing, not on behaviour.
-        page.locator("ktjs-demo-shell vaadin-menu-bar-item[data-menu='theme']").first().waitFor()
+        page.locator("ktjs-demo-layout vaadin-menu-bar-item[data-menu='theme']").first().waitFor()
         waitForIconsRendered(page)
         page.setDefaultTimeout(7_000.0)
         return page
@@ -47,7 +47,7 @@ class DemoPageTest(private val browser: Browser) {
     }
 
     /**
-     * Waits until every icon of the shell has rendered.
+     * Waits until every icon of the layout has rendered.
      *
      * Iconify loads asynchronously and an icon that has not rendered yet has no width, so measuring the
      * navbar before that gives a narrower action row than the one the user sees. The locator has to be
@@ -55,7 +55,7 @@ class DemoPageTest(private val browser: Browser) {
      * plain document query cannot see into.
      */
     private fun waitForIconsRendered(page: Page) {
-        val icons = page.locator("ktjs-demo-shell iconify-icon")
+        val icons = page.locator("ktjs-demo-layout iconify-icon")
         val deadline = System.currentTimeMillis() + 7_000
         while (System.currentTimeMillis() < deadline) {
             val states = icons.evaluateAll("icons => icons.map((icon) => icon.status)") as List<*>
@@ -67,7 +67,7 @@ class DemoPageTest(private val browser: Browser) {
 
     /** Opens the menu bar of [menu] (`docs`, `language` or `theme`) by clicking its button. */
     private fun openMenu(page: Page, menu: String) {
-        page.locator("ktjs-demo-shell vaadin-menu-bar-item[data-menu='$menu']")
+        page.locator("ktjs-demo-layout vaadin-menu-bar-item[data-menu='$menu']")
             .first()
             .click()
         // The entries are teleported into the menu's overlay; waiting for one keeps the next
@@ -93,10 +93,10 @@ class DemoPageTest(private val browser: Browser) {
      * icon and the check mark change.
      */
     private fun actionGeometry(page: Page): List<Double> =
-        (page.locator("ktjs-demo-shell [slot='navbar']").first().evaluate(
+        (page.locator("ktjs-demo-layout [slot='navbar']").first().evaluate(
             """
             (navbar) => {
-              const actions = navbar.querySelector('.shell__actions').getBoundingClientRect();
+              const actions = navbar.querySelector('.layout__actions').getBoundingClientRect();
               const crumbs = navbar.querySelector('vaadin-breadcrumbs').getBoundingClientRect();
               return [actions.width, actions.x, crumbs.x];
             }
@@ -107,8 +107,8 @@ class DemoPageTest(private val browser: Browser) {
     fun `the title sits in the navbar, not in the drawer`() {
         val page = open("")
 
-        assertEquals("ktjs-dom-kit", page.locator("ktjs-demo-shell [slot='navbar'] .shell__title").textContent())
-        assertEquals(0, page.locator("ktjs-demo-shell [slot='drawer'] .shell__title").count())
+        assertEquals("ktjs-dom-kit", page.locator("ktjs-demo-layout [slot='navbar'] .layout__title").textContent())
+        assertEquals(0, page.locator("ktjs-demo-layout [slot='drawer'] .layout__title").count())
         assertNoErrors()
     }
 
@@ -116,7 +116,7 @@ class DemoPageTest(private val browser: Browser) {
     fun `the navbar carries a logo immediately left of the title`() {
         val page = open("")
 
-        val logo = page.locator("ktjs-demo-shell [slot='navbar'] .shell__logo")
+        val logo = page.locator("ktjs-demo-layout [slot='navbar'] .layout__logo")
         assertEquals(1, logo.count(), "the nav bar has one site mark")
         // The mark is the repository logo (the same file the README and the docs site show), not an
         // Iconify glyph: if the build ever stops copying it, this fails instead of drawing a broken box.
@@ -124,7 +124,7 @@ class DemoPageTest(private val browser: Browser) {
         assertEquals("img/ktjs-dom-kit-logo.png", logo.getAttribute("src"))
         assertTrue((logo.evaluate("el => el.naturalWidth") as Number).toInt() > 0, "the mark was loaded")
         val logoBox = logo.boundingBox()!!
-        val titleBox = page.locator("ktjs-demo-shell [slot='navbar'] .shell__title").boundingBox()!!
+        val titleBox = page.locator("ktjs-demo-layout [slot='navbar'] .layout__title").boundingBox()!!
         assertTrue(logoBox.x + logoBox.width <= titleBox.x + 1.0, "the mark sits left of the title")
         assertTrue(logoBox.height <= 30.0, "the mark stays navbar-sized, got ${logoBox.height}px")
         assertNoErrors()
@@ -146,12 +146,12 @@ class DemoPageTest(private val browser: Browser) {
         val gaps = page.evaluate(
             """
             () => {
-              const shell = document.querySelector('ktjs-demo-shell');
-              const nav = shell.shadowRoot.querySelector("[slot='navbar']");
+              const layout = document.querySelector('ktjs-demo-layout');
+              const nav = layout.shadowRoot.querySelector("[slot='navbar']");
               const box = (node) => node.getBoundingClientRect();
               const toggle = nav.querySelector('vaadin-drawer-toggle');
-              const logo = nav.querySelector('.shell__logo');
-              const title = nav.querySelector('.shell__title');
+              const logo = nav.querySelector('.layout__logo');
+              const title = nav.querySelector('.layout__title');
               return {
                 toggle: [box(toggle).x, box(toggle).width],
                 glyph: [box(toggle.shadowRoot.querySelector("[part='icon']")).x],
@@ -178,7 +178,7 @@ class DemoPageTest(private val browser: Browser) {
     /**
      * The wordmark is the site's way home: an `<a href="#/">` around the mark and the title, not a click
      * handler on the `h1`. Link behaviour therefore stays intact (middle-click, copy address, keyboard
-     * activation), and `#/` parses to the router's default route without the shell hard-coding a slug.
+     * activation), and `#/` parses to the router's default route without the layout hard-coding a slug.
      */
     @Test
     fun `the wordmark links back to the home page`() {
@@ -189,10 +189,10 @@ class DemoPageTest(private val browser: Browser) {
         val page = open("#/stylesheets")
         page.waitForSelector("ktjs-demo-page .page__title:text-is('Stylesheets')")
 
-        val link = page.locator("ktjs-demo-shell [slot='navbar'] a.shell__title-link")
+        val link = page.locator("ktjs-demo-layout [slot='navbar'] a.layout__title-link")
         assertEquals(1, link.count(), "the title is wrapped in one link")
         assertEquals("#/", link.getAttribute("href"))
-        assertEquals("ktjs-dom-kit", link.locator(".shell__title").textContent())
+        assertEquals("ktjs-dom-kit", link.locator(".layout__title").textContent())
 
         link.click()
         page.waitForSelector("ktjs-demo-page .page__title:text-is('$homeTitle')")
@@ -208,7 +208,7 @@ class DemoPageTest(private val browser: Browser) {
     fun `the action row keeps a margin from the window edge`() {
         val page = open("")
 
-        val actions = page.locator("ktjs-demo-shell [slot='navbar'] .shell__actions").boundingBox()!!
+        val actions = page.locator("ktjs-demo-layout [slot='navbar'] .layout__actions").boundingBox()!!
         val windowWidth = (page.evaluate("() => window.innerWidth") as Number).toDouble()
         val gap = windowWidth - (actions.x + actions.width)
         assertTrue(gap >= 8.0, "the last menu is ${gap}px from the window edge, expected at least 8px")
@@ -223,7 +223,7 @@ class DemoPageTest(private val browser: Browser) {
     fun `navbar children share one vertical centre`() {
         val page = open("")
 
-        val centres = page.locator("ktjs-demo-shell [slot='navbar']").first().evaluate(
+        val centres = page.locator("ktjs-demo-layout [slot='navbar']").first().evaluate(
             """
             (navbar) => {
               const centre = (node) => {
@@ -234,7 +234,7 @@ class DemoPageTest(private val browser: Browser) {
                 const rect = node.getBoundingClientRect();
                 return [node.tagName.toLowerCase(), Math.round(rect.top), Math.round(rect.height)];
               };
-              const start = navbar.querySelector('.shell__topbar-start');
+              const start = navbar.querySelector('.layout__topbar-start');
               return {
                 bar: centre(navbar),
                 halves: [...navbar.children].map(centre),
@@ -267,20 +267,20 @@ class DemoPageTest(private val browser: Browser) {
      * browser showing its default globe, so the test also fetches it and checks the bytes arrive.
      */
     /**
-     * The shell raises Lumo's corner radii one step, and the three steps stay distinct: `s` is the
+     * The layout raises Lumo's corner radii one step, and the three steps stay distinct: `s` is the
      * stock 0.25em, `m` (and the base it derives from) is 0.5em, `l` is 1em. `m` is declared explicitly
      * because a few components redeclare it on their own `:host`; inheriting only the base left those
      * corners at the old value. The assertion reads the values a real component ends up with, not the
      * tokens alone: 14px body size ⇒ 3.5 / 7 / 14.
      */
     @Test
-    fun `the shell rounds one step larger than Lumo's defaults`() {
+    fun `the layout rounds one step larger than Lumo's defaults`() {
         val page = open("#/elements")
 
-        val tokens = page.locator("ktjs-demo-shell").first().evaluate(
+        val tokens = page.locator("ktjs-demo-layout").first().evaluate(
             """
-            (shell) => {
-              const style = getComputedStyle(shell);
+            (layout) => {
+              const style = getComputedStyle(layout);
               return ['--lumo-border-radius-s', '--lumo-border-radius', '--lumo-border-radius-m',
                       '--lumo-border-radius-l'].map((name) => style.getPropertyValue(name).trim());
             }
@@ -298,9 +298,9 @@ class DemoPageTest(private val browser: Browser) {
         // `s` must stay visibly smaller than `m`, otherwise the three steps collapse into two values.
         val widths = listOf("s", "", "l").map { step ->
             val name = if (step.isEmpty()) "--lumo-border-radius" else "--lumo-border-radius-$step"
-            page.locator("ktjs-demo-shell").first()
+            page.locator("ktjs-demo-layout").first()
                 .evaluate(
-                    "(shell, name) => parseFloat(getComputedStyle(shell).getPropertyValue(name)) * 14",
+                    "(layout, name) => parseFloat(getComputedStyle(layout).getPropertyValue(name)) * 14",
                     name,
                 ) as Number
         }
@@ -412,7 +412,7 @@ class DemoPageTest(private val browser: Browser) {
 
     /** The background the whole site sits on; `body` itself is transparent under Lumo. */
     private fun shellBackground(page: Page): String =
-        page.locator("ktjs-demo-shell").first()
+        page.locator("ktjs-demo-layout").first()
             .evaluate("node => getComputedStyle(node).backgroundColor") as String
 
     /**
@@ -436,11 +436,11 @@ class DemoPageTest(private val browser: Browser) {
     }
 
     @Test
-    fun `shell upgrades and keeps our sheets inside shadow roots`() {
+    fun `layout upgrades and keeps our sheets inside shadow roots`() {
         val page = open("")
 
         assertEquals(0, (page.evaluate("document.adoptedStyleSheets.length") as Number).toInt())
-        assertTrue(page.evaluate("customElements.get('ktjs-demo-shell') !== undefined") as Boolean)
+        assertTrue(page.evaluate("customElements.get('ktjs-demo-layout') !== undefined") as Boolean)
         assertTrue(page.evaluate("customElements.get('ktjs-demo-page') !== undefined") as Boolean)
         assertEquals(
             0,
@@ -454,7 +454,7 @@ class DemoPageTest(private val browser: Browser) {
     fun `the action row offers links, languages and themes as menus`() {
         val page = open("")
 
-        assertEquals(3, page.locator("ktjs-demo-shell [slot='navbar'] vaadin-menu-bar").count())
+        assertEquals(3, page.locator("ktjs-demo-layout [slot='navbar'] vaadin-menu-bar").count())
 
         // The entries of a menu are materialised the first time it opens, and stay in the overlay
         // afterwards; the action prefix tells which menu they belong to.
@@ -476,7 +476,7 @@ class DemoPageTest(private val browser: Browser) {
         val page = open("#/custom-elements")
 
         assertTrue(page.title().contains("Custom elements"), "title was: ${page.title()}")
-        val breadcrumb = page.locator("ktjs-demo-shell vaadin-breadcrumbs").textContent().orEmpty()
+        val breadcrumb = page.locator("ktjs-demo-layout vaadin-breadcrumbs").textContent().orEmpty()
         assertTrue(breadcrumb.contains("Custom elements"), "breadcrumb was: $breadcrumb")
         assertTrue(page.locator("ktjs-demo-page .page__title").textContent().orEmpty().isNotEmpty())
         assertEquals("#/custom-elements", page.evaluate("location.hash") as String)
@@ -487,7 +487,7 @@ class DemoPageTest(private val browser: Browser) {
     fun `navigation swaps exactly one page`() {
         val page = open("")
 
-        assertTrue(page.locator("ktjs-demo-shell [slot='drawer'] vaadin-side-nav-item").count() >= 4)
+        assertTrue(page.locator("ktjs-demo-layout [slot='drawer'] vaadin-side-nav-item").count() >= 4)
         page.locator("[data-route='stylesheets']").first().click()
         page.waitForSelector("ktjs-demo-page .page__title:text-is('Stylesheets')")
         assertEquals(1, page.locator("ktjs-demo-page").count(), "the content area hosts one page")

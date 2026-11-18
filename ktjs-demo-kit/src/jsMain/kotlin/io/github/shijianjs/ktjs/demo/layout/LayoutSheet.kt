@@ -1,4 +1,4 @@
-package io.github.shijianjs.ktjs.demo.shell
+package io.github.shijianjs.ktjs.demo.layout
 
 import io.github.shijianjs.ktjs.demo.style.Palette
 import io.github.shijianjs.ktjs.dom.css.cssSheet
@@ -33,12 +33,12 @@ import web.cssom.`var`
 import web.cssom.vh
 
 /**
- * The shell: app layout sizing, navbar, drawer column and content column.
+ * The layout: app layout sizing, navbar, drawer column and content column.
  *
  * Colours are Lumo custom properties (see [Palette]), so the light/dark switch at the document level
  * repaints every tree without a `[data-theme]` selector.
  */
-val SHELL_SHEET: CSSStyleSheet = cssSheet {
+val LAYOUT_SHEET: CSSStyleSheet = cssSheet {
     ":host" {
         display = Display.block
         height = 100.vh
@@ -49,7 +49,7 @@ val SHELL_SHEET: CSSStyleSheet = cssSheet {
         set(CustomPropertyName<Length>("--vaadin-app-layout-drawer-width"), 264.px)
         set(CustomPropertyName<Length>("--lumo-font-size-m"), 14.px)
         // Lumo's radii, scaled up (`s` 0.25em stays the default, `m` 0.5em, `l` 1em): every card,
-        // button, field and overlay inside the shell inherits them, so the whole site rounds together
+        // button, field and overlay inside the layout inherits them, so the whole site rounds together
         // instead of each component being adjusted separately.
         //
         // `m` is written out even though Lumo defines it as `var(--lumo-border-radius, 0.25em)`: some
@@ -65,7 +65,7 @@ val SHELL_SHEET: CSSStyleSheet = cssSheet {
     // `utility.css` is a document-level sheet of `@vaadin/vaadin-lumo-styles`, so its rules cannot
     // cross into this shadow tree. The classes are still the ones Lumo defines — the selectors below
     // are the wrapper's `ClassName` values — and the declarations have to be repeated here for them
-    // to apply inside the shell. Only the handful the shell uses is repeated.
+    // to apply inside the layout. Only the handful the layout uses is repeated.
     LumoUtility.AlignItems.CENTER { alignItems = AlignItems.center }
 
     LumoUtility.JustifyContent.BETWEEN { justifyContent = JustifyContent.spaceBetween }
@@ -77,7 +77,7 @@ val SHELL_SHEET: CSSStyleSheet = cssSheet {
     // wordmark (colour, weight, gradient), so the anchor only removes the underline and the visited
     // colour. `display: flex` makes the mark and the `h1` one flex row, so the anchor stays the same
     // height as the plain `h1` did and the navbar's centre line does not move.
-    SHELL_TITLE_LINK {
+    LAYOUT_TITLE_LINK {
         display = Display.flex
         alignItems = AlignItems.center
         // The mark and the wordmark are one lock-up, but not one glyph pair: a small gap keeps them
@@ -88,7 +88,7 @@ val SHELL_SHEET: CSSStyleSheet = cssSheet {
         flexShrink = number(0.0)
     }
 
-    SHELL_TITLE {
+    LAYOUT_TITLE {
         margin = Margin(0.px, 0.px)
         fontSize = 18.px
         color = Palette.text
@@ -108,7 +108,7 @@ val SHELL_SHEET: CSSStyleSheet = cssSheet {
         supportsDeclaration(webkitBackgroundClipName, BackgroundClip.text) or
             supportsDeclaration(PropertyName.backgroundClip, BackgroundClip.text),
     ) {
-        SHELL_TITLE {
+        LAYOUT_TITLE {
             backgroundImage = linearGradient(
                 100.deg,
                 colorStop(`var`(CustomPropertyName<Color>("--lumo-primary-color"))),
@@ -122,12 +122,12 @@ val SHELL_SHEET: CSSStyleSheet = cssSheet {
         }
     }
 
-    SHELL_VERSION {
+    LAYOUT_VERSION {
         fontSize = 11.px
         color = Palette.muted
     }
 
-    SHELL_TOPBAR {
+    LAYOUT_TOPBAR {
         width = 100.pct
         // The bar spans the window, but its content must not touch the edges: the last menu would sit
         // flush against the scrollbar, and the drawer toggle flush against the window frame.
@@ -137,8 +137,8 @@ val SHELL_SHEET: CSSStyleSheet = cssSheet {
 
     // The toggle is a 36px icon-button box around a 21px glyph: Lumo's own 9px padding and 8px margin
     // around it read as a blank gap between the toggle and the wordmark, on top of the layout's gap.
-    // Both are dropped here; the inset comes from [SHELL_TOPBAR], the separation from the layout gap.
-    SHELL_TOGGLE {
+    // Both are dropped here; the inset comes from [LAYOUT_TOPBAR], the separation from the layout gap.
+    LAYOUT_TOGGLE {
         marginInlineStart = 0.px
         marginInlineEnd = 0.px
         paddingInlineStart = 0.px
@@ -147,24 +147,24 @@ val SHELL_SHEET: CSSStyleSheet = cssSheet {
 
     // The left cluster may be narrower than the title plus the full breadcrumb trail; letting it
     // shrink keeps the actions on screen instead of pushing the navbar wider than the viewport.
-    SHELL_TOPBAR_START {
+    LAYOUT_TOPBAR_START {
         minWidth = 0.px
     }
 
     // The action row keeps its intrinsic width, so the left cluster is what gives way.
-    SHELL_ACTIONS {
+    LAYOUT_ACTIONS {
         flexShrink = number(0.0)
     }
 
     // The mark is an image, not an icon: its height is fixed by the navbar and the width follows the
     // file, so a wide logo is not squashed into a square box.
-    SHELL_LOGO {
+    LAYOUT_LOGO {
         height = 28.px
         width = Auto.auto
         flexShrink = number(0.0)
     }
 
-    SHELL_NAV_ICON {
+    LAYOUT_NAV_ICON {
         fontSize = 18.px
     }
 }

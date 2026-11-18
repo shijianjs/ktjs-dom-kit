@@ -6,7 +6,7 @@ import io.github.shijianjs.ktjs.demo.i18n.Translations
 import io.github.shijianjs.ktjs.demo.i18n.texts
 
 /**
- * Every string the shell and the navigation show, in English.
+ * Every string the layout and the navigation show, in English.
  *
  * One object per language, declared once in [siteTexts]; adding a language is one more entry there
  * plus one in `LanguageState.languages`, and no existing string is touched.
@@ -63,7 +63,7 @@ private val chineseSite: SiteTexts = SiteTexts(
     ),
 )
 
-/** The shell's strings, one entry per registered language. */
+/** The layout's strings, one entry per registered language. */
 val siteTexts: Translations<SiteTexts> = texts(
     Langs.EN to englishSite,
     Langs.ZH_HANS to chineseSite,

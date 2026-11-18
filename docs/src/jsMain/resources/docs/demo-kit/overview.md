@@ -6,11 +6,11 @@ sidebar_position: 1
 
 `ktjs-demo-kit` is the frame a **live demo site** is built in — the site that documents a library and
 doubles as its integration test. It is not a UI framework and it is not a page template: it is the
-shell (app layout, drawer, navbar, menus), the page catalogue behind those menus, the language and
+layout (app layout, drawer, navbar, menus), the page catalogue behind those menus, the language and
 theme state, and the blocks pages are assembled from.
 
 The demo of `ktjs-dom-kit` is an instance of it: the very pages you are reading the code examples from
-were built as `Entry`s in a `Catalog` and mounted into one `DemoShell`.
+were built as `Entry`s in a `DemoMenu` and mounted into one `DemoLayout`.
 
 ## Coordinates
 
@@ -19,7 +19,7 @@ implementation("io.github.shijianjs:ktjs-demo-kit:0.1.0")
 ```
 
 It brings `ktjs-dom-kit`, `ktjs-vaadin-web-components` and `ktjs-iconify-icon` as `api` dependencies
-(the shell is built out of Vaadin components and Iconify icons, and the page contract is spelled in
+(the layout is built out of Vaadin components and Iconify icons, and the page contract is spelled in
 `HTMLElement`), so a demo project adds this one line and writes pages.
 
 ## What it gives you
@@ -36,8 +36,8 @@ flowchart TB
 
 | Package | Provides |
 | --- | --- |
-| `…ktjs.demo.shell` | [`DemoShell`](./pages.md) and `ShellConfig` — the site frame and its one config object; `SHELL_SHEET`, the class names the frame and its sheet agree on |
-| `…ktjs.demo.nav` | `Catalog`, `Group`, `Entry`, `Page` and the hash `Router` behind them |
+| `…ktjs.demo.layout` | [`DemoLayout`](./pages.md) and `LayoutConfig` — the site frame and its one config object; `LAYOUT_SHEET`, the class names the frame and its sheet agree on |
+| `…ktjs.demo.nav` | `DemoMenu`, `Group`, `Entry`, `Page` and the hash `Router` behind them |
 | `…ktjs.demo.i18n` | `Lang` (a BCP 47 tag, registrable), `LanguageState`, `Translations<T>` / `texts(…)` and `SiteTexts` |
 | `…ktjs.demo.page` | [`DemoPage`](./pages.md) and the blocks: `paragraph`, `heading`, `anchor`, `codeText`, `bulletList`, `row`, `col`, `exampleBox`, `sectionBlock`, `Readout` |
 | `…ktjs.demo.style` | `Theme` / `ThemeMode` (light / dark / follow-the-browser), `Palette` (the Lumo custom properties the site paints with) and `RESET`, the shared reset sheet |
@@ -53,12 +53,12 @@ fun main() {
     val theme = Theme()                     // Light / Dark / System, persisted
     theme.applyStored()
 
-    DemoShell.define()
-    val shell = document.getElementById(ElementId("demo")) as? DemoShell ?: error("no <ktjs-demo-shell>")
+    DemoLayout.define()
+    val layout = document.getElementById(ElementId("demo")) as? DemoLayout ?: error("no <ktjs-demo-layout>")
 
-    shell.mount(
-        ShellConfig(
-            catalog = siteCatalog(),
+    layout.mount(
+        LayoutConfig(
+            menu = siteMenu(),
             language = language,
             theme = theme,
             texts = siteTexts,
@@ -72,14 +72,14 @@ fun main() {
 }
 ```
 
-`ShellConfig` is one object on purpose. A `mount(catalog, language, theme, config, texts)` signature
-grows a parameter per knob; one config means the shell can gain a sixth concern (`siteVersion`, a
+`LayoutConfig` is one object on purpose. A `mount(menu, language, theme, config, texts)` signature
+grows a parameter per knob; one config means the layout can gain a sixth concern (`siteVersion`, a
 feedback link, a base path) without every demo project editing its call site. Everything after
 `siteVersion` is optional — a site with only a repository gets a link menu with one entry, and a site
 with no URLs hides the menu entirely.
 
-The element itself must come from the page (`index.html` declares `<ktjs-demo-shell id="demo">`); a
-second shell built in `main` would leave the declared one empty and the site with two drawers.
+The element itself must come from the page (`index.html` declares `<ktjs-demo-layout id="demo">`); a
+second layout built in `main` would leave the declared one empty and the site with two drawers.
 
 ## Languages
 
@@ -106,7 +106,7 @@ any other tag the site has copy for.
 - Switching is a walk over the mounted pages (`Page.applyTranslation`), never a rebuild: scroll position
   and whatever the user typed survive.
 
-## Catalog and routing
+## DemoMenu and routing
 
 ```kotlin
 class Entry(val id: String, val group: Group, val icon: String?, val create: () -> Page)
@@ -121,7 +121,7 @@ sequenceDiagram
   autonumber
   participant U as user
   participant R as Router
-  participant C as Catalog
+  participant C as DemoMenu
   participant P as Page (cached)
   U->>R: click an entry, or open #/stylesheets
   R->>C: Entry(id) for the route

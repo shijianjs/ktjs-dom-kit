@@ -1,7 +1,7 @@
 package io.github.shijianjs.ktjs.demo.i18n
 
 /**
- * Every string the shell and the navigation show, in one language.
+ * Every string the layout and the navigation show, in one language.
  *
  * The site keeps one instance per language (`englishSite` / `chineseSite` … in the application) and
  * declares the table with [texts]; a new language is one more entry there plus the same in each page's

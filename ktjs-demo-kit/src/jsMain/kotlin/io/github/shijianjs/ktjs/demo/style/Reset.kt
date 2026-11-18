@@ -11,8 +11,8 @@ import web.cssom.Display
  * redeclared inside each tree — that is the reason a reset is shared at all.
  *
  * Everything else stays with its owner: the page's typography in
- * [io.github.shijianjs.ktjs.demo.page.PAGE_SHEET], the shell's sizing in
- * [io.github.shijianjs.ktjs.demo.shell.SHELL_SHEET].
+ * [io.github.shijianjs.ktjs.demo.page.PAGE_SHEET], the layout's sizing in
+ * [io.github.shijianjs.ktjs.demo.layout.LAYOUT_SHEET].
  */
 val RESET: CSSStyleSheet = cssSheet {
     ":host" { display = Display.block }
