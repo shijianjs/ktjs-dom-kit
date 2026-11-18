@@ -241,6 +241,33 @@ class DemoPageTest(private val browser: Browser) {
         assertNoErrors()
     }
 
+    /**
+     * The elements page builds its third example with the operator alone: `+tag { … }` inside the
+     * parent's block. This asserts the shape rather than the pixels — an article holding a heading, a
+     * paragraph and a list, each item holding its own code element — because "one expression, one
+     * subtree" is a claim about structure, not about looks.
+     */
+    @Test
+    fun `the append operator builds the whole subtree`() {
+        val page = open("#/elements")
+
+        val shape = page.locator("article.elements__subtree").first().evaluate(
+            """
+            (article) => ({
+              children: [...article.children].map((child) => child.tagName.toLowerCase()),
+              items: [...article.querySelectorAll('ul > li')]
+                .map((item) => item.firstElementChild?.tagName.toLowerCase() ?? null),
+              text: article.querySelector('p')?.textContent ?? null,
+            })
+            """.trimIndent(),
+        ) as Map<*, *>
+
+        assertEquals(listOf("h3", "p", "ul"), shape["children"])
+        assertEquals(listOf("code", "code", "code"), shape["items"])
+        assertTrue((shape["text"] as String).isNotBlank(), "the bound paragraph stayed empty")
+        assertNoErrors()
+    }
+
     @Test
     fun `the browser tab shows the site logo`() {
         val page = open("")

@@ -1,7 +1,8 @@
 package io.github.shijianjs.ktjs.demo.page
 
 import io.github.shijianjs.ktjs.demo.Palette
-import io.github.shijianjs.ktjs.dom.element.createElement
+import io.github.shijianjs.ktjs.dom.element.invoke
+import io.github.shijianjs.ktjs.dom.element.unaryPlus
 import io.github.shijianjs.ktjs.vaadin.card.CardElement
 import io.github.shijianjs.ktjs.vaadin.card.createCard
 import io.github.shijianjs.ktjs.vaadin.horizontallayout.HorizontalLayoutElement
@@ -26,14 +27,15 @@ import web.window._blank
  * `vaadin-horizontal-layout`, `vaadin-card`) with their `padding` / `spacing` theme variants: gaps,
  * padding and the card surface are the component library's business, so this site only styles
  * typography and the few colours that come from [Palette]. Nodes are created through dom-kit's typed
- * `createElement`, so no tag name is ever written as a string and no markup is parsed.
+ * helpers — `HtmlTagName.p { … }` for a standalone node, `+HtmlTagName.li { … }` for a child inside
+ * its parent's block — so no tag name is ever written as a string and no markup is parsed.
  *
  * A class constant is declared here only when this file and a sheet in another file both use it; a
  * class a single page introduces stays in that page.
  */
 
 /** Creates a `<p>` with [text]. */
-fun paragraph(text: String = ""): HTMLElement = HtmlTagName.p.createElement { textContent = text }
+fun paragraph(text: String = ""): HTMLElement = HtmlTagName.p { textContent = text }
 
 /** Creates a heading of [level] (1-4 coerced). */
 fun heading(level: Int, text: String = ""): HTMLHeadingElement {
@@ -43,12 +45,12 @@ fun heading(level: Int, text: String = ""): HTMLHeadingElement {
         3 -> HtmlTagName.h3
         else -> HtmlTagName.h4
     }
-    return tag.createElement { textContent = text }
+    return tag { textContent = text }
 }
 
 /** Creates an `<a>` pointing at [href]; external links open in a new tab. */
 fun anchor(text: String, href: String, external: Boolean = false): HTMLAnchorElement =
-    HtmlTagName.a.createElement {
+    HtmlTagName.a {
         this.textContent = text
         this.href = href
         if (external) {
@@ -58,14 +60,14 @@ fun anchor(text: String, href: String, external: Boolean = false): HTMLAnchorEle
     }
 
 /** Creates an inline `<code>` fragment. */
-fun codeText(text: String): HTMLElement = HtmlTagName.code.createElement {
+fun codeText(text: String): HTMLElement = HtmlTagName.code {
     classList.add(CODE)
     textContent = text
 }
 
-/** Creates a `<ul>` with one `<li>` per entry. */
-fun bulletList(items: List<String>): HTMLElement = HtmlTagName.ul.createElement {
-    items.forEach { item -> append(HtmlTagName.li.createElement { textContent = item }) }
+/** Creates a `<ul>` with one `<li>` per entry; each item is created and appended by `+`. */
+fun bulletList(items: List<String>): HTMLElement = HtmlTagName.ul {
+    items.forEach { item -> +HtmlTagName.li { textContent = item } }
 }
 
 /** A horizontal group: the Vaadin layout supplies the gap, the site sheet centres the items. */
@@ -88,7 +90,7 @@ fun exampleBox(caption: String? = null, vararg children: Node): CardElement {
     val card = createCard()
     if (caption != null) {
         card.append(
-            HtmlTagName.p.createElement {
+            HtmlTagName.p {
                 classList.add(EXAMPLE_CAPTION)
                 textContent = caption
             },
@@ -115,8 +117,8 @@ class SectionBlock(
 
 /** Creates an empty section; the caller fills [SectionBlock.body]. */
 fun sectionBlock(): SectionBlock {
-    val title = HtmlTagName.h2.createElement { classList.add(SECTION_TITLE) }
-    val hint = HtmlTagName.p.createElement { classList.add(SECTION_HINT) }
+    val title = HtmlTagName.h2 { classList.add(SECTION_TITLE) }
+    val hint = HtmlTagName.p { classList.add(SECTION_HINT) }
     val body = createVerticalLayout { addTheme(VerticalLayoutVariants.spacing) }
     // Title, hint and body sit tight; the sheet supplies their margins, the body keeps the component's
     // spacing between its paragraphs and examples.
@@ -128,7 +130,7 @@ fun sectionBlock(): SectionBlock {
 
 /** Text that is updated in place to show the current state of an example. */
 class Readout(initial: String = "") {
-    val root: HTMLElement = HtmlTagName.p.createElement {
+    val root: HTMLElement = HtmlTagName.p {
         classList.add(READOUT)
         textContent = initial
     }

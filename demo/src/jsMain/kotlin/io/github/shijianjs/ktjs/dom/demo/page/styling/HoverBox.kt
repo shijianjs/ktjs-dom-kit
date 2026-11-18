@@ -6,7 +6,7 @@ import io.github.shijianjs.ktjs.dom.webcomponent.attr.attr
 import io.github.shijianjs.ktjs.dom.css.cssSheet
 import io.github.shijianjs.ktjs.dom.css.dsl.Pseudos
 import io.github.shijianjs.ktjs.dom.css.dsl.invoke
-import io.github.shijianjs.ktjs.dom.element.createElement
+import io.github.shijianjs.ktjs.dom.element.invoke
 import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementAdapter
 import io.github.shijianjs.ktjs.dom.webcomponent.attachStyledShadow
 import io.github.shijianjs.ktjs.dom.webcomponent.defineIfMissing
@@ -54,7 +54,7 @@ private val BOX_SHEET: CSSStyleSheet = cssSheet {
  * and a named setter.
  */
 class HoverBox : CustomElementAdapter() {
-    private val label: HTMLSpanElement = HtmlTagName.span.createElement { classList.add(BOX) }
+    private val label: HTMLSpanElement = HtmlTagName.span { classList.add(BOX) }
 
     init {
         attachStyledShadow(RESET, BOX_SHEET).append(label)
@@ -81,5 +81,5 @@ class HoverBox : CustomElementAdapter() {
 /** Creates a defined `<demo-hover-box>`; callers set [HoverBox.labelText]. */
 fun newHoverBox(): HoverBox {
     HoverBox.define()
-    return HoverBox.NAME.createElement()
+    return HoverBox.NAME()
 }

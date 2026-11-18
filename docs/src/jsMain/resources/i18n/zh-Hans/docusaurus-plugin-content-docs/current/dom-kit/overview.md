@@ -41,7 +41,7 @@ implementation("io.github.shijianjs:ktjs-dom-kit:0.1.0")
 
 | 包 | 提供 |
 | --- | --- |
-| `element/` | 通用元素辅助：`TagName<T>.createElement { … }`，以及 `HTMLElement.inlineStyle`（元素自己的样式，`csstype.Properties` 视图） |
+| `element/` | 通用元素辅助：`TagName<T>.createElement { … }`、它的简写 `HtmlTagName.div { … }`、把子节点挂进正在构建的元素里的 `+tag { … }`（[构建元素](./elements.md)），以及 `HTMLElement.inlineStyle`（元素自己的样式，`csstype.Properties` 视图） |
 | `webcomponent/` | 自定义元素的构成：`CustomElementAdapter`（按原生名字声明生命周期钩子、承载 `attr` 委托）、`defineIfMissing`、[`stripBridgesFrom`](./custom-elements.md)，以及 `attachShadowRoot` / `attachStyledShadow` |
 | `attribute/` | `attr` 属性委托：`attr`、`AttributeChange`、它背后的 provider 与 delegate，以及属性名规则；`attribute/types/` 放编解码器——委托认识的每种类型一个，外加 `enumAttributeCodec` |
 | `css/` | `cssSheet { … }` / `cssText { … }`，以及 cssom 没建模的类型化值（`RadialGradientShape`、`radialGradient`、`pointerEventsNone`、`SupportsQuery`……）；`css/dsl/` 放写样式表时用的语法糖：`Pseudos` / `pseudo` / `pseudos`、at-rule `supports { … }` 与 `webkitBackgroundClip` |
@@ -59,6 +59,8 @@ implementation("io.github.shijianjs:ktjs-dom-kit:0.1.0")
 
 ## 各页面
 
+- [构建元素](./elements.md)——`createElement`、写在标签上的调用，以及用 `+` 把子节点挂进正在构建的
+  元素。
 - [自定义元素](./custom-elements.md)——基类、生命周期钩子与标签定义。
 - [属性](./attributes.md)——`attr` 委托与它的编解码器。
 - [样式](./styling.md)——内联样式、shadow root 与 adopt 的 sheet。

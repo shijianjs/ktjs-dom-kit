@@ -18,7 +18,8 @@ import io.github.shijianjs.ktjs.demo.nav.Catalog
 import io.github.shijianjs.ktjs.demo.nav.Entry
 import io.github.shijianjs.ktjs.demo.nav.Page
 import io.github.shijianjs.ktjs.demo.nav.Router
-import io.github.shijianjs.ktjs.dom.element.createElement
+import io.github.shijianjs.ktjs.dom.element.invoke
+import io.github.shijianjs.ktjs.dom.element.unaryPlus
 import io.github.shijianjs.ktjs.dom.element.inlineStyle
 import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementAdapter
 import io.github.shijianjs.ktjs.dom.webcomponent.attachStyledShadow
@@ -114,9 +115,9 @@ class DemoShell : CustomElementAdapter() {
      * The site title, in the navbar the way every app-layout example puts it: an `h1` that is a direct
      * child of the navbar, not a box stacked back into the drawer.
      */
-    private val siteTitle: HTMLElement = HtmlTagName.h1.createElement { classList.add(SHELL_TITLE) }
+    private val siteTitle: HTMLElement = HtmlTagName.h1 { classList.add(SHELL_TITLE) }
 
-    private val titleVersion: HTMLElement = HtmlTagName.span.createElement { classList.add(SHELL_VERSION) }
+    private val titleVersion: HTMLElement = HtmlTagName.span { classList.add(SHELL_VERSION) }
 
     /** Left half of the navbar: toggle, optional mark, title, version and breadcrumbs on one line. */
     private val navbarStart: HorizontalLayoutElement = createHorizontalLayout {
@@ -266,7 +267,7 @@ class DemoShell : CustomElementAdapter() {
     /** The mark sits immediately left of the name, so it reads as one lock-up with the title. */
     private fun buildLogo() {
         val src = config.logoSrc ?: return
-        val logo = HtmlTagName.img.createElement {
+        val logo = HtmlTagName.img {
             classList.add(SHELL_LOGO)
             setAttribute("src", src)
             setAttribute("alt", "")
@@ -282,7 +283,7 @@ class DemoShell : CustomElementAdapter() {
             // a click toggles the children instead of navigating. It starts expanded so every page
             // stays one click away, the same as the old always-visible group heading.
             val groupItem = createSideNavItem { expanded = true }
-            val groupLabel = HtmlTagName.span.createElement()
+            val groupLabel = HtmlTagName.span()
             groupLabel.textContent = current.groupTitles[group.id] ?: group.id
             group.icon?.let { groupItem.append(navIcon(it)) }
             groupItem.append(groupLabel)
@@ -292,7 +293,7 @@ class DemoShell : CustomElementAdapter() {
                 // and a `#/…` path would make *every* item look current. The row is therefore a plain
                 // item that the frame turns into a link and highlights itself.
                 val item = createSideNavItem()
-                val label = HtmlTagName.span.createElement { textContent = titleOf(entry, language.current) }
+                val label = HtmlTagName.span { textContent = titleOf(entry, language.current) }
                 entry.icon?.let { item.append(navIcon(it)) }
                 item.append(label)
                 item.dataset["route"] = entry.id
@@ -347,19 +348,22 @@ class DemoShell : CustomElementAdapter() {
      * The inline declarations travel with the element; this is the documented exception for nodes
      * that leave their owner's tree.
      */
-    private fun menuItemNode(action: String, icon: String, label: String, checked: Boolean): HTMLElement =
-        TagName<HTMLElement>("vaadin-menu-bar-item").createElement {
+    private fun menuItemNode(action: String, icon: String, label: String, checked: Boolean): HTMLElement {
+        // The tag is held separately: `TagName<HTMLElement>("…") { }` would read as a trailing lambda on
+        // the factory function, not as a call on the tag it returns.
+        val itemTag: TagName<HTMLElement> = TagName("vaadin-menu-bar-item")
+        return itemTag {
             if (action.isNotEmpty()) dataset["action"] = action
-            append(menuIcon(icon))
-            val text = HtmlTagName.span.createElement { textContent = label }
+            +menuIcon(icon)
+            val text = +HtmlTagName.span { textContent = label }
             if (checked) {
                 text.inlineStyle.apply {
                     fontWeight = integer(600)
                     color = Color("var(--lumo-primary-text-color)")
                 }
             }
-            append(text)
         }
+    }
 
     private fun menuIcon(name: String): IconifyIconElement =
         createIconifyIcon(name) {
@@ -558,5 +562,5 @@ class DemoShell : CustomElementAdapter() {
 /** Creates a detached shell; configure it with [DemoShell.mount] and then append it to the body. */
 fun newShell(): DemoShell {
     DemoShell.define()
-    return DemoShell.NAME.createElement()
+    return DemoShell.NAME()
 }

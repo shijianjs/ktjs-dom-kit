@@ -24,9 +24,10 @@
 - `ktjs-dom-kit`：发布模块，本仓库的第一个库。它不包装 npm 包，版本是手写的语义版本 `0.1.0`（见
   `semanticModules`）。内容：**页面侧**那一半（`cssSheet { … }` 经 `@emotion/serialize` + `stylis`、
   `loadjs` 封装），加上**写自定义元素**那一半（`dom.webcomponent` 的 `CustomElementAdapter` 与 shadow
-  root、`dom.element` 的 `createElement` / `inlineStyle`、`dom.webcomponent.attr` 里的 `attr` 委托与
-  `AttributeChange`）。包按关注点分：`dom.css`（语法糖在 `dom.css.dsl`）、`dom.loadjs`、`dom.element`、
-  `dom.webcomponent`（`attr` 委托是它的子包：只给自定义元素作者用，对外的公开面基本就是 `attr`）。
+  root、`dom.element` 的 `createElement` / `invoke` / `unaryPlus` 与 `inlineStyle`、`dom.webcomponent.attr`
+  里的 `attr` 委托与 `AttributeChange`）。包按关注点分：`dom.css`（语法糖在 `dom.css.dsl`）、
+  `dom.loadjs`、`dom.element`、`dom.webcomponent`（`attr` 委托是它的子包：只给自定义元素作者用，对外的
+  公开面基本就是 `attr`）。
   它用 `api(project(":ktjs-wrapper-kit"))` 把 wrapper 那一半也交给页面代码，所以对外 API 仍是完整的一份。
 - `ktjs-wrapper-kit`：发布模块，**只放「操作别人的元素」那一层**，也是各 wrapper 库（`ktjs-vaadin`、
   `ktjs-iconify`、`ktjs-echarts` …）唯一该依赖的 DOM 库。内容就是 `dom.attribute` 里对 wrapper 有用的
@@ -63,7 +64,10 @@
     `i18n/`（`Lang`、`LanguageState`、`Translations`、`SiteTexts`、`Binder`）、`nav/`（`Catalog` 的
     `Page`/`Group`/`Entry` 与 `Router`）、`page/`（`DemoPage`、`Blocks`、`PageSheet`、`PageClasses`）、
     `shell/`（`DemoShell`、`ShellSheet`、`ShellClasses`）。
-  - 没有「元素 helper」层：建节点直接用 `TagName<T>.createElement { }`；`theme` 用 wrapper 的
+  - 没有「元素 helper」层：建节点直接用 `TagName<T>` 的三种写法——父节点已决定就用
+    `HtmlTagName.p { … }`（`invoke`），在父块的里面就写 `+HtmlTagName.li { … }`（带 context 参数的
+    `unaryPlus`，返回值是子节点），只有要传 `Document` 或链式更好读时才写 `createElement { }`。
+    三种都是同一个原语，**不要**再包一层 `element(tag, …)` 这种 helper。`theme` 用 wrapper 的
     `addTheme` / `setTheme` / `removeTheme`（挂在上游 `ThemePropertyMixin` 上，只有组件渲染这个属性）；
     显示与隐藏用原生 `toggleAttribute("hidden", …)`。**不要**再在 `HTMLElement` 上挂 `withTheme` 这类
     给所有元素凭空加能力的扩展。

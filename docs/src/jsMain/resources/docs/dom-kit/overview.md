@@ -45,7 +45,7 @@ written inside it), and a file per declaration — nothing here is a catch-all.
 
 | Package | Provides |
 | --- | --- |
-| `element/` | the generic element helpers: `TagName<T>.createElement { … }`, and `HTMLElement.inlineStyle`, the element's own style seen as `csstype.Properties` |
+| `element/` | the generic element helpers: `TagName<T>.createElement { … }`, its `HtmlTagName.div { … }` shorthand, the `+tag { … }` append operator ([Building elements](./elements.md)), and `HTMLElement.inlineStyle`, the element's own style seen as `csstype.Properties` |
 | `webcomponent/` | what a custom element is built from: `CustomElementAdapter` (the lifecycle hooks under their native names, the `attr` delegate host), `defineIfMissing`, [`stripBridgesFrom`](./custom-elements.md), and `attachShadowRoot` / `attachStyledShadow` |
 | `attribute/` | the `attr` property delegate: `attr`, `AttributeChange`, the provider and the delegate behind it, and the property-name rule; `attribute/types/` holds the codecs — one per type the delegate knows, plus `enumAttributeCodec` |
 | `css/` | `cssSheet { … }` / `cssText { … }`, and the typed values cssom does not model (`RadialGradientShape`, `radialGradient`, `pointerEventsNone`, `SupportsQuery`, …); `css/dsl/` holds the sugar written inside a sheet — `Pseudos` / `pseudo` / `pseudos`, the `supports { … }` at-rule and `webkitBackgroundClip` |
@@ -65,6 +65,8 @@ written inside it), and a file per declaration — nothing here is a catch-all.
 
 ## The pages
 
+- [Building elements](./elements.md) — `createElement`, its call-on-the-tag spelling, and `+` for
+  appending a child into the element being built.
 - [Custom elements](./custom-elements.md) — the adapter, the lifecycle hooks, and defining a tag.
 - [Attributes](./attributes.md) — the `attr` delegate and its codecs.
 - [Styling](./styling.md) — inline styles, shadow roots and adopted sheets.

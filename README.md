@@ -3,7 +3,8 @@
 <p align="center"><img src="docs/src/jsMain/resources/static/img/ktjs-dom-kit-logo.png" width="120" alt="ktjs-dom-kit"></p>
 
 DOM helpers for Kotlin/JS: a custom-element base class, an attribute delegate that keeps the DOM as the
-single source of truth, shadow-root style helpers, typed stylesheets, and a wrapper for the `loadjs`
+single source of truth, shadow-root style helpers, typed stylesheets, element construction as
+`createElement { … }` / `HtmlTagName.div { … }` / `+tag { … }`, and a wrapper for the `loadjs`
 loader. No UI framework, no template language, no state-driven re-render.
 
 The repository is also the home of the small libraries that do not need a repository of their own.

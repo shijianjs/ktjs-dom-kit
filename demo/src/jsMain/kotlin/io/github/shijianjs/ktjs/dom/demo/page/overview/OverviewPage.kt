@@ -1,6 +1,7 @@
 package io.github.shijianjs.ktjs.dom.demo.page.overview
 
-import io.github.shijianjs.ktjs.dom.element.createElement
+import io.github.shijianjs.ktjs.dom.element.invoke
+import io.github.shijianjs.ktjs.dom.element.unaryPlus
 import io.github.shijianjs.ktjs.demo.i18n.Binder
 import io.github.shijianjs.ktjs.demo.i18n.Lang
 import io.github.shijianjs.ktjs.demo.i18n.Langs
@@ -46,7 +47,7 @@ private val overviewEnglish: OverviewTexts = OverviewTexts(
         "by hand; and a Kotlin class only becomes a working custom element when the module targets ES2015 " +
         "and the compiler's bridges are stripped before the tag is defined.",
     bullets = listOf(
-        "TagName<T>.createElement { } — the tag decides the type, no magic strings.",
+        "HtmlTagName.p { } / +HtmlTagName.li { } — the tag decides the type, no magic strings.",
         "attr { } — a property backed by an HTML attribute, decoded by a codec.",
         "cssSheet { } — a typed stylesheet adopted by a shadow root.",
         "CustomElementAdapter + defineIfMissing — a class is a component, bridges removed.",
@@ -68,7 +69,7 @@ private val overviewChinese: OverviewTexts = OverviewTexts(
     body = "Kotlin/JS 已经暴露了 DOM，但裸封装留下三个缺口：标签名是字符串，建出来的节点仍是 Element；属性是文本，" +
         "每个数值属性都要手工解析；而一个 Kotlin 类要真正成为可用的自定义元素，模块必须发射 ES2015，且注册前剥掉编译器桥。",
     bullets = listOf(
-        "TagName<T>.createElement { } —— 标签决定类型，不写魔法字符串。",
+        "HtmlTagName.p { } / +HtmlTagName.li { } —— 标签决定类型，不写魔法字符串。",
         "attr { } —— 属性即属性，由 codec 解码。",
         "cssSheet { } —— 类型化样式表，交给 shadow root adopt。",
         "CustomElementAdapter + defineIfMissing —— 一个类就是一个组件，桥已在注册前剥掉。",
@@ -106,10 +107,10 @@ internal class OverviewPage : Page {
         val purpose = sectionBlock()
         texts.bind(purpose.title, { it.purposeHeading })
 
-        val bulletItems = List(4) { HtmlTagName.li.createElement() }
-        val bullets = HtmlTagName.ul.createElement { bulletItems.forEach(::append) }
-        bulletItems.forEachIndexed { index, item ->
-            texts.bind(item) { it.bullets.getOrNull(index).orEmpty() }
+        val bullets = HtmlTagName.ul {
+            List(4) { index ->
+                texts.bind(+HtmlTagName.li()) { it.bullets.getOrNull(index).orEmpty() }
+            }
         }
         purpose.body.append(texts.bind(paragraph(), { it.body }), bullets)
 

@@ -4,7 +4,7 @@ import io.github.shijianjs.ktjs.demo.Palette
 import io.github.shijianjs.ktjs.demo.RESET
 import io.github.shijianjs.ktjs.dom.webcomponent.attr.attr
 import io.github.shijianjs.ktjs.dom.css.cssSheet
-import io.github.shijianjs.ktjs.dom.element.createElement
+import io.github.shijianjs.ktjs.dom.element.invoke
 import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementAdapter
 import io.github.shijianjs.ktjs.dom.webcomponent.attachStyledShadow
 import io.github.shijianjs.ktjs.dom.webcomponent.defineIfMissing
@@ -56,7 +56,7 @@ private val COUNTER_SHEET: CSSStyleSheet = cssSheet {
  * instances of this tag on one page share the sheet, not their state.
  */
 class DemoCounter : CustomElementAdapter() {
-    private val valueElement: HTMLSpanElement = HtmlTagName.span.createElement { classList.add(VALUE) }
+    private val valueElement: HTMLSpanElement = HtmlTagName.span { classList.add(VALUE) }
 
     private val incrementElement = createButton().apply {
         classList.add(INCREMENT)
@@ -64,7 +64,7 @@ class DemoCounter : CustomElementAdapter() {
     }
 
     init {
-        val root = HtmlTagName.div.createElement { classList.add(COUNTER) }
+        val root = HtmlTagName.div { classList.add(COUNTER) }
         root.append(valueElement, incrementElement)
         attachStyledShadow(RESET, COUNTER_SHEET).append(root)
 
@@ -97,5 +97,5 @@ class DemoCounter : CustomElementAdapter() {
 /** Creates a defined `<demo-counter>`; callers set [DemoCounter.value] and [DemoCounter.incrementLabel]. */
 fun newCounter(): DemoCounter {
     DemoCounter.define()
-    return DemoCounter.NAME.createElement()
+    return DemoCounter.NAME()
 }

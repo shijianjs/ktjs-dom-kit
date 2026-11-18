@@ -1,7 +1,7 @@
 package io.github.shijianjs.ktjs.demo.page
 
 import io.github.shijianjs.ktjs.demo.RESET
-import io.github.shijianjs.ktjs.dom.element.createElement
+import io.github.shijianjs.ktjs.dom.element.invoke
 import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementAdapter
 import io.github.shijianjs.ktjs.dom.webcomponent.attachStyledShadow
 import io.github.shijianjs.ktjs.dom.webcomponent.defineIfMissing
@@ -30,11 +30,11 @@ import web.html.HtmlTagName
  * strings. Nothing extends it.
  */
 class DemoPage : CustomElementAdapter() {
-    private val titleElement: HTMLHeadingElement = HtmlTagName.h1.createElement { classList.add(PAGE_TITLE) }
+    private val titleElement: HTMLHeadingElement = HtmlTagName.h1 { classList.add(PAGE_TITLE) }
 
-    private val summaryElement: HTMLParagraphElement = HtmlTagName.p.createElement { classList.add(PAGE_SUMMARY) }
+    private val summaryElement: HTMLParagraphElement = HtmlTagName.p { classList.add(PAGE_SUMMARY) }
 
-    private val linksElement: HTMLElement = HtmlTagName.div.createElement { classList.add(PAGE_LINKS) }
+    private val linksElement: HTMLElement = HtmlTagName.div { classList.add(PAGE_LINKS) }
 
     /**
      * The block a page appends its sections to.
@@ -77,5 +77,5 @@ class DemoPage : CustomElementAdapter() {
 /** Creates an empty page frame; [DemoPage.define] has to have run. */
 fun newPage(): DemoPage {
     DemoPage.define()
-    return DemoPage.NAME.createElement()
+    return DemoPage.NAME()
 }

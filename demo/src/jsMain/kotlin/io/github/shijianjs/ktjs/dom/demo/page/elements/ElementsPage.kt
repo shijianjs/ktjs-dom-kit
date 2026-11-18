@@ -1,6 +1,7 @@
 package io.github.shijianjs.ktjs.dom.demo.page.elements
 
-import io.github.shijianjs.ktjs.dom.element.createElement
+import io.github.shijianjs.ktjs.dom.element.invoke
+import io.github.shijianjs.ktjs.dom.element.unaryPlus
 import io.github.shijianjs.ktjs.demo.i18n.Binder
 import io.github.shijianjs.ktjs.demo.i18n.Lang
 import io.github.shijianjs.ktjs.demo.i18n.Langs
@@ -18,6 +19,7 @@ import io.github.shijianjs.ktjs.vaadin.button.createButton
 import io.github.shijianjs.ktjs.vaadin.themablemixin.addTheme
 import io.github.shijianjs.ktjs.vaadin.theme.ButtonVariants
 import web.dom.clickEvent
+import web.cssom.ClassName
 import web.events.addHandler
 import web.html.HTMLElement
 import web.html.HtmlTagName
@@ -34,6 +36,10 @@ private class ElementsTexts(
     val collectionHint: String,
     val addLabel: String,
     val collectionNote: String,
+    val subtreeHeading: String,
+    val subtreeHint: String,
+    val subtreeCode: String,
+    val subtreeNote: String,
 )
 
 private val elementsEnglish: ElementsTexts = ElementsTexts(
@@ -49,6 +55,12 @@ private val elementsEnglish: ElementsTexts = ElementsTexts(
     collectionHint = "Adding an entry appends one item; nothing is cleared and the page is not rebuilt.",
     addLabel = "Add entry",
     collectionNote = "The list keeps its own nodes: a new entry is one more li, the rest are untouched.",
+    subtreeHeading = "One expression, one subtree",
+    subtreeHint = "The operator creates the child and appends it to the element being built; its value is " +
+        "the child, so the same call works when the builder needs the node later.",
+    subtreeCode = "+HtmlTagName.li { textContent = line }",
+    subtreeNote = "The tree below is one expression: article, heading, paragraph, list — and every list " +
+        "item again built with the same operator.",
 )
 
 private val elementsChinese: ElementsTexts = ElementsTexts(
@@ -63,6 +75,11 @@ private val elementsChinese: ElementsTexts = ElementsTexts(
     collectionHint = "新增条目只 append 一项，不清空，也不重建页面。",
     addLabel = "新增一条",
     collectionNote = "列表自己持有节点：新增一条只是多一个 li，其余节点不动。",
+    subtreeHeading = "一个表达式，一棵子树",
+    subtreeHint = "这个运算符建出子节点并挂进正在构建的元素，表达式的值就是子节点，所以构建者需要留住它时" +
+        "也是同一个写法。",
+    subtreeCode = "+HtmlTagName.li { textContent = line }",
+    subtreeNote = "下面这棵树就是一个表达式：article、标题、段落、列表，列表的每一项同样用这个运算符建。",
 )
 
 private val elementsTexts: Translations<ElementsTexts> = texts(
@@ -70,16 +87,29 @@ private val elementsTexts: Translations<ElementsTexts> = texts(
     Langs.ZH_HANS to elementsChinese,
 )
 
+private val SUBTREE: ClassName = ClassName("elements__subtree")
+
+/** The lines the built subtree shows, and the code the page quotes next to it. */
+private val SUBTREE_LINES: List<String> = listOf(
+    "+HtmlTagName.h3 { textContent = \"…\" }",
+    "texts.bind(+HtmlTagName.p { }, { it.subtreeNote })",
+    "+HtmlTagName.ul { lines.forEach { +HtmlTagName.li { +codeText(it) } } }",
+)
+
 /**
- * `TagName<T>.createElement { }`: the tag carries the element type, so the created node needs no cast
- * and no `querySelector`, and a growing list appends instead of rebuilding.
+ * `TagName<T>` decides the element type, so a created node needs no cast and no `querySelector`, and a
+ * growing list appends instead of rebuilding.
+ *
+ * The page shows the three spellings: `HtmlTagName.a { … }` for a node whose parent is decided later,
+ * `+HtmlTagName.li { … }` for a child created inside the element being built, and the growing list,
+ * where `appendChild` is the honest call because the entry is created outside its parent's block.
  */
 internal class ElementsPage : Page {
     private val page = newPage()
 
     private val texts = Binder(elementsTexts)
 
-    private val list: HTMLElement = HtmlTagName.ul.createElement()
+    private val list: HTMLElement = HtmlTagName.ul()
 
     private var entries = 0
 
@@ -95,7 +125,7 @@ internal class ElementsPage : Page {
                 null,
                 texts.bind(heading(3), { it.typedNode }),
                 texts.bind(paragraph(), { it.typedNote }),
-                row(codeText("HtmlTagName.a.createElement { href = … }")),
+                row(codeText("HtmlTagName.a { href = … }")),
             ),
         )
 
@@ -108,7 +138,24 @@ internal class ElementsPage : Page {
 
         collection.body.append(exampleBox(null, addButton, list, texts.bind(paragraph(), { it.collectionNote })))
 
-        page.body.append(typed.root, collection.root)
+        val subtree = sectionBlock()
+        texts.bind(subtree.title, { it.subtreeHeading })
+        texts.bind(subtree.hint, { it.subtreeHint })
+
+        val built = HtmlTagName.article {
+            classList.add(SUBTREE)
+            +HtmlTagName.h3 { textContent = "article > h3" }
+            texts.bind(+HtmlTagName.p {}, { it.subtreeNote })
+            +HtmlTagName.ul {
+                SUBTREE_LINES.forEach { line -> +HtmlTagName.li { +codeText(line) } }
+            }
+        }
+
+        subtree.body.append(
+            exampleBox(null, built, row(texts.bind(codeText(""), { it.subtreeCode }))),
+        )
+
+        page.body.append(typed.root, collection.root, subtree.root)
     }
 
     override fun applyTranslation(lang: Lang) {
@@ -120,6 +167,6 @@ internal class ElementsPage : Page {
 
     private fun appendEntry() {
         entries += 1
-        list.append(HtmlTagName.li.createElement { textContent = "entry $entries" })
+        list.append(HtmlTagName.li { textContent = "entry $entries" })
     }
 }

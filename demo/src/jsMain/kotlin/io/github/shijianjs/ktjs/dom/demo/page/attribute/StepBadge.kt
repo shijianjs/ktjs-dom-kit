@@ -4,7 +4,7 @@ import io.github.shijianjs.ktjs.demo.Palette
 import io.github.shijianjs.ktjs.demo.RESET
 import io.github.shijianjs.ktjs.dom.webcomponent.attr.attr
 import io.github.shijianjs.ktjs.dom.css.cssSheet
-import io.github.shijianjs.ktjs.dom.element.createElement
+import io.github.shijianjs.ktjs.dom.element.invoke
 import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementAdapter
 import io.github.shijianjs.ktjs.dom.webcomponent.attachStyledShadow
 import io.github.shijianjs.ktjs.dom.webcomponent.defineIfMissing
@@ -36,7 +36,7 @@ private val BADGE_SHEET: CSSStyleSheet = cssSheet {
  * a public API rather than a copy of one.
  */
 class StepBadge : CustomElementAdapter() {
-    private val label = HtmlTagName.span.createElement {
+    private val label = HtmlTagName.span {
         classList.add(BADGE_CLASS)
         textContent = "step = 1"
     }
@@ -66,5 +66,5 @@ class StepBadge : CustomElementAdapter() {
 /** Creates a defined `<demo-step-badge>`; callers configure it through [StepBadge.step]. */
 fun newStepBadge(): StepBadge {
     StepBadge.define()
-    return StepBadge.NAME.createElement()
+    return StepBadge.NAME()
 }

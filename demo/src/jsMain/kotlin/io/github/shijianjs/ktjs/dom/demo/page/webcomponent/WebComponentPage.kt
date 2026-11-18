@@ -1,6 +1,6 @@
 package io.github.shijianjs.ktjs.dom.demo.page.webcomponent
 
-import io.github.shijianjs.ktjs.dom.element.createElement
+import io.github.shijianjs.ktjs.dom.element.invoke
 import io.github.shijianjs.ktjs.demo.i18n.Binder
 import io.github.shijianjs.ktjs.demo.i18n.Lang
 import io.github.shijianjs.ktjs.demo.i18n.Langs
@@ -73,7 +73,7 @@ internal class WebComponentPage : Page {
 
     private val texts = Binder(webComponentTexts)
 
-    private val instanceHost = HtmlTagName.div.createElement()
+    private val instanceHost = HtmlTagName.div()
 
     private val counters: MutableList<DemoCounter> = mutableListOf()
 
