@@ -19,11 +19,24 @@ The split is by **npm dependency**, not by "which functions happen to be shared"
 `card.ariaLabel = "…"` should not be pulled into that. So this module depends on `kotlin-browser` and
 nothing else, and both sides use it:
 
-```text
-ktjs-wrapper-kit  ←  ktjs-dom-kit        (re-exports it as api)
-                  ←  ktjs-vaadin         (typed attributes of every component)
-                  ←  ktjs-iconify, …     (whichever wrapper needs an attribute)
+```mermaid
+flowchart LR
+  subgraph wrappers["wrapper side — kotlin-browser only"]
+    W["ktjs-wrapper-kit<br/>Attribute&lt;T&gt; + codecs"]
+  end
+  subgraph authoring["authoring side — the npm packages stay here"]
+    D["ktjs-dom-kit"]
+    NPM["@emotion/serialize · stylis · loadjs"]
+  end
+  D -->|"api dependency"| W
+  NPM --> D
+  V["ktjs-vaadin"] --> W
+  I["ktjs-iconify"] --> W
+  O["your own wrapper"] --> W
 ```
+
+Arrows point from the dependent to its dependency: `ktjs-vaadin` and `ktjs-iconify` need the attribute
+layer, and the attribute layer needs nothing but the DOM types.
 
 Only the part a wrapper genuinely needs is here:
 

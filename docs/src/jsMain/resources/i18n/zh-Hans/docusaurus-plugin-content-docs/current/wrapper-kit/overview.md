@@ -17,11 +17,23 @@ sidebar_position: 1
 `@emotion/serialize`、`stylis`、`loadjs`；一个只想读 `card.ariaLabel = "…"` 的库不该被拖进这一串。所以
 本模块只依赖 `kotlin-browser`，两边都用它：
 
-```text
-ktjs-wrapper-kit  ←  ktjs-dom-kit        （以 api 再导出）
-                  ←  ktjs-vaadin         （每个组件的类型化属性）
-                  ←  ktjs-iconify, …     （任何需要属性的 wrapper）
+```mermaid
+flowchart LR
+  subgraph wrappers["wrapper 侧 —— 只要 kotlin-browser"]
+    W["ktjs-wrapper-kit<br/>Attribute&lt;T&gt; + codec"]
+  end
+  subgraph authoring["编写侧 —— npm 包留在这边"]
+    D["ktjs-dom-kit"]
+    NPM["@emotion/serialize · stylis · loadjs"]
+  end
+  D -->|"api 依赖"| W
+  NPM --> D
+  V["ktjs-vaadin"] --> W
+  I["ktjs-iconify"] --> W
+  O["你自己的 wrapper"] --> W
 ```
+
+箭头从依赖方指向被依赖方：`ktjs-vaadin` 与 `ktjs-iconify` 需要属性层，属性层只需要 DOM 类型。
 
 这里只放 wrapper 真正需要的部分：
 

@@ -18,6 +18,15 @@ button.labelText.clear()              // 移除该属性
 它不缓存任何东西，所以 npm 组件、devtools 或裸 `setAttribute` 写进去的值在下一次读时就是可见的 ——
 不存在第二份要同步的副本。扩展属性因此可以每次访问都新建一个对象。
 
+```mermaid
+flowchart LR
+  X["button.labelText<br/>（Attribute&lt;String&gt;）"] -->|"value = …"| ENC["codec.encode"]
+  ENC -->|"文本；null 则移除"| ATTR["元素上的属性"]
+  ATTR -->|"codec.decode；缺失时给 absent"| X
+  ATTR --> OBS["MutationObserver<br/>（observe() 挂的）"]
+  OBS -->|"只报真实变化"| X
+```
+
 ## 读写
 
 | 成员 | 含义 |

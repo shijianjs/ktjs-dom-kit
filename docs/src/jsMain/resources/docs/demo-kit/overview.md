@@ -24,6 +24,16 @@ It brings `ktjs-dom-kit`, `ktjs-vaadin-web-components` and `ktjs-iconify-icon` a
 
 ## What it gives you
 
+```mermaid
+flowchart TB
+  L["vaadin-app-layout<br/>(navbar spans the full width)"] --> N["navbar<br/>mark · title · version · breadcrumb · menus"]
+  L --> D["drawer<br/>vaadin-side-nav, icon per entry"]
+  L --> B["content slot"]
+  B --> P["the mounted page<br/>(DemoPage of the current route)"]
+  N --> M["menu bars: docs · language · appearance"]
+  M --> T["Theme / LanguageState<br/>written straight to &lt;html&gt;"]
+```
+
 | Package | Provides |
 | --- | --- |
 | `…ktjs.demo.shell` | [`DemoShell`](./pages.md) and `ShellConfig` — the site frame and its one config object; `SHELL_SHEET`, the class names the frame and its sheet agree on |
@@ -104,6 +114,25 @@ class Entry(val id: String, val group: Group, val icon: String?, val create: () 
 
 Groups are derived from the entries, so adding a page is one entry and nothing else. `id` is the route
 (`#/stylesheets`) and the key `SiteTexts.pageTitles` is looked up by — an id missing from the map shows
-the id itself, so a page appears in the navigation before its translations land. Pages are created
-lazily on first visit and then cached, so a page's own state (typed input, opened panels) survives
-navigating away and back.
+the id itself, so a page appears in the navigation before its translations land.
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant U as user
+  participant R as Router
+  participant C as Catalog
+  participant P as Page (cached)
+  U->>R: click an entry, or open #/stylesheets
+  R->>C: Entry(id) for the route
+  alt first visit
+    C->>P: create()
+    P->>P: applyTranslation(current language)
+  else seen before
+    C-->>P: the same instance
+  end
+  R->>U: the page is the content slot
+```
+
+Pages are created lazily on first visit and then cached, so a page's own state (typed input, opened
+panels) survives navigating away and back.

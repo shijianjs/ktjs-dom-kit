@@ -22,6 +22,16 @@ implementation("io.github.shijianjs:ktjs-demo-kit:0.1.0")
 
 ## 它给人什么
 
+```mermaid
+flowchart TB
+  L["vaadin-app-layout<br/>（导航栏通屏）"] --> N["导航栏<br/>标记 · 标题 · 版本 · 面包屑 · 菜单"]
+  L --> D["抽屉<br/>vaadin-side-nav，每条一个图标"]
+  L --> B["内容槽"]
+  B --> P["已挂载的页面<br/>（当前路由的 DemoPage）"]
+  N --> M["菜单栏：文档 · 语言 · 外观"]
+  M --> T["Theme / LanguageState<br/>直接写到 &lt;html&gt;"]
+```
+
 | 包 | 提供 |
 | --- | --- |
 | `…ktjs.demo.shell` | [`DemoShell`](./pages.md) 与 `ShellConfig` —— 站点外壳及它唯一的配置对象；以及外壳与其样式表共用的 `SHELL_SHEET`、类名 |
@@ -98,4 +108,23 @@ class Entry(val id: String, val group: Group, val icon: String?, val create: () 
 
 分组由条目推导，所以加一个页面就是加一条 `Entry`，别的都不用动。`id` 就是路由（`#/stylesheets`），也是
 `SiteTexts.pageTitles` 的键 —— 表里缺这个 id 时直接显示 id 本身，于是页面能在译文之前先出现在导航里。
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant U as 用户
+  participant R as Router
+  participant C as Catalog
+  participant P as 页面（缓存）
+  U->>R: 点条目，或打开 #/stylesheets
+  R->>C: 按路由取 Entry(id)
+  alt 首次访问
+    C->>P: create()
+    P->>P: applyTranslation(当前语言)
+  else 之前来过
+    C-->>P: 同一个实例
+  end
+  R->>U: 页面即内容槽
+```
+
 页面首次访问时惰性创建，之后缓存，所以页面自己的状态（输入的内容、展开的面板）离开再回来还在。

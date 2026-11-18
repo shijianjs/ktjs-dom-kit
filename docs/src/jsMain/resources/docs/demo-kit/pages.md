@@ -10,6 +10,18 @@ content, not in chrome.
 
 ## The page frame
 
+```mermaid
+flowchart TB
+  DP["DemoPage<br/>(one class, every page)"] --> HEAD["header: h1 · summary · links row"]
+  DP --> BODY["body: vaadin-vertical-layout theme=&quot;spacing&quot;"]
+  BODY --> S["sectionBlock"]
+  S --> ST["title + hint (hint empty → line hidden)"]
+  S --> SB["section body"]
+  SB --> PR["paragraph / bulletList / codeText"]
+  SB --> EX["exampleBox → vaadin-card"]
+  EX --> CH["row / col / Readout"]
+```
+
 ```kotlin
 val page = newPage()
 page.setTitle(current.pageTitle)

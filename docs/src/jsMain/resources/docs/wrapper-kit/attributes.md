@@ -20,6 +20,15 @@ button.labelText.clear()              // the attribute is removed
 devtools or a plain `setAttribute` is visible on the next read — there is no second copy to keep in
 sync. That is also why the extension property can build a fresh object per access.
 
+```mermaid
+flowchart LR
+  X["button.labelText<br/>(Attribute&lt;String&gt;)"] -->|"value = …"| ENC["codec.encode"]
+  ENC -->|"text, or null → remove"| ATTR["the element's attribute"]
+  ATTR -->|"codec.decode, absent when missing"| X
+  ATTR --> OBS["MutationObserver<br/>via observe()"]
+  OBS -->|"only real changes"| X
+```
+
 ## Reading and writing
 
 | Member | Meaning |

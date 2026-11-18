@@ -9,6 +9,18 @@ sidebar_position: 2
 
 ## 页面框架
 
+```mermaid
+flowchart TB
+  DP["DemoPage<br/>（一个类，所有页面）"] --> HEAD["头部：h1 · 摘要 · 链接行"]
+  DP --> BODY["body：vaadin-vertical-layout theme=&quot;spacing&quot;"]
+  BODY --> S["sectionBlock"]
+  S --> ST["标题 + 提示（提示为空则隐藏该行）"]
+  S --> SB["区块 body"]
+  SB --> PR["paragraph / bulletList / codeText"]
+  SB --> EX["exampleBox → vaadin-card"]
+  EX --> CH["row / col / Readout"]
+```
+
 ```kotlin
 val page = newPage()
 page.setTitle(current.pageTitle)
