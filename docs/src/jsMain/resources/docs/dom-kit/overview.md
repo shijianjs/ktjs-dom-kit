@@ -43,6 +43,21 @@ The module is split by concern: a package per job, a subpackage wherever a packa
 parent–child or one-to-many relation (a type and the implementations of it, a sheet and the sugar
 written inside it), and a file per declaration — nothing here is a catch-all.
 
+```mermaid
+flowchart LR
+  E["element/<br/>createElement · + · inlineStyle"]
+  W["webcomponent/<br/>adapter · shadow · defineIfMissing"]
+  A["attribute/<br/>attr delegate + codecs"]
+  C["css/<br/>cssSheet · typed values<br/>css/dsl: pseudos · selectors · at-rules"]
+  X["a component<br/>one Kotlin class + one tag"]
+  L["loadjs/<br/>script and stylesheet loading"]
+  E --> X
+  W --> X
+  A --> X
+  C --> X
+```
+
+
 | Package | Provides |
 | --- | --- |
 | `element/` | the generic element helpers: `TagName<T>.createElement { … }`, its `HtmlTagName.div { … }` shorthand, the `+tag { … }` append operator ([Building elements](./elements.md)), and `HTMLElement.inlineStyle`, the element's own style seen as `csstype.Properties` |

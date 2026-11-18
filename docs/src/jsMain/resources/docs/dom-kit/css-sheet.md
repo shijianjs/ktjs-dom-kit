@@ -42,14 +42,11 @@ no better than a text file.
 
 ## The pipeline and its contract
 
-```
-PropertiesBuilder (= JSO)
-    │  serializeStyles(jsArrayOf(rules))            @emotion/serialize: declarations + nested key{…}
-    ▼
-"border:1px solid …;transition:…;:hover{…}"        (still not a flat rule)
-    │  serialize(compile("selector{…}"), middleware(jsArrayOf(stringify)))   stylis
-    ▼
-".card{…}.card:hover{…}"                            → CSSStyleSheet.replaceSync(…)
+```mermaid
+flowchart LR
+  PB["PropertiesBuilder (a JSO)<br/>a map of selector keys to declarations"] -->|"serializeStyles(jsArrayOf(rules))<br/>@emotion/serialize"| S1["declarations + nested key{…}<br/>still not a flat rule"]
+  S1 -->|"serialize(compile(…), middleware(jsArrayOf(stringify)))<br/>stylis"| S2[".card{…}.card:hover{…}"]
+  S2 -->|"replaceSync(…)"| SH["CSSStyleSheet"]
 ```
 
 - **The top level is a map of selectors**, not a set of declarations. `cardClass { … }`,
@@ -160,6 +157,18 @@ val hostDisabled = pseudo(Pseudos.host, attributeSelector(HtmlAttributes.disable
 cssSheet { selected { display = Display.block } }
 ```
 
+`compound` and the combinators build one tree; the result is a selector value, not text:
+
+```mermaid
+flowchart TB
+  R["className(ROW) → .row"] --> CP["compound(…)"]
+  S["className(SELECTED) → .is-selected"] --> CP
+  CP --> CMP[".row.is-selected"]
+  CMP --> CH["child (infix)"]
+  L["className(LABEL) → .label"] --> CH
+  CH --> OUT[".row.is-selected > .label<br/>a CssSelector value"]
+  OUT --> KEY["used as a rule key:<br/>cssSheet { selected { … } }"]
+```
 | Node kind | Factory |
 | --- | --- |
 | type selector | `tag(HtmlTagName.div)` / `tag(BUTTON)` — a `TagName`, never a string |

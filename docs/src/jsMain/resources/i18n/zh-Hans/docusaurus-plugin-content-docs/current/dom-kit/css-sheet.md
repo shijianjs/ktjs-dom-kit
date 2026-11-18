@@ -38,15 +38,13 @@ internal val CARD_SHEET: CSSStyleSheet = cssSheet {
 
 ## 管线与契约
 
+```mermaid
+flowchart LR
+  PB["PropertiesBuilder（一个 JSO）<br/>选择器 key → 声明的映射"] -->|"serializeStyles(jsArrayOf(rules))<br/>@emotion/serialize"| S1["声明 + 嵌套 key{…}<br/>还不是扁平规则"]
+  S1 -->|"serialize(compile(…), middleware(jsArrayOf(stringify)))<br/>stylis"| S2[".card{…}.card:hover{…}"]
+  S2 -->|"replaceSync(…)"| SH["CSSStyleSheet"]
 ```
-PropertiesBuilder (= JSO)
-    │  serializeStyles(jsArrayOf(rules))            @emotion/serialize：声明 + 嵌套 key{…}
-    ▼
-"border:1px solid …;transition:…;:hover{…}"        （还不是扁平规则）
-    │  serialize(compile("selector{…}"), middleware(jsArrayOf(stringify)))   stylis
-    ▼
-".card{…}.card:hover{…}"                            → CSSStyleSheet.replaceSync(…)
-```
+
 
 - **顶层是选择器映射**，不是声明集合。`cardClass { … }`、`Pseudos.hover { … }`、`pseudo(Pseudos.host) { … }`、
   `"@media …" { … }` 是 key；写在里面的属性属于最近一层 `{}` 的那条规则。
@@ -140,6 +138,19 @@ val hostDisabled = pseudo(Pseudos.host, attributeSelector(HtmlAttributes.disable
                                                                      // :host([disabled]) > vaadin-button
 
 cssSheet { selected { display = Display.block } }
+```
+
+`compound` 与各个组合器拼出来的是一棵树，结果是一个选择器**值**，不是文本：
+
+```mermaid
+flowchart TB
+  R["className(ROW) → .row"] --> CP["compound(…)"]
+  S["className(SELECTED) → .is-selected"] --> CP
+  CP --> CMP[".row.is-selected"]
+  CMP --> CH["child（中缀）"]
+  L["className(LABEL) → .label"] --> CH
+  CH --> OUT[".row.is-selected > .label<br/>一个 CssSelector 值"]
+  OUT --> KEY["当作规则键：<br/>cssSheet { selected { … } }"]
 ```
 
 | 节点类型 | 工厂 |

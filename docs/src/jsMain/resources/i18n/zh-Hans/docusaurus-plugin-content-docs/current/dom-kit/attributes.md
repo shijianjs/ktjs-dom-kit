@@ -17,6 +17,15 @@ attribute 就是这个属性。getter 读它并解码，setter 编码并写它�
 ——而那份只为区分真变化与重复写入。标记、`setAttribute`、devtools 与 Kotlin 最终落到同一处，没有第二份
 状态要同步。
 
+```mermaid
+flowchart LR
+  SET["Kotlin setter"] --> ENC["codec.encode"] --> WR["setAttribute(name, raw)"]
+  EXT["标记 · setAttribute · devtools"] --> WR
+  WR --> OB["MutationObserver<br/>排一个微任务"] --> DEC["codec.decode"] --> CH["AttributeChange<br/>name · 新旧值 · isRemoval"] --> CB["变化回调"] --> NODE["这个元素自己持有的节点"]
+  GET["Kotlin getter"] --> RD["getAttribute → codec.decode<br/>缺失 → default / absent"]
+```
+
+
 `attr` 是 inline 函数，`name`、`default`、`codec` 与变化回调都可省：
 
 ```kotlin

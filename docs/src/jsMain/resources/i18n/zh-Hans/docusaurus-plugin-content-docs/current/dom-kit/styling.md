@@ -12,6 +12,16 @@ sidebar_position: 5
 | 组件类自己的一份 sheet | 内联表达不了的：`:hover`、`:focus-visible`、`::before`、`@media`、`@supports`、`@keyframes` | 类的 `companion object` 里一份 `CSSStyleSheet`，由 shadow root adopt |
 | 多个组件共享的一份 sheet | 重置、主题 token、父容器统一施加给子组件的布局 | 同样的机制，一份 sheet 被多个元素类 adopt |
 
+```mermaid
+flowchart LR
+  L1["1 · 内联样式<br/>node.inlineStyle"] -->|"写不了 :hover、::before、@media"| L2["2 · 组件类自己的 sheet<br/>companion object，由它的 shadow root adopt"]
+  L2 -->|"两个以上组件必须一起变"| L3["3 · 共享 sheet<br/>重置 · 主题 token · 父容器布局"]
+  L1 --> EL["渲染出来的元素"]
+  L2 --> EL
+  L3 --> EL
+```
+
+
 ## 类型化的内联样式
 
 `HTMLElement.style` 来自 lib.dom，每个属性都是普通 `String`。`inlineStyle` 是同一个

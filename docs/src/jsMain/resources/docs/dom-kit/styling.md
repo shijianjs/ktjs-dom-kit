@@ -13,6 +13,16 @@ not a matter of taste:
 | a sheet the component class owns | what inline styles cannot: `:hover`, `:focus-visible`, `::before`, `@media`, `@supports`, `@keyframes` | one `CSSStyleSheet` in the class's `companion object`, adopted by the shadow root |
 | a sheet several components share | a reset, the theme tokens, a layout a parent imposes on its children | the same mechanism, one sheet adopted by more than one element class |
 
+```mermaid
+flowchart LR
+  L1["1 · inline style<br/>node.inlineStyle"] -->|"cannot express :hover, ::before, @media"| L2["2 · the class's own sheet<br/>companion object, adopted by its shadow root"]
+  L2 -->|"two or more components must change together"| L3["3 · a shared sheet<br/>reset · theme tokens · parent layout"]
+  L1 --> EL["the element as rendered"]
+  L2 --> EL
+  L3 --> EL
+```
+
+
 ## Inline styles, typed
 
 `HTMLElement.style` comes from lib.dom, where every property is a plain `String`. `inlineStyle` is the

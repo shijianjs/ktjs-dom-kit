@@ -110,6 +110,16 @@ already in the document, whose `connectedCallback` runs right away — before th
 is a stack overflow. Calling it twice is safe, which is what makes it usable from a module that may
 be evaluated more than once.
 
+```mermaid
+flowchart TB
+  D["defineIfMissing(tag, reference)"] --> S["stripBridgesFrom(klass)<br/>delete the forwarding bridges on every prototype,<br/>stopping before HTMLElement.prototype"]
+  S --> R["customElements.define(tag, companion)"]
+  R --> U["matching markup upgrades now"]
+  U --> C["connectedCallback<br/>shadow subtree already built in the constructor"]
+  C --> A["applyInitialAttributes()<br/>parsed attributes reach the delegates"]
+```
+
+
 | Piece | Comes from |
 | --- | --- |
 | `NAME: TagName<T>` | your element's `companion object`; the tag name lives in one place per element |

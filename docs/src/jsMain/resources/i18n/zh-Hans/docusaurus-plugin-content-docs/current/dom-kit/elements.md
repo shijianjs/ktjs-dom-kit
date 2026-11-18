@@ -24,6 +24,16 @@ val card = HtmlTagName.section {
 给你的 `HTMLAnchorElement` 已经带好 `href`、`target`、`rel`，建完不需要强转，也不需要
 `querySelector` 再找一次。
 
+```mermaid
+flowchart LR
+  A["+tag { … }"] -->|"顺手挂载"| P["外层块<br/>（上下文参数 parent: ParentNode）"]
+  B["tag { … }"] --> F
+  C["tag.createElement { … }"] --> F
+  A --> F
+  F["Document.createElement(TagName&lt;T&gt;)<br/>块的接收者就是 T"] --> N["类型化节点<br/>不用强转、不用再 querySelector"]
+```
+
+
 ## 用哪一种
 
 | 写法 | 什么时候用 |

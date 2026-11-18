@@ -25,6 +25,16 @@ All three go through `Document.createElement(TagName<T>)`, so the block's receiv
 type — `HtmlTagName.anchor` hands you an `HTMLAnchorElement` with `href`, `target` and `rel` already
 typed, and no cast or `querySelector` is needed afterwards.
 
+```mermaid
+flowchart LR
+  A["+tag { … }"] -->|"also appends"| P["the enclosing block<br/>(context parent: ParentNode)"]
+  B["tag { … }"] --> F
+  C["tag.createElement { … }"] --> F
+  A --> F
+  F["Document.createElement(TagName&lt;T&gt;)<br/>the block's receiver is T"] --> N["a typed node<br/>no cast, no querySelector"]
+```
+
+
 ## Which spelling
 
 | Use | When |

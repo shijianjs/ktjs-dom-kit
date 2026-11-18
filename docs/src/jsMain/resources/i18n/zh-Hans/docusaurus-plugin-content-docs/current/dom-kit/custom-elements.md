@@ -91,6 +91,16 @@ defineIfMissing(KtjsBadge.NAME, KtjsBadge.Companion)
 的同类元素，它们的 `connectedCallback` 立即执行——如果那时桥还在，就是一次栈溢出。重复调用是安全的，这才
 让它可以放在可能被求值多次的模块里。
 
+```mermaid
+flowchart TB
+  D["defineIfMissing(tag, reference)"] --> S["stripBridgesFrom(klass)<br/>沿原型链逐层删掉转发桥，<br/>删到 HTMLElement.prototype 之前为止"]
+  S --> R["customElements.define(tag, companion)"]
+  R --> U["文档里已有的同类元素立即升级"]
+  U --> C["connectedCallback<br/>shadow 子树在构造函数里就已建好"]
+  C --> A["applyInitialAttributes()<br/>解析出来的属性这才到达各个委托"]
+```
+
+
 | 部件 | 来自 |
 | --- | --- |
 | `NAME: TagName<T>` | 元素自己的 `companion object`；标签名每个元素只写一处 |

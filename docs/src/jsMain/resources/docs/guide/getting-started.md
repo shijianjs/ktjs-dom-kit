@@ -18,6 +18,16 @@ Dependencies point one way: `ktjs-dom-kit` re-exports `ktjs-wrapper-kit`, and `k
 both. A project that only describes npm components can depend on `ktjs-wrapper-kit` alone and stay clear
 of the emotion/stylis/loadjs side of the DOM kit.
 
+```mermaid
+flowchart LR
+  W["ktjs-wrapper-kit<br/>typed attributes for an npm element"]
+  D["ktjs-dom-kit<br/>element · webcomponent · attribute · css<br/>(also ships emotion · stylis · loadjs)"]
+  M["ktjs-demo-kit<br/>site layout · router · i18n · blocks"]
+  W -->|"re-exported by"| D
+  D -->|"re-exported by"| M
+```
+
+
 ## Add the dependency
 
 ```kotlin

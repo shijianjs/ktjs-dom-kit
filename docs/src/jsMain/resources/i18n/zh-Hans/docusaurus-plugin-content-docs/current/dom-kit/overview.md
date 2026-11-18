@@ -39,6 +39,21 @@ implementation("io.github.shijianjs:ktjs-dom-kit:0.1.0")
 模块按关注点分包：一件事一个包；只要一个包里存在明确的父子级或一对多关系，就再下沉一层子包（一个类型与
 它的各种实现、一张样式表与写它时用的语法糖）；一个声明一个文件，没有哪个文件是杂物间。
 
+```mermaid
+flowchart LR
+  E["element/<br/>createElement · + · inlineStyle"]
+  W["webcomponent/<br/>基类 · shadow · defineIfMissing"]
+  A["attribute/<br/>attr 委托 + 编解码器"]
+  C["css/<br/>cssSheet · 类型化取值<br/>css/dsl：伪类 · 选择器 · at-rule"]
+  X["一个组件<br/>一个 Kotlin 类 + 一个标签"]
+  L["loadjs/<br/>脚本与样式表加载"]
+  E --> X
+  W --> X
+  A --> X
+  C --> X
+```
+
+
 | 包 | 提供 |
 | --- | --- |
 | `element/` | 通用元素辅助：`TagName<T>.createElement { … }`、它的简写 `HtmlTagName.div { … }`、把子节点挂进正在构建的元素里的 `+tag { … }`（[构建元素](./elements.md)），以及 `HTMLElement.inlineStyle`（元素自己的样式，`csstype.Properties` 视图） |

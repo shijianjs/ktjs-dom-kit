@@ -18,6 +18,15 @@ nothing is kept on the Kotlin side except the last reported value, which exists 
 change from a repeated write. Markup, `setAttribute`, devtools and Kotlin all end up in the same
 place, so there is no second copy to keep in sync.
 
+```mermaid
+flowchart LR
+  SET["Kotlin setter"] --> ENC["codec.encode"] --> WR["setAttribute(name, raw)"]
+  EXT["markup · setAttribute · devtools"] --> WR
+  WR --> OB["MutationObserver<br/>queued microtask"] --> DEC["codec.decode"] --> CH["AttributeChange<br/>name · old/new · isRemoval"] --> CB["the change callback"] --> NODE["the nodes this element owns"]
+  GET["Kotlin getter"] --> RD["getAttribute → codec.decode<br/>absent → default / absent"]
+```
+
+
 `attr` is an inline function taking `name`, `default`, `codec` and the change callback, all optional:
 
 ```kotlin
