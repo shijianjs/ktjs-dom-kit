@@ -9,16 +9,35 @@ import web.html.HTMLElement
  * the field it reads. [apply] walks the registrations and rewrites `textContent` in place — no
  * rebuild, no `data-i18n` attributes, and a field that disappears from the text class fails to
  * compile at the binding that used it.
+ *
+ * A node whose copy does not live in `textContent` registers the property it does live in
+ * ([bind]'s `set` overload): component labels, `helperText`, `placeholder`, a tooltip's `text`.
+ * Both overloads keep the same rule for empty copy — the node is hidden, so a section that declares
+ * no hint leaves no blank line behind.
  */
 class Binder<T : Any>(private val translations: Translations<T>) {
-    private val bindings: MutableList<Pair<HTMLElement, (T) -> String>> = mutableListOf()
+    /** node, the field it shows, and how that field is written onto it. */
+    private val bindings: MutableList<Triple<HTMLElement, (T) -> String, (String) -> Unit>> = mutableListOf()
+
+    /** The copy [apply] last resolved, for text a page composes itself (`"Error: " + message`). */
+    var current: T = translations.languages.first().let { translations[it] }
+        private set
 
     /**
-     * Registers [node] to show [field] of the text class; returns the node unchanged, still typed as
-     * the concrete element, so a binding can be chained into the API of that element.
+     * Registers [node] to show [field] of the text class as its `textContent`; returns the node
+     * unchanged, still typed as the concrete element, so a binding can be chained into its API.
      */
     fun <E : HTMLElement> bind(node: E, field: (T) -> String): E {
-        bindings += node to field
+        bindings += Triple(node, field) { text -> node.textContent = text }
+        return node
+    }
+
+    /**
+     * Registers [node] to show [field] of the text class through [set], for copy that lives in a
+     * property rather than in `textContent` (`label`, `helperText`, `placeholder`, `text`).
+     */
+    fun <E : HTMLElement> bind(node: E, field: (T) -> String, set: (String) -> Unit): E {
+        bindings += Triple(node, field, set)
         return node
     }
 
@@ -30,10 +49,10 @@ class Binder<T : Any>(private val translations: Translations<T>) {
      * hint would appear at construction and stay hidden for every later language.
      */
     fun apply(lang: Lang) {
-        val texts = translations[lang]
-        bindings.forEach { (node, field) ->
-            val text = field(texts)
-            node.textContent = text
+        current = translations[lang]
+        bindings.forEach { (node, field, set) ->
+            val text = field(current)
+            set(text)
             node.toggleAttribute("hidden", text.isEmpty())
         }
     }
