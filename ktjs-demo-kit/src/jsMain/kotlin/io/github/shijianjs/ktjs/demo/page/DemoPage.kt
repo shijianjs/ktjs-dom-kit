@@ -15,6 +15,7 @@ import web.components.ShadowRoot
 import web.cssom.CSSStyleSheet
 import web.dom.Node
 import web.dom.TagName
+import web.dom.document
 import web.html.HTMLHeadingElement
 import web.html.HTMLParagraphElement
 import web.html.HTMLElement
@@ -87,6 +88,38 @@ class DemoPage : CustomElementAdapter() {
     fun addLink(node: Node) {
         if (node is HTMLElement) node.classList.add(PAGE_LINK)
         linksElement.append(node)
+    }
+
+    /**
+     * Re-hosts one linked document stylesheet inside this page's shadow tree.
+     *
+     * A wrapper around a library that ships its own CSS (`index.html` links `lf/index.css`, a
+     * calendar theme, a grid theme) has a problem the library cannot solve: document styles never
+     * cross a shadow boundary, so the canvas renders unstyled — usually with no error at all. This
+     * copies the rule text of the linked sheet into a sheet the page adopts, which is the only way
+     * to keep both the `<link>` (that is how the file is shipped) and the shadow tree.
+     *
+     * Returns whether a sheet matched, so a page can say so in its status line instead of failing
+     * silently.
+     */
+    fun addLinkedSheet(hrefFragment: String): Boolean {
+        val list = document.styleSheets
+        for (index in 0 until list.length) {
+            val sheet = list.item(index) ?: continue
+            val href = sheet.href ?: continue
+            if (!href.contains(hrefFragment)) continue
+            val text = StringBuilder()
+            val rules = sheet.cssRules
+            for (ruleIndex in 0 until rules.length) {
+                val rule = rules.item(ruleIndex) ?: continue
+                text.append(rule.cssText)
+            }
+            val copy = CSSStyleSheet()
+            copy.replaceSync(text.toString())
+            addSheet(copy)
+            return true
+        }
+        return false
     }
 
     companion object : CustomElementReference<DemoPage>(DemoPage::class.js) {
