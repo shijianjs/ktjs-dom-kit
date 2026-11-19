@@ -22,9 +22,19 @@ class Binder<T : Any>(private val translations: Translations<T>) {
         return node
     }
 
-    /** Rewrites every registered node from the text class of [lang]. */
+    /**
+     * Rewrites every registered node from the text class of [lang].
+     *
+     * The `hidden` attribute follows the text: `SectionBlock` hides an empty hint line, and a page
+     * that rewrites its sections through a binder never calls `setText` again — without this the
+     * hint would appear at construction and stay hidden for every later language.
+     */
     fun apply(lang: Lang) {
         val texts = translations[lang]
-        bindings.forEach { (node, field) -> node.textContent = field(texts) }
+        bindings.forEach { (node, field) ->
+            val text = field(texts)
+            node.textContent = text
+            node.toggleAttribute("hidden", text.isEmpty())
+        }
     }
 }

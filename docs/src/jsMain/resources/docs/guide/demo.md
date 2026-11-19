@@ -28,6 +28,21 @@ Two invariants the page keeps, and the end-to-end suite asserts:
 
 ### Layout
 
+One shell draws every page, and the page itself is the only thing that changes:
+
+```mermaid
+flowchart TB
+  HTML["index.html<br/>ktjs-demo-layout id=demo"] --> L["DemoLayout<br/>(vaadin-app-layout)"]
+  L --> NB["navbar<br/>mark + h1 + version + breadcrumbs + 3 menus"]
+  L --> DR["drawer<br/>vaadin-side-nav<br/>group item → page items"]
+  L --> CT["content column"]
+  CT --> PG["ktjs-demo-page<br/>title + summary + links + body"]
+  PG --> SEC["sections → vaadin-card examples"]
+  MENU["DemoMenu<br/>(groups, entries)"] --> DR
+  ROUTER["Router<br/>#/slug"] --> CT
+  I18N["LanguageState + Translations"] --> PG
+```
+
 The layout is one `vaadin-app-layout`:
 
 - the site mark, the title (`<h1>`), the version tag, the drawer toggle and the breadcrumbs sit in the

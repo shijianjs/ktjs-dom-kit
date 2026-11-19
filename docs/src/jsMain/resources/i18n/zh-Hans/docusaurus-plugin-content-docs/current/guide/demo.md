@@ -25,6 +25,21 @@ fragment（`#/elements`）里，所以静态托管上的深链可用，刷新也
 
 ### 布局
 
+所有页面共用一个外壳，换页时只有页面本身在变：
+
+```mermaid
+flowchart TB
+  HTML["index.html<br/>ktjs-demo-layout id=demo"] --> L["DemoLayout<br/>（vaadin-app-layout）"]
+  L --> NB["导航栏<br/>标记 + h1 + 版本 + 面包屑 + 三个菜单"]
+  L --> DR["抽屉<br/>vaadin-side-nav<br/>组项 → 页面项"]
+  L --> CT["内容列"]
+  CT --> PG["ktjs-demo-page<br/>标题 + 摘要 + 链接 + 正文"]
+  PG --> SEC["小节 → vaadin-card 示例"]
+  MENU["DemoMenu<br/>（组、条目）"] --> DR
+  ROUTER["Router<br/>#/slug"] --> CT
+  I18N["LanguageState + Translations"] --> PG
+```
+
 布局就是一个 `vaadin-app-layout`：
 
 - 站点标记、标题（`<h1>`）、版本号、抽屉开关和面包屑都在导航栏里，写法照官方 `app-layout` 的
