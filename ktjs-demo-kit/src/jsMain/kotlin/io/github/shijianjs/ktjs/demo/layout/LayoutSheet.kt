@@ -125,6 +125,12 @@ val LAYOUT_SHEET: CSSStyleSheet = cssSheet {
     LAYOUT_VERSION {
         fontSize = 11.px
         color = Palette.muted
+        // "Vaadin 25" is one label: a flex row shrinks a short span below its content width and would
+        // break it at the space, so it keeps its intrinsic width and never wraps.
+        whiteSpace = WhiteSpace.nowrap
+        flexShrink = number(0.0)
+        // And it is a separate statement from the wordmark, not part of it.
+        marginLeft = 8.px
     }
 
     LAYOUT_TOPBAR {
