@@ -100,6 +100,19 @@ fun exampleBox(caption: String? = null, vararg children: Node): CardElement {
     return card
 }
 
+/**
+ * A responsive grid of [children]: as many columns of at least [minColumnWidth] pixels as fit the page.
+ *
+ * The track function (`repeat(auto-fill, minmax(…)`) has no typed counterpart in the CSS vocabulary,
+ * so it stays one declaration; everything else about the block is in the sheet.
+ */
+fun grid(minColumnWidth: Int = 260, vararg children: Node): HTMLElement = HtmlTagName.div {
+    classList.add(GRID)
+    style.setProperty("grid-template-columns", "repeat(auto-fill, minmax(${minColumnWidth}px, 1fr))")
+    style.setProperty("gap", "12px")
+    if (children.isNotEmpty()) append(*children)
+}
+
 /** One titled section: title, optional hint, and the body its examples go into. */
 class SectionBlock(
     val root: VerticalLayoutElement,
@@ -116,9 +129,12 @@ class SectionBlock(
 }
 
 /** Creates an empty section; the caller fills [SectionBlock.body]. */
-fun sectionBlock(): SectionBlock {
-    val title = HtmlTagName.h2 { classList.add(SECTION_TITLE) }
-    val hint = HtmlTagName.p { classList.add(SECTION_HINT) }
+fun sectionBlock(): SectionBlock = sectionBlock(null, null)
+
+/** Creates a section that already carries [title] and [hint]. */
+fun sectionBlock(title: String?, hint: String?): SectionBlock {
+    val titleNode = HtmlTagName.h2 { classList.add(SECTION_TITLE) }
+    val hintNode = HtmlTagName.p { classList.add(SECTION_HINT) }
     val body = createVerticalLayout { addTheme(VerticalLayoutVariants.spacing) }
     // Title, hint and body sit tight; the sheet supplies their margins, the body keeps the component's
     // spacing between its paragraphs and examples.
@@ -129,8 +145,8 @@ fun sectionBlock(): SectionBlock {
     // from that width instead of the page's. Sections always span the page.
     root.style.setProperty("width", "100%")
     body.style.setProperty("width", "100%")
-    root.append(title, hint, body)
-    return SectionBlock(root, title, hint, body)
+    root.append(titleNode, hintNode, body)
+    return SectionBlock(root, titleNode, hintNode, body).also { it.setText(title ?: "", hint ?: "") }
 }
 
 /** Text that is updated in place to show the current state of an example. */
@@ -142,5 +158,40 @@ class Readout(initial: String = "") {
 
     fun set(text: String) {
         root.textContent = text
+    }
+}
+
+/**
+ * An append-only log of what an example did, newest line last.
+ *
+ * The examples fire events faster than a reader can follow, so the box keeps the [capacity] newest
+ * lines only: older lines are removed, not hidden. The scroll container is part of the box, so a long
+ * page never grows a second scrollbar because of the log.
+ */
+class EventLog(private val capacity: Int = 6, placeholder: String? = null) {
+    val root: HTMLElement = HtmlTagName.div { classList.add(EVENT_LOG) }
+
+    /** Drawn until the first line arrives, so an untouched log reads as "nothing yet" and not as an empty bar. */
+    private val placeholder: HTMLElement? = placeholder?.let { text ->
+        HtmlTagName.div { classList.add(EVENT_LINE); textContent = text }
+    }
+
+    init {
+        if (placeholder != null) root.append(placeholder)
+    }
+
+    /** Appends one line, dropping the oldest ones past [capacity]. */
+    fun add(line: String) {
+        placeholder?.remove()
+        root.append(HtmlTagName.div { classList.add(EVENT_LINE); textContent = line })
+        while (root.childElementCount > capacity) {
+            root.firstElementChild?.remove()
+        }
+        root.scrollTop = root.scrollHeight.toDouble()
+    }
+
+    /** Drops every line. */
+    fun clear() {
+        root.replaceChildren()
     }
 }

@@ -10,6 +10,9 @@ import io.github.shijianjs.ktjs.vaadin.verticallayout.VerticalLayoutVariants
 import io.github.shijianjs.ktjs.vaadin.verticallayout.VerticalLayoutElement
 import io.github.shijianjs.ktjs.vaadin.verticallayout.createVerticalLayout
 import web.components.CustomElementReference
+import js.array.jsArrayOf
+import web.components.ShadowRoot
+import web.cssom.CSSStyleSheet
 import web.dom.Node
 import web.dom.TagName
 import web.html.HTMLHeadingElement
@@ -44,10 +47,19 @@ class DemoPage : CustomElementAdapter() {
      * up touching (a card's bottom edge right against the next section's title). The gap belongs to the
      * container, so a page does not have to put a margin on every section it creates.
      */
-    val body: VerticalLayoutElement = createVerticalLayout { addTheme(VerticalLayoutVariants.spacing) }
+    val body: VerticalLayoutElement = createVerticalLayout { addTheme(VerticalLayoutVariants.spacing) }.apply {
+        // The page is the column: its body spans the frame instead of hugging its widest section.
+        style.setProperty("width", "100%")
+    }
+
+    /** The frame's shadow root: the only style scope this page has. */
+    private val frame: ShadowRoot = attachStyledShadow(RESET, PAGE_SHEET)
+
+    /** Sheets a page added on top of the frame's own, kept so the adopted list can be rebuilt. */
+    private val extraSheets = mutableListOf<CSSStyleSheet>()
 
     init {
-        attachStyledShadow(RESET, PAGE_SHEET).append(titleElement, summaryElement, linksElement, body)
+        frame.append(titleElement, summaryElement, linksElement, body)
     }
 
     fun setTitle(text: String) {
@@ -56,6 +68,19 @@ class DemoPage : CustomElementAdapter() {
 
     fun setSummary(text: String) {
         summaryElement.textContent = text
+    }
+
+    /**
+     * Adopts one more sheet into the page's shadow tree.
+     *
+     * A page that needs a rule the blocks cannot express — a `::part()` selector, a screen-reader-only
+     * helper — declares it in its own file and hands it to the frame here. The rule then lives next to
+     * the page that uses it instead of in a site-wide stylesheet, and the frame stays the only owner of
+     * the shadow tree.
+     */
+    fun addSheet(sheet: CSSStyleSheet) {
+        extraSheets += sheet
+        frame.adoptedStyleSheets = jsArrayOf(RESET, PAGE_SHEET, *extraSheets.toTypedArray())
     }
 
     /** Adds one entry to the link row; the frame owns the layout and colour of that row. */

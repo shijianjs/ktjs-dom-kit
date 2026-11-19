@@ -4,11 +4,16 @@ import io.github.shijianjs.ktjs.demo.style.Palette
 import io.github.shijianjs.ktjs.dom.css.cssSheet
 import web.cssom.AlignItems
 import web.cssom.CSSStyleSheet
+import web.cssom.Display
+import web.cssom.FlexDirection
+import web.cssom.FontFamily
 import web.cssom.Margin
 import web.cssom.Padding
+import web.cssom.WhiteSpace
 import web.cssom.number
 import web.cssom.pct
 import web.cssom.px
+import web.cssom.rem
 
 /**
  * Typography of one page and the boxes a page owns.
@@ -62,10 +67,34 @@ val PAGE_SHEET: CSSStyleSheet = cssSheet {
 
     ROW { alignItems = AlignItems.center }
 
+    // The gap is a function-free length per grid; the block sets it inline (style.setProperty).
+    GRID {
+        display = Display.grid
+        width = 100.pct
+    }
+
     READOUT {
         margin = 0.px
         color = Palette.muted
         fontSize = 13.px
+    }
+
+    EVENT_LOG {
+        display = Display.flex
+        flexDirection = FlexDirection.column
+        margin = 0.px
+        padding = Padding(8.px, 10.px)
+        maxHeight = 9.rem
+        backgroundColor = Palette.surfaceRaised
+        borderRadius = 6.px
+        fontFamily = FontFamily.monospace
+        fontSize = 12.px
+        color = Palette.muted
+    }
+
+    EVENT_LINE {
+        margin = 0.px
+        whiteSpace = WhiteSpace.preWrap
     }
 
     // A card is the page's box: it fills the column, the surface itself stays the component's.

@@ -30,6 +30,15 @@ internal val EXAMPLE_CAPTION: ClassName = ClassName("example__caption")
 
 internal val ROW: ClassName = ClassName("row")
 
+/** A responsive grid of cards or boxes. */
+internal val GRID: ClassName = ClassName("grid")
+
 internal val READOUT: ClassName = ClassName("readout")
+
+/** The box an [EventLog] appends its lines to. */
+internal val EVENT_LOG: ClassName = ClassName("event-log")
+
+/** One line inside an [EventLog]. */
+internal val EVENT_LINE: ClassName = ClassName("event-log__line")
 
 internal val CODE: ClassName = ClassName("code")
