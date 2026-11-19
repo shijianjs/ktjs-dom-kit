@@ -311,6 +311,17 @@ class DemoLayout : CustomElementAdapter() {
     private fun buildGroups() {
         val current = textsFor(language.current)
         menu.groups.forEach { group ->
+            val entries = menu.entriesOf(group)
+
+            // A group with one page has nothing to fold: the parent row would exist only to be opened
+            // again, and it would carry the same mark as the page under it. The page itself moves up
+            // to the top level and keeps the group's mark, so the drawer loses a level without losing
+            // the section its icon identifies.
+            if (entries.size == 1) {
+                sideNav.append(pageRow(entries.single(), nested = false, icon = group.icon))
+                return@forEach
+            }
+
             // A group is a parent item without a path: Vaadin renders it as a collapsible section, and
             // a click toggles the children instead of navigating. It starts expanded so every page
             // stays one click away, the same as the old always-visible group heading.
@@ -320,27 +331,37 @@ class DemoLayout : CustomElementAdapter() {
             group.icon?.let { groupItem.append(navIcon(it)) }
             groupItem.append(groupLabel)
 
-            menu.entriesOf(group).forEach { entry ->
-                // No `path`: the component matches `location.pathname`, which cannot see a `#/…` hash,
-                // and a `#/…` path would make *every* item look current. The row is therefore a plain
-                // item that the frame turns into a link and highlights itself.
-                val item = createSideNavItem()
-                val label = HtmlTagName.span { textContent = titleOf(entry, language.current) }
-                entry.icon?.let { item.append(navIcon(it)) }
-                item.append(label)
-                item.dataset["route"] = entry.id
-                item.setAttribute("slot", "children")
-                item.setAttribute("role", "link")
-                item.tabIndex = 0
-                item.clickEvent.addHandler { navigate(entry.id) }
-                navItems[entry.id] = item
-                navLabels[entry.id] = label
-                groupItem.append(item)
-            }
+            entries.forEach { entry -> groupItem.append(pageRow(entry, nested = true)) }
 
             groupLabels[group.id] = groupLabel
             sideNav.append(groupItem)
         }
+    }
+
+    /**
+     * One page row of the drawer.
+     *
+     * No `path`: the component matches `location.pathname`, which cannot see a `#/…` hash, and a
+     * `#/…` path would make *every* item look current. The row is therefore a plain item that the frame
+     * turns into a link and highlights itself.
+     *
+     * [nested] decides the slot. A group's children have to declare `slot=children` to be projected
+     * into the group's collapsible body; a top-level row must not, or it would disappear into the
+     * previous group.
+     */
+    private fun pageRow(entry: Entry, nested: Boolean, icon: String? = null): SideNavItemElement {
+        val item = createSideNavItem()
+        val label = HtmlTagName.span { textContent = titleOf(entry, language.current) }
+        (icon ?: entry.icon)?.let { item.append(navIcon(it)) }
+        item.append(label)
+        item.dataset["route"] = entry.id
+        if (nested) item.setAttribute("slot", "children")
+        item.setAttribute("role", "link")
+        item.tabIndex = 0
+        item.clickEvent.addHandler { navigate(entry.id) }
+        navItems[entry.id] = item
+        navLabels[entry.id] = label
+        return item
     }
 
     /**
