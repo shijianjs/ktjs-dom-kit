@@ -124,6 +124,11 @@ fun sectionBlock(): SectionBlock {
     // spacing between its paragraphs and examples.
     val root = createVerticalLayout()
     root.classList.add(SECTION)
+    // A vertical layout sizes its children to their content and aligns them to the start, so a section
+    // would otherwise be as wide as its widest child — a grid or a row would then pick its column count
+    // from that width instead of the page's. Sections always span the page.
+    root.style.setProperty("width", "100%")
+    body.style.setProperty("width", "100%")
     root.append(title, hint, body)
     return SectionBlock(root, title, hint, body)
 }
