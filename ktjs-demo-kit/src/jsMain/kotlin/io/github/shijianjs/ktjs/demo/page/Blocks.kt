@@ -6,6 +6,7 @@ import io.github.shijianjs.ktjs.dom.element.invoke
 import io.github.shijianjs.ktjs.dom.element.unaryPlus
 import io.github.shijianjs.ktjs.iconify.createIconifyIcon
 import io.github.shijianjs.ktjs.vaadin.card.CardElement
+import io.github.shijianjs.ktjs.vaadin.card.CardVariants
 import io.github.shijianjs.ktjs.vaadin.card.createCard
 import io.github.shijianjs.ktjs.vaadin.horizontallayout.HorizontalLayoutElement
 import io.github.shijianjs.ktjs.vaadin.horizontallayout.createHorizontalLayout
@@ -88,9 +89,18 @@ fun col(vararg children: Node): VerticalLayoutElement {
     return layout
 }
 
-/** One example box: a Vaadin card, with an optional caption above the content. */
+/**
+ * One example box: a Vaadin card, with an optional caption above the content.
+ *
+ * The `outlined` variant draws the hairline and the surface stays the page background, which is what
+ * both Ant Design and Vaadin's own samples do: an example reads as a cut-out on the page instead of
+ * another grey block on a grey page. Both come from the component — no border, radius or padding of
+ * this site's own is added here.
+ */
 fun exampleBox(caption: String? = null, vararg children: Node): CardElement {
     val card = createCard()
+    card.addTheme(CardVariants.outlined)
+    card.inlineStyle.apply { backgroundColor = Palette.background }
     if (caption != null) {
         card.append(
             HtmlTagName.p {
