@@ -112,7 +112,12 @@ class DemoPage : CustomElementAdapter() {
             val rules = sheet.cssRules
             for (ruleIndex in 0 until rules.length) {
                 val rule = rules.item(ruleIndex) ?: continue
-                text.append(rule.cssText)
+                // Two things a copied rule loses. First, `:root` never matches inside a shadow tree,
+                // so a theme that defines its tokens there (`--fc-classic-*`, `--pswp-*`) contributes
+                // nothing and every `var(...)` in the rest of the sheet resolves to nothing — the
+                // library renders uncoloured and borderless, with no error. Re-point it at `:host`.
+                // Second, the sheet's base URL: `url(../fonts/x.woff)` would resolve against the page.
+                text.append(absolutizeUrls(hostScoped(rule.cssText), href))
             }
             val copy = CSSStyleSheet()
             copy.replaceSync(text.toString())
@@ -136,4 +141,52 @@ class DemoPage : CustomElementAdapter() {
 fun newPage(): DemoPage {
     DemoPage.define()
     return DemoPage.NAME()
+}
+
+/** `new URL(value, base).href`: the browser's own resolver, so a relative path stays correct. */
+private val resolveUrl: (String, String) -> String = js("(value, base) => new URL(value, base).href")
+
+/**
+ * Re-points `:root` at `:host` in one rule.
+ *
+ * A library's theme declares its design tokens on `:root`; inside a shadow tree that selector matches
+ * nothing, so the tokens never exist and every `var(--token)` in the rest of the sheet is invalid at
+ * computed-value time — the widget renders uncoloured, without borders, and without an error.
+ * `:host` is the same element as far as the page is concerned, and the tokens inherit down the tree.
+ *
+ * `:root` only ever appears as a selector here, so a plain replacement is exact.
+ */
+private fun hostScoped(css: String): String = if (css.contains(":root")) css.replace(":root", ":host") else css
+
+/**
+ * Rewrites every relative `url(...)` in one rule to an absolute one, resolved against [base].
+ *
+ * Only values the browser would resolve relative to the stylesheet are rewritten: `data:` URIs,
+ * fragment references and absolute URLs stay as they are.
+ */
+private fun absolutizeUrls(css: String, base: String): String {
+    if (!css.contains("url(")) return css
+    val out = StringBuilder(css.length + 64)
+    var index = 0
+    while (index < css.length) {
+        val start = css.indexOf("url(", index)
+        if (start < 0) {
+            out.append(css, index, css.length)
+            break
+        }
+        val end = css.indexOf(')', start)
+        if (end < 0) {
+            out.append(css, index, css.length)
+            break
+        }
+        out.append(css, index, start)
+        val raw = css.substring(start + 4, end).trim().trim('"', '\'')
+        val absolute = when {
+            raw.startsWith("data:") || raw.startsWith("#") || raw.contains("://") -> raw
+            else -> resolveUrl(raw, base)
+        }
+        out.append("url(\"").append(absolute).append("\")")
+        index = end + 1
+    }
+    return out.toString()
 }
