@@ -272,6 +272,12 @@ class DemoLayout : CustomElementAdapter() {
         registerLumoIcons()
         buildLogo()
 
+        // The shell fills the viewport, so the document must not keep the default 8px body margin:
+        // those 8px push the shell past the viewport and the page grows a second scrollbar next to
+        // the app layout's own content scroller. A document-level reset, not a component style - the
+        // shell is the thing that owns the document it fills.
+        document.body.style.margin = "0"
+
         titleVersion.textContent = config.siteVersion
         titleVersion.toggleAttribute("hidden", config.siteVersion.isEmpty())
 
