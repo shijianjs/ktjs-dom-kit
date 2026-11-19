@@ -1,8 +1,10 @@
 package io.github.shijianjs.ktjs.demo.page
 
 import io.github.shijianjs.ktjs.demo.style.Palette
+import io.github.shijianjs.ktjs.dom.element.inlineStyle
 import io.github.shijianjs.ktjs.dom.element.invoke
 import io.github.shijianjs.ktjs.dom.element.unaryPlus
+import io.github.shijianjs.ktjs.iconify.createIconifyIcon
 import io.github.shijianjs.ktjs.vaadin.card.CardElement
 import io.github.shijianjs.ktjs.vaadin.card.createCard
 import io.github.shijianjs.ktjs.vaadin.horizontallayout.HorizontalLayoutElement
@@ -19,6 +21,7 @@ import web.html.HTMLElement
 import web.html.HtmlTagName
 import web.window.WindowTarget
 import web.window._blank
+import web.cssom.px
 
 /**
  * The blocks a page is built from.
@@ -105,13 +108,32 @@ fun exampleBox(caption: String? = null, vararg children: Node): CardElement {
  *
  * The track function (`repeat(auto-fill, minmax(…)`) has no typed counterpart in the CSS vocabulary,
  * so it stays one declaration; everything else about the block is in the sheet.
+ *
+ * The block spans its container. A section body is a vertical layout, which sizes children to their
+ * content and aligns them to the start; without the width a grid would pick its column count from
+ * its own narrowest width rather than from the page.
  */
 fun grid(minColumnWidth: Int = 260, vararg children: Node): HTMLElement = HtmlTagName.div {
     classList.add(GRID)
     style.setProperty("grid-template-columns", "repeat(auto-fill, minmax(${minColumnWidth}px, 1fr))")
     style.setProperty("gap", "12px")
+    style.setProperty("width", "100%")
     if (children.isNotEmpty()) append(*children)
 }
+
+/**
+ * An `<iconify-icon>` as a plain node, for marking a heading the way the drawer marks its group.
+ *
+ * The element type stays inside this module: pages get a node they can append, not the icon set.
+ * Size is `font-size` — the element renders an `<svg width="1em">`, which `width`/`height` would only
+ * stretch — and `noobserver` keeps the glyph rendered wherever it is scrolled or folded away.
+ */
+fun icon(name: String, size: Int = 18): HTMLElement =
+    createIconifyIcon(name) {
+        setAttribute("aria-hidden", "true")
+        setAttribute("noobserver", "")
+        inlineStyle.apply { fontSize = size.px }
+    }
 
 /** One titled section: title, optional hint, and the body its examples go into. */
 class SectionBlock(
