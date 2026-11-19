@@ -3,11 +3,14 @@ package io.github.shijianjs.ktjs.dom.demo.page.styling
 import io.github.shijianjs.ktjs.demo.i18n.Binder
 import io.github.shijianjs.ktjs.demo.i18n.Lang
 import io.github.shijianjs.ktjs.demo.i18n.Langs
-import io.github.shijianjs.ktjs.demo.nav.Page
+import io.github.shijianjs.ktjs.demo.page.DemoPage
+import io.github.shijianjs.ktjs.dom.element.invoke
+import io.github.shijianjs.ktjs.dom.webcomponent.defineIfMissing
+import web.components.CustomElementReference
+import web.dom.TagName
 import io.github.shijianjs.ktjs.demo.i18n.Translations
 import io.github.shijianjs.ktjs.demo.page.codeText
 import io.github.shijianjs.ktjs.demo.page.exampleBox
-import io.github.shijianjs.ktjs.demo.page.newPage
 import io.github.shijianjs.ktjs.demo.page.paragraph
 import io.github.shijianjs.ktjs.demo.page.row
 import io.github.shijianjs.ktjs.demo.page.sectionBlock
@@ -81,8 +84,7 @@ private val stylingTexts: Translations<StylingTexts> = texts(
  * The one example where a class and a sheet are genuinely required: `:hover` cannot be inline, and a
  * per-instance `style` would outrank the hover rule.
  */
-internal class StylingPage : Page {
-    private val page = newPage()
+internal class StylingPage : DemoPage() {
 
     private val texts = Binder(stylingTexts)
 
@@ -90,7 +92,6 @@ internal class StylingPage : Page {
 
     private val selectorStrip = newSelectorStrip()
 
-    override val node get() = page
 
     init {
         val adopted = sectionBlock()
@@ -120,15 +121,29 @@ internal class StylingPage : Page {
             row(codeText("className(ROW) child attributeSelector(\"aria-current\")")),
         )
 
-        page.body.append(adopted.root, ladder.root, selector.root)
+        body.append(adopted.root, ladder.root, selector.root)
     }
 
     override fun applyTranslation(lang: Lang) {
         val current = stylingTexts[lang]
-        page.setTitle(current.title)
-        page.setSummary(current.summary)
+        setTitle(current.title)
+        setSummary(current.summary)
         texts.apply(lang)
         hoverBox.labelText = current.hoverLabel
         selectorStrip.setLabels(current.chipPlain, current.chipSelected)
     }
+
+    companion object : CustomElementReference<StylingPage>(StylingPage::class.js) {
+        val NAME: TagName<StylingPage> = TagName("demo-styling-page")
+
+        fun define() {
+            defineIfMissing(NAME, this)
+        }
+    }
+}
+
+/** Creates a defined `<demo-styling-page>`. */
+internal fun newStylingPage(): StylingPage {
+    StylingPage.define()
+    return StylingPage.NAME()
 }

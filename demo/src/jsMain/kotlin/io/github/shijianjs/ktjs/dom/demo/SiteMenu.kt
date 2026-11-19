@@ -3,11 +3,11 @@ package io.github.shijianjs.ktjs.dom.demo
 import io.github.shijianjs.ktjs.demo.nav.DemoMenu
 import io.github.shijianjs.ktjs.demo.nav.Entry
 import io.github.shijianjs.ktjs.demo.nav.Group
-import io.github.shijianjs.ktjs.dom.demo.page.attribute.AttributePage
-import io.github.shijianjs.ktjs.dom.demo.page.elements.ElementsPage
-import io.github.shijianjs.ktjs.dom.demo.page.overview.OverviewPage
-import io.github.shijianjs.ktjs.dom.demo.page.styling.StylingPage
-import io.github.shijianjs.ktjs.dom.demo.page.webcomponent.WebComponentPage
+import io.github.shijianjs.ktjs.dom.demo.page.attribute.newAttributePage
+import io.github.shijianjs.ktjs.dom.demo.page.elements.newElementsPage
+import io.github.shijianjs.ktjs.dom.demo.page.overview.newOverviewPage
+import io.github.shijianjs.ktjs.dom.demo.page.styling.newStylingPage
+import io.github.shijianjs.ktjs.dom.demo.page.webcomponent.newWebComponentPage
 
 /** Version the page reports; keep it the module's `version`. */
 const val KIT_VERSION: String = "0.1.0"
@@ -36,10 +36,10 @@ private val COMPONENTS: Group = Group("components", "lucide:package")
  */
 fun siteMenu(): DemoMenu = DemoMenu(
     listOf(
-        Entry("overview", OVERVIEW, "lucide:sparkles") { OverviewPage() },
-        Entry("elements", DOM, "lucide:code-xml") { ElementsPage() },
-        Entry("attributes", DOM, "lucide:tags") { AttributePage() },
-        Entry("stylesheets", DOM, "lucide:paintbrush") { StylingPage() },
-        Entry("custom-elements", COMPONENTS, "lucide:puzzle") { WebComponentPage() },
+        Entry("overview", OVERVIEW, "lucide:sparkles") { newOverviewPage() },
+        Entry("elements", DOM, "lucide:code-xml") { newElementsPage() },
+        Entry("attributes", DOM, "lucide:tags") { newAttributePage() },
+        Entry("stylesheets", DOM, "lucide:paintbrush") { newStylingPage() },
+        Entry("custom-elements", COMPONENTS, "lucide:puzzle") { newWebComponentPage() },
     ),
 )

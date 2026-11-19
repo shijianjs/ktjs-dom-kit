@@ -5,11 +5,13 @@ import io.github.shijianjs.ktjs.dom.element.unaryPlus
 import io.github.shijianjs.ktjs.demo.i18n.Binder
 import io.github.shijianjs.ktjs.demo.i18n.Lang
 import io.github.shijianjs.ktjs.demo.i18n.Langs
-import io.github.shijianjs.ktjs.demo.nav.Page
+import io.github.shijianjs.ktjs.demo.page.DemoPage
+import io.github.shijianjs.ktjs.dom.webcomponent.defineIfMissing
+import web.components.CustomElementReference
+import web.dom.TagName
 import io.github.shijianjs.ktjs.demo.i18n.Translations
 import io.github.shijianjs.ktjs.demo.page.anchor
 import io.github.shijianjs.ktjs.demo.page.codeText
-import io.github.shijianjs.ktjs.demo.page.newPage
 import io.github.shijianjs.ktjs.demo.page.paragraph
 import io.github.shijianjs.ktjs.demo.page.row
 import io.github.shijianjs.ktjs.demo.page.sectionBlock
@@ -92,17 +94,15 @@ private val overviewTexts: Translations<OverviewTexts> = texts(
  * The sections below are plain blocks, not components: they have nothing to swap at run time, so a
  * component per section would only add indirection.
  */
-internal class OverviewPage : Page {
-    private val page = newPage()
+internal class OverviewPage : DemoPage() {
 
     private val texts = Binder(overviewTexts)
 
-    override val node get() = page
 
     init {
-        page.addLink(texts.bind(anchor("", "#/elements"), { it.elementsLink }))
-        page.addLink(texts.bind(anchor("", "#/custom-elements"), { it.customElementsLink }))
-        page.addLink(texts.bind(anchor("", API_URL, external = true), { it.apiLink }))
+        addLink(texts.bind(anchor("", "#/elements"), { it.elementsLink }))
+        addLink(texts.bind(anchor("", "#/custom-elements"), { it.customElementsLink }))
+        addLink(texts.bind(anchor("", API_URL, external = true), { it.apiLink }))
 
         val purpose = sectionBlock()
         texts.bind(purpose.title, { it.purposeHeading })
@@ -126,13 +126,27 @@ internal class OverviewPage : Page {
         texts.bind(next.title, { it.nextHeading })
         next.body.append(texts.bind(paragraph(), { it.nextBody }))
 
-        page.body.append(purpose.root, coordinates.root, next.root)
+        body.append(purpose.root, coordinates.root, next.root)
     }
 
     override fun applyTranslation(lang: Lang) {
         val current = overviewTexts[lang]
-        page.setTitle(current.title)
-        page.setSummary(current.summary)
+        setTitle(current.title)
+        setSummary(current.summary)
         texts.apply(lang)
     }
+
+    companion object : CustomElementReference<OverviewPage>(OverviewPage::class.js) {
+        val NAME: TagName<OverviewPage> = TagName("demo-overview-page")
+
+        fun define() {
+            defineIfMissing(NAME, this)
+        }
+    }
+}
+
+/** Creates a defined `<demo-overview-page>`. */
+internal fun newOverviewPage(): OverviewPage {
+    OverviewPage.define()
+    return OverviewPage.NAME()
 }

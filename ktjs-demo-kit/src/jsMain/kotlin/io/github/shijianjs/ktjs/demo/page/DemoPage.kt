@@ -1,5 +1,7 @@
 package io.github.shijianjs.ktjs.demo.page
 
+import io.github.shijianjs.ktjs.demo.i18n.Lang
+import io.github.shijianjs.ktjs.demo.nav.Page
 import io.github.shijianjs.ktjs.demo.style.RESET
 import io.github.shijianjs.ktjs.dom.element.invoke
 import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementAdapter
@@ -22,18 +24,16 @@ import web.html.HTMLElement
 import web.html.HtmlTagName
 
 /**
- * `<ktjs-demo-page>`: the frame one page is built inside — title, summary, the links row and the body
- * slot the page fills with sections.
+ * The frame of one page — title, summary, the links row and the [body] the page fills with sections.
  *
- * It is one element for **every** page of the site, not one class per page: the pages differ in
- * content, not in their frame, and a site with ninety pages should not carry ninety tags. The body
- * lives in this element's shadow tree, so the page's own sheet styles it and nothing leaks to the
- * host page.
+ * **A page extends this class and registers its own tag.** Everything that produces DOM in this demo
+ * is a custom element, pages included: a page is a component like a counter or a styling box, it owns
+ * its nodes and its text, and the router mounts it by tag instead of calling a function that returns
+ * markup. A function returning a page is the one shape this architecture does not allow.
  *
- * This is a container, not a base class: a page creates it, fills [body] and translates its own
- * strings. Nothing extends it.
+ * [newPage] still creates the bare frame, for a site whose pages are not components yet.
  */
-class DemoPage : CustomElementAdapter() {
+open class DemoPage : CustomElementAdapter(), Page {
     private val titleElement: HTMLHeadingElement = HtmlTagName.h1 { classList.add(PAGE_TITLE) }
 
     private val summaryElement: HTMLParagraphElement = HtmlTagName.p { classList.add(PAGE_SUMMARY) }
@@ -53,6 +53,9 @@ class DemoPage : CustomElementAdapter() {
         style.setProperty("width", "100%")
     }
 
+    /** The layout mounts the page itself; a page is its own root node. */
+    override val node: HTMLElement get() = this
+
     /** The frame's shadow root: the only style scope this page has. */
     private val frame: ShadowRoot = attachStyledShadow(RESET, PAGE_SHEET)
 
@@ -62,6 +65,9 @@ class DemoPage : CustomElementAdapter() {
     init {
         frame.append(titleElement, summaryElement, linksElement, body)
     }
+
+    /** A page rewrites its own copy; the frame carries none of its own. */
+    open override fun applyTranslation(lang: Lang) {}
 
     fun setTitle(text: String) {
         titleElement.textContent = text

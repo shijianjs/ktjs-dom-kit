@@ -4,11 +4,13 @@ import io.github.shijianjs.ktjs.dom.element.invoke
 import io.github.shijianjs.ktjs.demo.i18n.Binder
 import io.github.shijianjs.ktjs.demo.i18n.Lang
 import io.github.shijianjs.ktjs.demo.i18n.Langs
-import io.github.shijianjs.ktjs.demo.nav.Page
+import io.github.shijianjs.ktjs.demo.page.DemoPage
+import io.github.shijianjs.ktjs.dom.webcomponent.defineIfMissing
+import web.components.CustomElementReference
+import web.dom.TagName
 import io.github.shijianjs.ktjs.demo.i18n.Translations
 import io.github.shijianjs.ktjs.demo.page.codeText
 import io.github.shijianjs.ktjs.demo.page.exampleBox
-import io.github.shijianjs.ktjs.demo.page.newPage
 import io.github.shijianjs.ktjs.demo.page.paragraph
 import io.github.shijianjs.ktjs.demo.page.row
 import io.github.shijianjs.ktjs.demo.page.sectionBlock
@@ -68,8 +70,7 @@ private val webComponentTexts: Translations<WebComponentTexts> = texts(
  * Shows custom elements as they are actually used: one tag, several instances, each with its own
  * state and a shared parsed sheet.
  */
-internal class WebComponentPage : Page {
-    private val page = newPage()
+internal class WebComponentPage : DemoPage() {
 
     private val texts = Binder(webComponentTexts)
 
@@ -79,7 +80,6 @@ internal class WebComponentPage : Page {
 
     private var incrementLabel: String = webComponentEnglish.incrementLabel
 
-    override val node get() = page
 
     init {
         val instances = sectionBlock()
@@ -103,13 +103,13 @@ internal class WebComponentPage : Page {
             texts.bind(paragraph(), { it.definitionNote }),
         )
 
-        page.body.append(instances.root, definition.root)
+        body.append(instances.root, definition.root)
     }
 
     override fun applyTranslation(lang: Lang) {
         val current = webComponentTexts[lang]
-        page.setTitle(current.title)
-        page.setSummary(current.summary)
+        setTitle(current.title)
+        setSummary(current.summary)
         texts.apply(lang)
 
         incrementLabel = current.incrementLabel
@@ -122,4 +122,18 @@ internal class WebComponentPage : Page {
         counters += counter
         instanceHost.append(counter)
     }
+
+    companion object : CustomElementReference<WebComponentPage>(WebComponentPage::class.js) {
+        val NAME: TagName<WebComponentPage> = TagName("demo-web-component-page")
+
+        fun define() {
+            defineIfMissing(NAME, this)
+        }
+    }
+}
+
+/** Creates a defined `<demo-web-component-page>`. */
+internal fun newWebComponentPage(): WebComponentPage {
+    WebComponentPage.define()
+    return WebComponentPage.NAME()
 }

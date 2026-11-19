@@ -5,12 +5,14 @@ import io.github.shijianjs.ktjs.dom.element.unaryPlus
 import io.github.shijianjs.ktjs.demo.i18n.Binder
 import io.github.shijianjs.ktjs.demo.i18n.Lang
 import io.github.shijianjs.ktjs.demo.i18n.Langs
-import io.github.shijianjs.ktjs.demo.nav.Page
+import io.github.shijianjs.ktjs.demo.page.DemoPage
+import io.github.shijianjs.ktjs.dom.webcomponent.defineIfMissing
+import web.components.CustomElementReference
+import web.dom.TagName
 import io.github.shijianjs.ktjs.demo.i18n.Translations
 import io.github.shijianjs.ktjs.demo.page.codeText
 import io.github.shijianjs.ktjs.demo.page.exampleBox
 import io.github.shijianjs.ktjs.demo.page.heading
-import io.github.shijianjs.ktjs.demo.page.newPage
 import io.github.shijianjs.ktjs.demo.page.paragraph
 import io.github.shijianjs.ktjs.demo.page.row
 import io.github.shijianjs.ktjs.demo.page.sectionBlock
@@ -104,8 +106,7 @@ private val SUBTREE_LINES: List<String> = listOf(
  * `+HtmlTagName.li { … }` for a child created inside the element being built, and the growing list,
  * where `appendChild` is the honest call because the entry is created outside its parent's block.
  */
-internal class ElementsPage : Page {
-    private val page = newPage()
+internal class ElementsPage : DemoPage() {
 
     private val texts = Binder(elementsTexts)
 
@@ -113,7 +114,6 @@ internal class ElementsPage : Page {
 
     private var entries = 0
 
-    override val node get() = page
 
     init {
         val typed = sectionBlock()
@@ -155,13 +155,13 @@ internal class ElementsPage : Page {
             exampleBox(null, built, row(texts.bind(codeText(""), { it.subtreeCode }))),
         )
 
-        page.body.append(typed.root, collection.root, subtree.root)
+        body.append(typed.root, collection.root, subtree.root)
     }
 
     override fun applyTranslation(lang: Lang) {
         val current = elementsTexts[lang]
-        page.setTitle(current.title)
-        page.setSummary(current.summary)
+        setTitle(current.title)
+        setSummary(current.summary)
         texts.apply(lang)
     }
 
@@ -169,4 +169,18 @@ internal class ElementsPage : Page {
         entries += 1
         list.append(HtmlTagName.li { textContent = "entry $entries" })
     }
+
+    companion object : CustomElementReference<ElementsPage>(ElementsPage::class.js) {
+        val NAME: TagName<ElementsPage> = TagName("demo-elements-page")
+
+        fun define() {
+            defineIfMissing(NAME, this)
+        }
+    }
+}
+
+/** Creates a defined `<demo-elements-page>`. */
+internal fun newElementsPage(): ElementsPage {
+    ElementsPage.define()
+    return ElementsPage.NAME()
 }

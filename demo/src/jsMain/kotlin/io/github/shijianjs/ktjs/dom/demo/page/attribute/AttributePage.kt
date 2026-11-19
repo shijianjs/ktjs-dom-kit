@@ -9,12 +9,15 @@ import io.github.shijianjs.ktjs.demo.i18n.Lang
 import io.github.shijianjs.ktjs.demo.i18n.Langs
 import io.github.shijianjs.ktjs.demo.i18n.Translations
 import io.github.shijianjs.ktjs.demo.i18n.texts
-import io.github.shijianjs.ktjs.demo.nav.Page
+import io.github.shijianjs.ktjs.demo.page.DemoPage
+import io.github.shijianjs.ktjs.dom.element.invoke
+import io.github.shijianjs.ktjs.dom.webcomponent.defineIfMissing
+import web.components.CustomElementReference
+import web.dom.TagName
 import io.github.shijianjs.ktjs.demo.page.Readout
 import io.github.shijianjs.ktjs.demo.page.SectionBlock
 import io.github.shijianjs.ktjs.demo.page.codeText
 import io.github.shijianjs.ktjs.demo.page.exampleBox
-import io.github.shijianjs.ktjs.demo.page.newPage
 import io.github.shijianjs.ktjs.demo.page.paragraph
 import io.github.shijianjs.ktjs.demo.page.row
 import io.github.shijianjs.ktjs.demo.page.sectionBlock
@@ -136,8 +139,7 @@ private val HTMLElement.densityAttr: Attribute<Density>
  * `attr { }`: a property backed by an HTML attribute. The demo drives the same attribute through two
  * paths — the property setter and a raw `setAttribute` — and shows that both land in one handler.
  */
-internal class AttributePage : Page {
-    private val page = newPage()
+internal class AttributePage : DemoPage() {
 
     private val texts = Binder(attributeTexts)
 
@@ -155,7 +157,6 @@ internal class AttributePage : Page {
      */
     private var typedWatch: AttributeWatch? = null
 
-    override val node get() = page
 
     init {
         val demo = sectionBlock()
@@ -194,14 +195,14 @@ internal class AttributePage : Page {
 
         val typed = typedSection()
 
-        page.body.append(demo.root, declared.root, wrapper.root, typed.root)
+        body.append(demo.root, declared.root, wrapper.root, typed.root)
         showValue()
     }
 
     override fun applyTranslation(lang: Lang) {
         val current = attributeTexts[lang]
-        page.setTitle(current.title)
-        page.setSummary(current.summary)
+        setTitle(current.title)
+        setSummary(current.summary)
         texts.apply(lang)
     }
 
@@ -304,4 +305,18 @@ internal class AttributePage : Page {
             "aria-label = $label, data-density = ${target.densityAttr.value.token}, observed = $observed",
         )
     }
+
+    companion object : CustomElementReference<AttributePage>(AttributePage::class.js) {
+        val NAME: TagName<AttributePage> = TagName("demo-attribute-page")
+
+        fun define() {
+            defineIfMissing(NAME, this)
+        }
+    }
+}
+
+/** Creates a defined `<demo-attribute-page>`. */
+internal fun newAttributePage(): AttributePage {
+    AttributePage.define()
+    return AttributePage.NAME()
 }
