@@ -354,11 +354,15 @@ class DemoLayout : CustomElementAdapter() {
      * [nested] decides the slot. A group's children have to declare `slot=children` to be projected
      * into the group's collapsible body; a top-level row must not, or it would disappear into the
      * previous group.
+     *
+     * [nested] also decides the mark: children of a group carry no icon. The group row above them already
+     * names the section, and repeating the same mark on every child would say nothing new — only top-level
+     * rows (and the pages a one-page group lifts up) are marked.
      */
     private fun pageRow(entry: Entry, nested: Boolean, icon: String? = null): SideNavItemElement {
         val item = createSideNavItem()
         val label = HtmlTagName.span { textContent = titleOf(entry, language.current) }
-        (icon ?: entry.icon)?.let { item.append(navIcon(it)) }
+        (icon ?: entry.icon.takeIf { !nested })?.let { item.append(navIcon(it)) }
         item.append(label)
         item.dataset["route"] = entry.id
         if (nested) item.setAttribute("slot", "children")
