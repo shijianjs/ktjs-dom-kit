@@ -181,6 +181,17 @@ fun sectionBlock(title: String?, hint: String?): SectionBlock {
     return SectionBlock(root, titleNode, hintNode, body).also { it.setText(title ?: "", hint ?: "") }
 }
 
+/**
+ * A caption line for an example box, as its own node.
+ *
+ * Use it when the caption has to be translated: bind it to the page's copy and pass it as one of the
+ * box's children, instead of giving [exampleBox] a caption string that is fixed at construction time.
+ */
+fun exampleCaption(text: String = ""): HTMLElement = HtmlTagName.p {
+    classList.add(EXAMPLE_CAPTION)
+    textContent = text
+}
+
 /** Text that is updated in place to show the current state of an example. */
 class Readout(initial: String = "") {
     val root: HTMLElement = HtmlTagName.p {
