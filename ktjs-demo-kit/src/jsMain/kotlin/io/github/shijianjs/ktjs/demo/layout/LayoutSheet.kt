@@ -173,4 +173,11 @@ val LAYOUT_SHEET: CSSStyleSheet = cssSheet {
     LAYOUT_NAV_ICON {
         fontSize = 18.px
     }
+
+    // The content column sizes its children to their content instead of stretching them, and a page is
+    // the column's only child: without this a page — and every card, grid and table inside it — would be
+    // as wide as its longest line rather than as wide as the column.
+    "ktjs-demo-page" {
+        width = 100.pct
+    }
 }
