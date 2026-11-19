@@ -160,11 +160,8 @@ class SectionBlock(
     }
 }
 
-/** Creates an empty section; the caller fills [SectionBlock.body]. */
-fun sectionBlock(): SectionBlock = sectionBlock(null, null)
-
-/** Creates a section that already carries [title] and [hint]. */
-fun sectionBlock(title: String?, hint: String?): SectionBlock {
+/** Creates a section that already carries [title] and, when given, [hint]. */
+fun sectionBlock(title: String? = null, hint: String? = null): SectionBlock {
     val titleNode = HtmlTagName.h2 { classList.add(SECTION_TITLE) }
     val hintNode = HtmlTagName.p { classList.add(SECTION_HINT) }
     val body = createVerticalLayout { addTheme(VerticalLayoutVariants.spacing) }
