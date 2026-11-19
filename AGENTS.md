@@ -91,6 +91,12 @@
     先 `./gradlew :demo:jsBrowserDevelopmentDistribution`，再
     `./gradlew :demo:e2eTest -Ddemo.dist=<repo>/demo/build/dist/js/developmentExecutable`（`e2eTest` 的
     `demo.dist` 系统属性可覆盖）。**只验收 production 会漏掉只在 dev 模式出现的错误**。
+  - **外壳填满视口，`body` 的默认 8px margin 由 kit 自己清零**（`DemoLayout.mount()` 里一句
+    `document.body.style.margin = "0"`）。漏掉就每个页面都「内容区滚动条 + 窗口滚动条」两条竖的：
+    `height: 100vh` 的外壳被 8px 上边距推下去、下边距再把文档撑高，`document.scrollHeight` 恒比视口多 16px
+    （2026-11 在 `ktjs-vaadin` 上实测 916×900）。`body` 不在任何 shadow root 里，组件 sheet 摸不到它，
+    所以这条只能由外壳做；**不要在各自 demo 的 `index.html` 里再写一遍 `style="margin: 0"`**，
+    二十个仓库不该复制同一个属性。
   - 套件里的静态服务器用 `ServerSocket(0)` 取 OS 临时端口：Hutool 的 `SimpleServer(0)` 会在 1024–65535 里
     随机挑，偶尔落到 Chromium 拒绝的端口（6665–6669 → `ERR_UNSAFE_PORT`），与代码无关地让整轮测试失败。
   - **下拉菜单里的图标要带 `noobserver`**：`iconify-icon` 一旦被 IntersectionObserver 判为不可见，就把自己
