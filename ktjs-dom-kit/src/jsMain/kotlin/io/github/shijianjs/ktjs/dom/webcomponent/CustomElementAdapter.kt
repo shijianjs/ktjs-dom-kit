@@ -122,6 +122,16 @@ open class CustomElementAdapter : HTMLElement(), CustomElement.WithCallbacks {
     }
 
     /**
+     * The attribute names this instance's delegates answer to, in declaration order.
+     *
+     * Internal, and for one check only: the generated `…Attributes.ALL` that a companion hands to
+     * `observedAttributes` must be exactly this list, and a name the processor failed to generate
+     * would otherwise fail silently — the attribute would read fine and only later external writes
+     * would go unreported.
+     */
+    internal fun attributeNames(): List<String> = attributeDelegates.map { it.name }
+
+    /**
      * The platform hook: called synchronously for every change to an attribute listed in the class's
      * static `observedAttributes` — a write from anywhere, a removal, and once per attribute the
      * element already carried when `customElements.define` upgraded it.

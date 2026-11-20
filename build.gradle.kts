@@ -11,6 +11,9 @@ plugins {
     id("com.vanniktech.maven.publish") version "0.37.0" apply false
     id("dev.detekt") version "2.0.0-alpha.6" apply false
     id("org.jetbrains.dokka") version "2.3.0"
+    // Runs the `ktjs-dom-kit-ksp` processor over a module's Kotlin sources. `apply false`: only the
+    // module that declares `by attr` (and the test probe that mirrors it) applies it.
+    id("com.google.devtools.ksp") version "2.3.14" apply false
 }
 
 // A working tree is never a release. Every module derives the version of its *next* release, which
@@ -31,7 +34,7 @@ val publishedPrefix = "ktjs-"
 // Libraries that wrap no npm package have no upstream version to follow, so they carry a
 // hand-written semantic version in their own build script instead of `{npm version}-kt.{revision}`.
 // Everything else derives its version from package.json and wrapper-revisions.properties.
-val semanticModules = setOf("ktjs-dom-kit", "ktjs-wrapper-kit", "ktjs-demo-kit")
+val semanticModules = setOf("ktjs-dom-kit", "ktjs-wrapper-kit", "ktjs-demo-kit", "ktjs-dom-kit-ksp")
 
 fun isPublished(module: String): Boolean = module.startsWith(publishedPrefix)
 
@@ -156,12 +159,19 @@ subprojects {
 
     // The subproject's Kotlin Multiplatform plugin is applied after this root script runs.
     // Choosing the javadoc jar earlier would hit the "no compatible plugin" branch and the
-    // plugin's afterEvaluate default (Dokka HTML) would win.
+    // plugin's afterEvaluate default (Dokka HTML) would win. Both plugin shapes are handled:
+    // `ktjs-dom-kit-ksp` is a plain JVM module.
     plugins.withId("org.jetbrains.kotlin.multiplatform") {
         extensions.configure<MavenPublishBaseExtension> {
             // Maven Central requires a javadoc jar, but Dokka's HTML output duplicates its static
             // assets into every module's jar (~1.1 MB each). The API reference is deployed to the
             // Pages site, so publish the required empty jar instead of the HTML copy.
+            configureBasedOnAppliedPlugins(javadocJar = JavadocJar.Empty())
+        }
+    }
+
+    plugins.withId("org.jetbrains.kotlin.jvm") {
+        extensions.configure<MavenPublishBaseExtension> {
             configureBasedOnAppliedPlugins(javadocJar = JavadocJar.Empty())
         }
     }

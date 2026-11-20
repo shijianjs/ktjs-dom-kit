@@ -43,6 +43,10 @@ var kind: ActionKind by attr(codec = enumAttributeCodec(ActionKind.entries), def
 属性名默认是属性名的中划线形式：`maxCount` → `max-count`、`XMLHttp` → `xml-http`。规则是在「一个词的
 开头的大写字母」前加连字符；数字与已有的连字符保持原样。
 
+模块里接上了 attribute 处理器（[生成的 attribute 名](custom-elements.md#生成-attribute-名)）之后，名字在
+`attr` 调用处也不必写了：`attr(KtjsHeroAttributes.LOGO_SRC)` 拿的是生成出来的常量；只有和属性名拼写不同
+的 attribute 才需要一个字面量，写在 `@AttributeName("title")` 里。
+
 原生拼写不做特殊照顾。`tabIndex` 要写 `attr("tabindex")`；属性名本来属于 `HTMLElement` 的成员
 （`title`、`id`、`hidden`）时必须换个名字并显式映射：
 

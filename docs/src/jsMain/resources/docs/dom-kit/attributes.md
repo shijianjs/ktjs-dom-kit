@@ -46,6 +46,12 @@ The attribute name defaults to the property name in kebab case: `maxCount` → `
 `XMLHttp` → `xml-http`. A dash goes before an upper-case letter that starts a word; digits and
 existing dashes are left alone.
 
+With the attribute processor wired into the module
+([generated attribute names](custom-elements.md#generated-attribute-names)), the name is not written
+at the `attr` call either: `attr(KtjsHeroAttributes.LOGO_SRC)` takes the generated constant, and
+`@AttributeName("title")` is the only literal when the attribute is spelled differently from the
+property.
+
 Native spellings are not special-cased. `tabIndex` needs `attr("tabindex")`, and a property whose
 name is already an `HTMLElement` member (`title`, `id`, `hidden`) has to be named differently and
 mapped explicitly:

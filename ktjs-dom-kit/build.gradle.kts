@@ -2,6 +2,7 @@ import org.jetbrains.kotlin.gradle.ExperimentalJsTestDsl
 
 plugins {
     kotlin("multiplatform")
+    id("com.google.devtools.ksp")
 }
 
 /**
@@ -70,4 +71,13 @@ kotlin {
             implementation(kotlin("test"))
         }
     }
+}
+
+// The test probe is the repository's only element that declares `by attr` properties, so the
+// processor runs over the test source set: `AttributeProbeAttributes` is generated next to it and
+// the probe registers that array. `kspJs` is wired as well — this module has no element of its own,
+// so it generates nothing, but it is the line an application module copies for its own classes.
+dependencies {
+    add("kspJs", project(":ktjs-dom-kit-ksp"))
+    add("kspJsTest", project(":ktjs-dom-kit-ksp"))
 }

@@ -23,6 +23,18 @@ import web.html.HtmlSource
  */
 class AttributeDelegateTest {
 
+    /**
+     * The generated `observedAttributes` array must be the same list the properties register, in the
+     * same order. A name the processor missed would not fail anywhere else: the property would still
+     * read the attribute, and only a later external write to it would go unreported.
+     */
+    @Test
+    fun theGeneratedListMatchesTheDeclarations() {
+        val probe = AttributeProbe.NAME()
+
+        assertEquals(AttributeProbeAttributes.ALL.toList(), probe.attributeNames())
+    }
+
     @Test
     fun thePropertyIsTheAttribute() {
         val probe = AttributeProbe.NAME()

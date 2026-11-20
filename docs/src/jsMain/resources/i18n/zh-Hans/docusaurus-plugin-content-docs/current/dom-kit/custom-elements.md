@@ -68,8 +68,65 @@ property 照样读得到 attribute，初始值照样会到（升级回调或 `ap
 attribute 的外部写入没人上报。两道防护：
 
 - `applyInitialAttributes()` 是元素连上后的兜底，漏写的名字至少还能报出它创建时带的那份标记。
-- 一条生成出来的名单——每个元素一个 `object`，由 `by attr` 声明推出——是消掉重复的方向；在那之前，名单
-  手写在它所属的标签旁边。
+- 下一节那条生成出来的名单，把重复彻底消掉；再加一条测试，拿它和属性实际注册的名字对齐。
+
+## 生成 attribute 名
+
+Kotlin/JS 的类在跑起来之前看不见自己的属性声明：委托是构造函数里按实例创建的，而 `observedAttributes`
+比这更早——在 `customElements.define` 那一刻就被读走。只有编译器先知道这些声明，所以由
+`ktjs-dom-kit-ksp` 生成名字：
+
+```mermaid
+flowchart LR
+  SRC["class KtjsHero : CustomElementAdapter()<br/>var logoSrc by attr(…)<br/>@AttributeName(&quot;title&quot;) var titleText"]
+  SRC --> KSP["ktjs-dom-kit-ksp<br/>委托属性 → kebab 命名<br/>@AttributeName 优先"]
+  KSP --> GEN["KtjsHeroAttributes<br/>const val LOGO_SRC · TITLE<br/>val ALL"]
+  GEN --> ATTR["attr(KtjsHeroAttributes.LOGO_SRC)"]
+  GEN --> OBS["observedAttributes = KtjsHeroAttributes.ALL"]
+```
+
+对每个继承 `CustomElementAdapter` 的类，处理器在它旁边写一个 `internal object`——常量，以及浏览器要读的
+`ALL`：
+
+```kotlin
+internal object KtjsHeroAttributes {
+    const val LOGO_SRC: String = "logo-src"
+    const val TITLE: String = "title"
+    val ALL: Array<String> = arrayOf(LOGO_SRC, TITLE)
+}
+```
+
+元素再把这两半都用常量写出来，于是字面量只出现一次：
+
+```kotlin
+class KtjsHero : CustomElementAdapter() {
+    var logoSrc: String by attr(KtjsHeroAttributes.LOGO_SRC)
+
+    @AttributeName("title")                                    // attribute 名不是 title-text
+    var titleText: String by attr(KtjsHeroAttributes.TITLE)
+
+    companion object : CustomElementReferenceAdapter<KtjsHero>(
+        KtjsHero::class.js, "ktjs-hero",
+        observedAttributes = KtjsHeroAttributes.ALL,
+    )
+}
+```
+
+attribute 名默认取属性名的 kebab 形式——也就是 `attr` 自己没拿到名字时用的那条规则——除非
+`@AttributeName` 另说。哪些属性算 attribute 由 `isDelegated()` 判定：适配器里的委托属性只有 `attr` 一种。
+两个属性映射到同一个 attribute 会报编译错误。
+
+接入只有两行，写在元素自己所在的模块里：
+
+```kotlin
+plugins { id("com.google.devtools.ksp") }
+
+dependencies { add("kspJs", project(":ktjs-dom-kit-ksp")) }
+```
+
+本仓库浏览器测试里的 `AttributeProbe` 就是参考接线：处理器跑在 `jsTest` 上，
+`theGeneratedListMatchesTheDeclarations` 拿 `ALL` 和属性实际注册的名字比对，处理器漏掉一个名字会挂构建，
+而不是悄悄失效。
 
 ## 官方 `CustomElement` 接口
 

@@ -75,9 +75,68 @@ external write to that attribute goes unreported. Two guards against that:
 
 - `applyInitialAttributes()` is the catch-up that runs once the element is connected, so a missed name
   still reports the markup it was created with.
-- A generated list — one `object` per element holding the names, produced from the `by attr`
-  declarations — is the direction that removes the repetition; until then the list is written by hand
-  next to the tag it belongs to.
+- The generated list in the next section, which removes the repetition entirely — plus a test that
+  compares it with what the properties actually registered.
+
+## Generated attribute names
+
+No Kotlin/JS class can see its own property declarations before it runs: the delegates are created in
+the constructor, per instance, and `observedAttributes` is read earlier than that — at
+`customElements.define`. The compiler is the one place that knows the declarations first, so
+`ktjs-dom-kit-ksp` generates the names:
+
+```mermaid
+flowchart LR
+  SRC["class KtjsHero : CustomElementAdapter()<br/>var logoSrc by attr(…)<br/>@AttributeName(&quot;title&quot;) var titleText"]
+  SRC --> KSP["ktjs-dom-kit-ksp<br/>delegated property → kebab case<br/>@AttributeName wins"]
+  KSP --> GEN["KtjsHeroAttributes<br/>const val LOGO_SRC · TITLE<br/>val ALL"]
+  GEN --> ATTR["attr(KtjsHeroAttributes.LOGO_SRC)"]
+  GEN --> OBS["observedAttributes = KtjsHeroAttributes.ALL"]
+```
+
+For every class extending `CustomElementAdapter`, the processor writes one `internal object` next to
+it — the constants, and `ALL`, the array the browser reads:
+
+```kotlin
+internal object KtjsHeroAttributes {
+    const val LOGO_SRC: String = "logo-src"
+    const val TITLE: String = "title"
+    val ALL: Array<String> = arrayOf(LOGO_SRC, TITLE)
+}
+```
+
+The element then uses those constants for both halves, so the literal exists once:
+
+```kotlin
+class KtjsHero : CustomElementAdapter() {
+    var logoSrc: String by attr(KtjsHeroAttributes.LOGO_SRC)
+
+    @AttributeName("title")                                    // the attribute is not `title-text`
+    var titleText: String by attr(KtjsHeroAttributes.TITLE)
+
+    companion object : CustomElementReferenceAdapter<KtjsHero>(
+        KtjsHero::class.js, "ktjs-hero",
+        observedAttributes = KtjsHeroAttributes.ALL,
+    )
+}
+```
+
+A name is derived from the property name in kebab case — the same rule `attr` applies when it is not
+given one — unless `@AttributeName` says otherwise. Which properties are attributes at all is
+`isDelegated()`: inside an adapter, the only delegated properties are `attr` ones. Two properties
+mapping to the same attribute is reported as a compile error.
+
+Wire it in two lines, next to the element's own module:
+
+```kotlin
+plugins { id("com.google.devtools.ksp") }
+
+dependencies { add("kspJs", project(":ktjs-dom-kit-ksp")) }
+```
+
+`AttributeProbe` in this repository's browser tests is the reference wiring: the processor runs over
+`jsTest`, and `theGeneratedListMatchesTheDeclarations` compares `ALL` with the names the properties
+registered, so a name the processor misses fails the build instead of going quiet.
 
 ## The official `CustomElement` interface
 

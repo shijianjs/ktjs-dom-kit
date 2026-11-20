@@ -55,6 +55,11 @@ rootProject.name = "ktjs-dom-kit"
 // version report pick up every `ktjs-*` project automatically.
 include(":ktjs-dom-kit")
 
+// The KSP processor that turns a class's `by attr` declarations into the constants and the
+// `observedAttributes` array it registers with. It has to be a JVM module: KSP loads the processor
+// inside the compiler, which cannot consume a Kotlin/JS library.
+include(":ktjs-dom-kit-ksp")
+
 // The wrapper-facing half of the DOM layer: the attribute objects, element helpers and the
 // custom-element base, with no npm dependency. Wrapper libraries (`ktjs-vaadin`, `ktjs-iconify`, …)
 // depend on this one and stay free of emotion/stylis/loadjs; `ktjs-dom-kit` depends on it with `api`

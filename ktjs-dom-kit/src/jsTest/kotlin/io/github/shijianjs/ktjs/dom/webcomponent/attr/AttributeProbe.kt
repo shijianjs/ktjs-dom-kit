@@ -19,12 +19,13 @@ internal class UpgradeProbe : CustomElementAdapter() {
 
     val changes: MutableList<AttributeChange<*>> = mutableListOf()
 
-    var label: String by attr("upgrade-label") { changes.add(it) }
+    @AttributeName("upgrade-label")
+    var label: String by attr(UpgradeProbeAttributes.LABEL) { changes.add(it) }
 
     companion object : CustomElementReferenceAdapter<UpgradeProbe>(
         UpgradeProbe::class.js,
         "ktjs-attr-upgrade-probe",
-        observedAttributes = arrayOf("upgrade-label"),
+        observedAttributes = UpgradeProbeAttributes.ALL,
         register = false,
     )
 }
@@ -34,39 +35,49 @@ internal class UpgradeProbe : CustomElementAdapter() {
  *
  * Every callback appends to [changes], so a test can assert what was reported and in which order.
  * Two callbacks do more than record: `mirror` writes another attribute, `echo` writes itself back.
+ *
+ * Both this class and [UpgradeProbe] name their attributes through the `…Attributes` object the
+ * processor generates from these declarations: the generated constants are what `attr` receives and
+ * `ALL` is what the browser reads as `observedAttributes`, so a name is authored once — as the
+ * property name, or as `@AttributeName` where the attribute is spelled differently.
  */
 internal class AttributeProbe : CustomElementAdapter() {
 
     val changes: MutableList<AttributeChange<*>> = mutableListOf()
 
-    var text: String by attr { changes.add(it) }
+    var text: String by attr(AttributeProbeAttributes.TEXT) { changes.add(it) }
 
-    var count: Int by attr { changes.add(it) }
+    var count: Int by attr(AttributeProbeAttributes.COUNT) { changes.add(it) }
 
     @JsName("maxCount")
-    var maxCount: Int by attr(default = 10) { changes.add(it) }
+    var maxCount: Int by attr(AttributeProbeAttributes.MAX_COUNT, default = 10) { changes.add(it) }
 
-    var ratio: Double by attr(default = 1.5) { changes.add(it) }
+    var ratio: Double by attr(AttributeProbeAttributes.RATIO, default = 1.5) { changes.add(it) }
 
     @JsName("flagged")
-    var flagged: Boolean by attr { changes.add(it) }
+    var flagged: Boolean by attr(AttributeProbeAttributes.FLAGGED) { changes.add(it) }
 
-    var explicit: String by attr("data-explicit") { changes.add(it) }
+    @AttributeName("data-explicit")
+    var explicit: String by attr(AttributeProbeAttributes.EXPLICIT) { changes.add(it) }
 
     @JsName("publicName")
-    var internalName: String by attr { changes.add(it) }
+    var internalName: String by attr(AttributeProbeAttributes.INTERNAL_NAME) { changes.add(it) }
 
     @JsName("kind")
-    var kind: ProbeKind by attr(codec = kindCodec, default = ProbeKind.Primary) { changes.add(it) }
+    var kind: ProbeKind by attr(
+        AttributeProbeAttributes.KIND,
+        codec = kindCodec,
+        default = ProbeKind.Primary,
+    ) { changes.add(it) }
 
-    var second: Int by attr("second", default = 5) { changes.add(it) }
+    var second: Int by attr(AttributeProbeAttributes.SECOND, default = 5) { changes.add(it) }
 
-    var mirror: String by attr("mirror") { change ->
+    var mirror: String by attr(AttributeProbeAttributes.MIRROR) { change ->
         changes.add(change)
         if (change.newValue.isNotEmpty()) second = change.newValue.length
     }
 
-    var echo: String by attr("echo") { change ->
+    var echo: String by attr(AttributeProbeAttributes.ECHO) { change ->
         changes.add(change)
         // Writing the same value back must not re-enter this delegate.
         echo = change.newValue
@@ -78,26 +89,10 @@ internal class AttributeProbe : CustomElementAdapter() {
 
     // Registering is the companion's `init`: `AttributeProbe.NAME` defines the tag on first read, and
     // `AttributeProbe.NAME()` creates a detached probe — no `probeTag()` / `newProbe()` helpers.
-    //
-    // `observedAttributes` repeats the names the properties above stand for. The browser reads it
-    // once, at `define`, and only those attributes reach `attributeChangedCallback`; this list and
-    // the `by attr` declarations are the same fact written twice until a generated one replaces it.
     companion object : CustomElementReferenceAdapter<AttributeProbe>(
         AttributeProbe::class.js,
         "ktjs-attr-probe",
-        observedAttributes = arrayOf(
-            "text",
-            "count",
-            "max-count",
-            "ratio",
-            "flagged",
-            "data-explicit",
-            "internal-name",
-            "kind",
-            "second",
-            "mirror",
-            "echo",
-        ),
+        observedAttributes = AttributeProbeAttributes.ALL,
     ) {
 
         private val kindCodec: AttributeCodec<ProbeKind> = enumAttributeCodec(ProbeKind.entries)
