@@ -46,7 +46,7 @@ kotlin {
             implementation("io.github.shijianjs:ktjs-iconify-icon:3.0.5-kt.6-SNAPSHOT")
             // Menu items are plain JS objects (`js.objects.unsafeJso`), which live in kotlin-wrappers'
             // `kotlin-js` module; the old standalone `plain-objects` artifact stops at Kotlin 2.2.
-            implementation("org.jetbrains.kotlin-wrappers:kotlin-js:2026.11.1")
+            implementation("org.jetbrains.kotlin-wrappers:kotlin-js:2026.11.2")
         }
         jsTest.dependencies {
             implementation(kotlin("test"))
