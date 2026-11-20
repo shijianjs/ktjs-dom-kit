@@ -31,15 +31,14 @@ import web.cssom.px
 /**
  * The blocks a page is built from.
  *
- * **A block that composes several nodes is one of two things: a registered element when its API allows
- * it, a plain class when it cannot be.** This file therefore has:
+ * **A block that composes nodes is an element; a block that is one node is a factory.** That is the
+ * whole rule, and this file is the vocabulary it produces:
  *
- * - `Grid` is a custom element (`<ktjs-demo-grid>`): the host is the grid, children are appended
- *   straight into it, and it stays in the light DOM so its cells keep the page's sheet.
- * - `SectionBlock` is a class, **not** a tag: a custom element inherits `HTMLElement.title` (the native
- *   tooltip string), so a node named `title` could not be declared on the element at all — and twenty
- *   demos bind `section.title` / `section.hint`. The class owns the title, the hint and the body and
- *   hands out a `vaadin-vertical-layout` as their root, so the nodes are still assembled by a class.
+ * - `SectionBlock` (`<ktjs-demo-section>`), `Grid` (`<ktjs-demo-grid>`), `Readout`
+ *   (`<ktjs-demo-readout>`) and `EventLog` (`<ktjs-demo-event-log>`) are custom elements: each owns
+ *   several nodes or its own state, so a function building them would be DOM assembled outside a class.
+ *   They live in the light DOM, not in a shadow root: their children are the page's own cards and grids,
+ *   and those have to keep receiving the page's sheet.
  * - `paragraph` / `heading` / `anchor` / `codeText` / `bulletList` / `icon` are factories, because what
  *   they return is **one native tag or one component**: `<p>`, `<h2>`, `<a>`, `<code>`, `<ul>`,
  *   `<iconify-icon>`. That is the equivalent of the JSX a component renders — wrapping `<h2>` in a
@@ -47,6 +46,12 @@ import web.cssom.px
  *   `exampleBox` return `vaadin-horizontal-layout` / `vaadin-vertical-layout` / `vaadin-card` with a
  *   theme variant, which is the "must be that component, because it reads its own children or slots"
  *   case (`vaadin-card` only styles direct `::slotted` children).
+ *
+ * **Field names never collide with the built-ins of `HTMLElement`.** The living standard owns a lot of
+ * short names — `title`, `lang`, `dir`, `hidden`, `id`, `slot`, `style`, `children`, `textContent` —
+ * and an element inherits every one of them, so a field with that name cannot be declared at all
+ * (`'title' hides member of supertype 'HTMLElement'`). The section's heading node is therefore
+ * `heading`, not `title`: renaming a field is cheap, bending the architecture around a name is not.
  *
  * Boxes and groups come from Vaadin's layout components, so gaps, padding and the card surface are the
  * component library's business; this site only styles typography and the few colours from [Palette].
@@ -192,45 +197,66 @@ fun icon(name: String, size: Int = 18): HTMLElement =
     }
 
 /**
- * One titled section: title, optional hint, and the body its examples go into.
+ * One titled section, **as an element**: heading, optional hint, and the [body] its examples go into.
  *
- * The class owns all three nodes, so nothing here is assembled outside a class. It is **not** a
- * registered tag, and the reason is structural rather than stylistic: a custom element inherits
- * `HTMLElement.title` (the native tooltip attribute, a `String`), so a node named `title` on the
- * element would shadow the browser's own member and could not be declared at all. Twenty demos read
- * `section.title` / `section.hint` (a `Binder` binds them), so the API is the class's, and the class
- * builds a `vaadin-vertical-layout` as its root instead.
+ * The element owns its three nodes, so nothing is assembled outside a class. Two naming rules show up
+ * here, and both are the reason the fields are what they are:
+ *
+ * - The heading node is [heading], not `title`. `HTMLElement.title` is the browser's own tooltip
+ *   property (a `String`), so a node called `title` cannot be declared on an element at all — a name
+ *   is cheaper to rename than an architecture is to bend around it.
+ * - A field a page binds through `Binder` is one word here on purpose (`hint`); anything that would
+ *   trip over a built-in `HTMLElement` member gets a second word instead.
+ *
+ * It stays in the light DOM: its children are the page's own cards and grids, and they have to keep
+ * receiving the page's sheet, which a shadow root would cut off. [show] appends the nodes instead of
+ * the constructor doing it, because a custom element's constructor may not add children to itself.
  */
-class SectionBlock(
-    val root: VerticalLayoutElement,
-    val title: HTMLElement,
-    val hint: HTMLElement,
-    val body: VerticalLayoutElement,
-) {
-    /** Writes [title] and [hint]; an empty [hintText] hides the hint line. */
-    fun setText(title: String, hintText: String = "") {
-        this.title.textContent = title
+class SectionBlock : CustomElementAdapter() {
+    /** The node a page binds its title text to. */
+    val heading: HTMLElement = HtmlTagName.h2().apply { classList.add(SECTION_TITLE) }
+
+    /** The node a page binds its hint text to; empty text hides it. */
+    val hint: HTMLElement = HtmlTagName.p().apply { classList.add(SECTION_HINT) }
+
+    /** The vertical group the examples go into; it keeps the component's gap between them. */
+    val body: VerticalLayoutElement = createVerticalLayout { addTheme(VerticalLayoutVariants.spacing) }
+
+    /** The section nodes themselves are this element; a page appends it to its body. */
+    val root: HTMLElement get() = this
+
+    /** Fills the section: the width, the three nodes and their text. */
+    fun show(heading: String, hintText: String = "") {
+        classList.add(SECTION)
+        style.setProperty("width", "100%")
+        // A vertical layout sizes its children to their content and aligns them to the start, so a
+        // section would otherwise be as wide as its widest child — a grid or a row would then pick its
+        // column count from that width instead of the page's. Sections always span the page.
+        body.style.setProperty("width", "100%")
+        append(this.heading, this.hint, body)
+        setText(heading, hintText)
+    }
+
+    /** Writes the heading and the hint; an empty [hintText] hides the hint line. */
+    fun setText(heading: String, hintText: String = "") {
+        this.heading.textContent = heading
         this.hint.textContent = hintText
         this.hint.toggleAttribute("hidden", hintText.isEmpty())
     }
+
+    companion object : CustomElementReference<SectionBlock>(SectionBlock::class.js) {
+        val NAME: TagName<SectionBlock> = TagName("ktjs-demo-section")
+
+        fun define() {
+            defineIfMissing(NAME, this)
+        }
+    }
 }
 
-/** Creates a section that already carries [title] and, when given, [hint]. */
-fun sectionBlock(title: String? = null, hint: String? = null): SectionBlock {
-    val titleNode = HtmlTagName.h2 { classList.add(SECTION_TITLE) }
-    val hintNode = HtmlTagName.p { classList.add(SECTION_HINT) }
-    val body = createVerticalLayout { addTheme(VerticalLayoutVariants.spacing) }
-    // Title, hint and body sit tight; the sheet supplies their margins, the body keeps the component's
-    // spacing between its paragraphs and examples.
-    val root = createVerticalLayout()
-    root.classList.add(SECTION)
-    // A vertical layout sizes its children to their content and aligns them to the start, so a section
-    // would otherwise be as wide as its widest child — a grid or a row would then pick its column count
-    // from that width instead of the page's. Sections always span the page.
-    root.style.setProperty("width", "100%")
-    body.style.setProperty("width", "100%")
-    root.append(titleNode, hintNode, body)
-    return SectionBlock(root, titleNode, hintNode, body).also { it.setText(title ?: "", hint ?: "") }
+/** Creates a section that already carries [heading] and, when given, [hint]. */
+fun sectionBlock(heading: String? = null, hint: String? = null): SectionBlock {
+    SectionBlock.define()
+    return SectionBlock.NAME().apply { show(heading ?: "", hint ?: "") }
 }
 
 /**
@@ -244,49 +270,113 @@ fun exampleCaption(text: String = ""): HTMLElement = HtmlTagName.p {
     textContent = text
 }
 
-/** Text that is updated in place to show the current state of an example. */
-class Readout(initial: String = "") {
-    val root: HTMLElement = HtmlTagName.p {
+/**
+ * Text that is updated in place to show the current state of an example, **as an element**.
+ *
+ * The element is the readout: `root` is itself, so a page appends it wherever the text belongs, and
+ * `set` rewrites its own text. A page that wants a different look wraps it — that is the inheritance
+ * and composition case, not a reason to keep this a bare class.
+ *
+ * The constructor takes no child: a custom element may not add children to itself, so the text and
+ * the class arrive through [newReadout]'s [show]. `Readout(initial)` is the same factory by another
+ * name, kept because a hundred call sites spell it that way.
+ */
+class Readout : CustomElementAdapter() {
+    /** The readout is its own root node. */
+    val root: HTMLElement get() = this
+
+    /** Writes the class and the first text; called once, by the factory. */
+    fun show(initial: String = "") {
         classList.add(READOUT)
         textContent = initial
     }
 
+    /** Rewrites the text; the node itself stays put. */
     fun set(text: String) {
-        root.textContent = text
+        textContent = text
+    }
+
+    companion object : CustomElementReference<Readout>(Readout::class.js) {
+        val NAME: TagName<Readout> = TagName("ktjs-demo-readout")
+
+        fun define() {
+            defineIfMissing(NAME, this)
+        }
     }
 }
 
+/** Creates a defined `<ktjs-demo-readout>` showing [initial]. */
+fun newReadout(initial: String = ""): Readout {
+    Readout.define()
+    return Readout.NAME().apply { show(initial) }
+}
+
+/** `newReadout(initial)` spelled the way the pages have always spelled it. */
+fun Readout(initial: String = ""): Readout = newReadout(initial)
+
 /**
- * An append-only log of what an example did, newest line last.
+ * An append-only log of what an example did, newest line last — **as an element**.
  *
  * The examples fire events faster than a reader can follow, so the box keeps the [capacity] newest
- * lines only: older lines are removed, not hidden. The scroll container is part of the box, so a long
+ * lines only: older lines are removed, not hidden. The scroll container is the log itself, so a long
  * page never grows a second scrollbar because of the log.
  */
-class EventLog(private val capacity: Int = 6, placeholder: String? = null) {
-    val root: HTMLElement = HtmlTagName.div { classList.add(EVENT_LOG) }
+class EventLog : CustomElementAdapter() {
+    /** The log is its own root node. */
+    val root: HTMLElement get() = this
 
-    /** Drawn until the first line arrives, so an untouched log reads as "nothing yet" and not as an empty bar. */
-    private val placeholder: HTMLElement? = placeholder?.let { text ->
-        HtmlTagName.div { classList.add(EVENT_LINE); textContent = text }
+    private var capacity: Int = 6
+
+    /** Drawn until the first line arrives, so an untouched log reads as "nothing yet". */
+    private var placeholder: HTMLElement? = null
+
+    private var built = false
+
+    /** Sets the box up once: the class, the capacity and the optional placeholder line. */
+    fun show(capacity: Int = 6, placeholder: String? = null) {
+        if (built) return
+        built = true
+        this.capacity = capacity
+        classList.add(EVENT_LOG)
+        if (placeholder != null) {
+            val line = HtmlTagName.div { classList.add(EVENT_LINE); textContent = placeholder }
+            this.placeholder = line
+            append(line)
+        }
     }
 
-    init {
-        if (placeholder != null) root.append(placeholder)
-    }
-
-    /** Appends one line, dropping the oldest ones past [capacity]. */
+    /** Appends one line, dropping the oldest ones past the capacity. */
     fun add(line: String) {
         placeholder?.remove()
-        root.append(HtmlTagName.div { classList.add(EVENT_LINE); textContent = line })
-        while (root.childElementCount > capacity) {
-            root.firstElementChild?.remove()
+        placeholder = null
+        append(HtmlTagName.div { classList.add(EVENT_LINE); textContent = line })
+        while (childElementCount > capacity) {
+            firstElementChild?.remove()
         }
-        root.scrollTop = root.scrollHeight.toDouble()
+        scrollTop = scrollHeight.toDouble()
     }
 
     /** Drops every line. */
     fun clear() {
-        root.replaceChildren()
+        placeholder = null
+        replaceChildren()
+    }
+
+    companion object : CustomElementReference<EventLog>(EventLog::class.js) {
+        val NAME: TagName<EventLog> = TagName("ktjs-demo-event-log")
+
+        fun define() {
+            defineIfMissing(NAME, this)
+        }
     }
 }
+
+/** Creates a defined `<ktjs-demo-event-log>` with [capacity] lines and an optional [placeholder]. */
+fun newEventLog(capacity: Int = 6, placeholder: String? = null): EventLog {
+    EventLog.define()
+    return EventLog.NAME().apply { show(capacity, placeholder) }
+}
+
+/** `newEventLog(capacity, placeholder)` spelled the way the pages have always spelled it. */
+fun EventLog(capacity: Int = 6, placeholder: String? = null): EventLog =
+    newEventLog(capacity, placeholder)

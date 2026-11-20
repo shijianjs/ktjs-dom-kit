@@ -46,6 +46,13 @@ val PAGE_SHEET: CSSStyleSheet = cssSheet {
         fontSize = 13.px
     }
 
+    // A section is an element (`<ktjs-demo-section>`), and an unknown element is inline by default;
+    // its heading, hint and body are block-level, so the host has to say so.
+    SECTION {
+        display = Display.block
+        width = 100.pct
+    }
+
     SECTION_TITLE {
         margin = Margin(0.px, 0.px, 6.px)
         fontSize = 18.px

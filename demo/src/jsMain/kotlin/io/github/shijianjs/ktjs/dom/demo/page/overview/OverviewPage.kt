@@ -105,7 +105,7 @@ internal class OverviewPage : DemoPage() {
         addLink(texts.bind(anchor("", API_URL, external = true), { it.apiLink }))
 
         val purpose = sectionBlock()
-        texts.bind(purpose.title, { it.purposeHeading })
+        texts.bind(purpose.heading, { it.purposeHeading })
 
         val bullets = HtmlTagName.ul {
             List(4) { index ->
@@ -115,7 +115,7 @@ internal class OverviewPage : DemoPage() {
         purpose.body.append(texts.bind(paragraph(), { it.body }), bullets)
 
         val coordinates = sectionBlock()
-        texts.bind(coordinates.title, { it.coordinatesHeading })
+        texts.bind(coordinates.heading, { it.coordinatesHeading })
         texts.bind(coordinates.hint, { it.coordinatesNote })
         coordinates.body.append(
             row(codeText("implementation(\"io.github.shijianjs:ktjs-dom-kit:0.1.0\")")),
@@ -123,7 +123,7 @@ internal class OverviewPage : DemoPage() {
         )
 
         val next = sectionBlock()
-        texts.bind(next.title, { it.nextHeading })
+        texts.bind(next.heading, { it.nextHeading })
         next.body.append(texts.bind(paragraph(), { it.nextBody }))
 
         body.append(purpose.root, coordinates.root, next.root)

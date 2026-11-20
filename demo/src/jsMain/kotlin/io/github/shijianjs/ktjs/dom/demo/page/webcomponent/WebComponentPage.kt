@@ -83,7 +83,7 @@ internal class WebComponentPage : DemoPage() {
 
     init {
         val instances = sectionBlock()
-        texts.bind(instances.title, { it.instancesHeading })
+        texts.bind(instances.heading, { it.instancesHeading })
         texts.bind(instances.hint, { it.instancesHint })
 
         val addInstance = texts.bind(createButton(), { it.addInstanceLabel })
@@ -95,7 +95,7 @@ internal class WebComponentPage : DemoPage() {
         )
 
         val definition = sectionBlock()
-        texts.bind(definition.title, { it.definitionHeading })
+        texts.bind(definition.heading, { it.definitionHeading })
         texts.bind(definition.hint, { it.definitionHint })
         definition.body.append(
             row(codeText("js { compilerOptions { target = \"es2015\" } }")),

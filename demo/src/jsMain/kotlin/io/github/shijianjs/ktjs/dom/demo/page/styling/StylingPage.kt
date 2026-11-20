@@ -95,7 +95,7 @@ internal class StylingPage : DemoPage() {
 
     init {
         val adopted = sectionBlock()
-        texts.bind(adopted.title, { it.adoptedHeading })
+        texts.bind(adopted.heading, { it.adoptedHeading })
         texts.bind(adopted.hint, { it.adoptedHint })
         adopted.body.append(
             exampleBox(null, hoverBox),
@@ -104,7 +104,7 @@ internal class StylingPage : DemoPage() {
         )
 
         val ladder = sectionBlock()
-        texts.bind(ladder.title, { it.ladderHeading })
+        texts.bind(ladder.heading, { it.ladderHeading })
         ladder.body.append(
             exampleBox(null, texts.bind(paragraph(), { it.inlineStep })),
             exampleBox(null, texts.bind(paragraph(), { it.sheetStep })),
@@ -112,7 +112,7 @@ internal class StylingPage : DemoPage() {
         )
 
         val selector = sectionBlock()
-        texts.bind(selector.title, { it.selectorHeading })
+        texts.bind(selector.heading, { it.selectorHeading })
         texts.bind(selector.hint, { it.selectorHint })
         selector.body.append(
             exampleBox(null, selectorStrip),

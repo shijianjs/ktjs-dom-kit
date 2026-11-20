@@ -117,7 +117,7 @@ internal class ElementsPage : DemoPage() {
 
     init {
         val typed = sectionBlock()
-        texts.bind(typed.title, { it.typedHeading })
+        texts.bind(typed.heading, { it.typedHeading })
         texts.bind(typed.hint, { it.typedHint })
         typed.body.append(
             exampleBox(null, texts.bind(paragraph(), { it.typedExample })),
@@ -130,7 +130,7 @@ internal class ElementsPage : DemoPage() {
         )
 
         val collection = sectionBlock()
-        texts.bind(collection.title, { it.collectionHeading })
+        texts.bind(collection.heading, { it.collectionHeading })
         texts.bind(collection.hint, { it.collectionHint })
 
         val addButton = texts.bind(createButton(), { it.addLabel }).addTheme(ButtonVariants.primary)
@@ -139,7 +139,7 @@ internal class ElementsPage : DemoPage() {
         collection.body.append(exampleBox(null, addButton, list, texts.bind(paragraph(), { it.collectionNote })))
 
         val subtree = sectionBlock()
-        texts.bind(subtree.title, { it.subtreeHeading })
+        texts.bind(subtree.heading, { it.subtreeHeading })
         texts.bind(subtree.hint, { it.subtreeHint })
 
         val built = HtmlTagName.article {

@@ -160,7 +160,7 @@ internal class AttributePage : DemoPage() {
 
     init {
         val demo = sectionBlock()
-        texts.bind(demo.title, { it.demoHeading })
+        texts.bind(demo.heading, { it.demoHeading })
         texts.bind(demo.hint, { it.demoHint })
 
         val increment = texts.bind(createButton(), { it.incrementLabel }).addTheme(ButtonVariants.primary)
@@ -185,7 +185,7 @@ internal class AttributePage : DemoPage() {
         )
 
         val declared = sectionBlock()
-        texts.bind(declared.title, { it.declaredHeading })
+        texts.bind(declared.heading, { it.declaredHeading })
         texts.bind(declared.hint, { it.declaredHint })
         declared.body.append(
             exampleBox(null, row(codeText("var step: Int by attr(default = 1) { change -> /* repaint */ }")), texts.bind(paragraph(), { it.declaredNote })),
@@ -219,7 +219,7 @@ internal class AttributePage : DemoPage() {
      */
     private fun wrapperSection(): SectionBlock {
         val section = sectionBlock()
-        texts.bind(section.title, { it.wrapperHeading })
+        texts.bind(section.heading, { it.wrapperHeading })
         texts.bind(section.hint, { it.wrapperHint })
 
         val target = createButton().apply { textContent = "vaadin-button" }
@@ -264,7 +264,7 @@ internal class AttributePage : DemoPage() {
      */
     private fun typedSection(): SectionBlock {
         val section = sectionBlock()
-        texts.bind(section.title, { it.typedHeading })
+        texts.bind(section.heading, { it.typedHeading })
         texts.bind(section.hint, { it.typedHint })
 
         val target = createButton().apply { textContent = "vaadin-button" }
