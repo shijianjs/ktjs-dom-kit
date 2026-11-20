@@ -14,18 +14,6 @@ import web.cssom.Padding
 import web.cssom.px
 import web.html.HtmlTagName
 
-private val BADGE_CLASS: ClassName = ClassName("step-badge")
-
-private val BADGE_SHEET: CSSStyleSheet = cssSheet {
-    BADGE_CLASS {
-        padding = Padding(6.px, 10.px, 6.px, 10.px)
-        backgroundColor = Palette.surfaceRaised
-        borderRadius = 6.px
-        color = Palette.text
-        fontSize = 13.px
-    }
-}
-
 /**
  * `<demo-step-badge>`: the smallest component that shows `attr`.
  *
@@ -52,7 +40,19 @@ class StepBadge : CustomElementAdapter() {
         label.textContent = "step = ${change.newValue}"
     }
 
-    companion object : CustomElementReferenceAdapter<StepBadge>(StepBadge::class.js, "demo-step-badge")
+    companion object : CustomElementReferenceAdapter<StepBadge>(StepBadge::class.js, "demo-step-badge") {
+
+        private val BADGE_CLASS: ClassName = ClassName("step-badge")
+        private val BADGE_SHEET: CSSStyleSheet = cssSheet {
+            BADGE_CLASS {
+                padding = Padding(6.px, 10.px, 6.px, 10.px)
+                backgroundColor = Palette.surfaceRaised
+                borderRadius = 6.px
+                color = Palette.text
+                fontSize = 13.px
+            }
+        }
+    }
 }
 
 /** Creates a defined `<demo-step-badge>`; callers configure it through [StepBadge.step]. */

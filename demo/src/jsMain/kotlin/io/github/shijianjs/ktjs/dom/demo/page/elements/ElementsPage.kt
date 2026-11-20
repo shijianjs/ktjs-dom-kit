@@ -25,60 +25,6 @@ import web.events.addHandler
 import web.html.HTMLElement
 import web.html.HtmlTagName
 
-private val elementsEnglish: ElementsTexts = ElementsTexts(
-    title = "Element creation",
-    summary = "Every HTML tag has a typed constant in kotlin-browser; dom-kit's createElement carries that " +
-        "type through to the created node.",
-    typedHeading = "The tag decides the type",
-    typedHint = "Every node in this example was built from a typed tag — not one string tag name in sight.",
-    typedExample = "HtmlTagName.h2 / HtmlTagName.p / HtmlTagName.a / HtmlTagName.code",
-    typedNode = "Created with a typed tag",
-    typedNote = "No cast and no querySelector: the created node already is the element type.",
-    collectionHeading = "Updating a collection in place",
-    collectionHint = "Adding an entry appends one item; nothing is cleared and the page is not rebuilt.",
-    addLabel = "Add entry",
-    collectionNote = "The list keeps its own nodes: a new entry is one more li, the rest are untouched.",
-    subtreeHeading = "One expression, one subtree",
-    subtreeHint = "The operator creates the child and appends it to the element being built; its value is " +
-        "the child, so the same call works when the builder needs the node later.",
-    subtreeCode = "+HtmlTagName.li { textContent = line }",
-    subtreeNote = "The tree below is one expression: article, heading, paragraph, list — and every list " +
-        "item again built with the same operator.",
-)
-
-private val elementsChinese: ElementsTexts = ElementsTexts(
-    title = "元素创建",
-    summary = "kotlin-browser 给每个 HTML 标签都提供了类型化常量，dom-kit 的 createElement 把这个类型一直带到创建结果。",
-    typedHeading = "标签决定类型",
-    typedHint = "下面每个节点都是从类型化标签建出来的，一个字符串标签都没有。",
-    typedExample = "HtmlTagName.h2 / HtmlTagName.p / HtmlTagName.a / HtmlTagName.code",
-    typedNode = "用类型化标签建出来的节点",
-    typedNote = "不需要强转，也不需要 querySelector：建出来的就是那个元素类型。",
-    collectionHeading = "就地更新集合",
-    collectionHint = "新增条目只 append 一项，不清空，也不重建页面。",
-    addLabel = "新增一条",
-    collectionNote = "列表自己持有节点：新增一条只是多一个 li，其余节点不动。",
-    subtreeHeading = "一个表达式，一棵子树",
-    subtreeHint = "这个运算符建出子节点并挂进正在构建的元素，表达式的值就是子节点，所以构建者需要留住它时" +
-        "也是同一个写法。",
-    subtreeCode = "+HtmlTagName.li { textContent = line }",
-    subtreeNote = "下面这棵树就是一个表达式：article、标题、段落、列表，列表的每一项同样用这个运算符建。",
-)
-
-private val elementsTexts: Translations<ElementsTexts> = texts(
-    Langs.EN to elementsEnglish,
-    Langs.ZH_HANS to elementsChinese,
-)
-
-private val SUBTREE: ClassName = ClassName("elements__subtree")
-
-/** The lines the built subtree shows, and the code the page quotes next to it. */
-private val SUBTREE_LINES: List<String> = listOf(
-    "+HtmlTagName.h3 { textContent = \"…\" }",
-    "texts.bind(+HtmlTagName.p { }, { it.subtreeNote })",
-    "+HtmlTagName.ul { lines.forEach { +HtmlTagName.li { +codeText(it) } } }",
-)
-
 /**
  * `TagName<T>` decides the element type, so a created node needs no cast and no `querySelector`, and a
  * growing list appends instead of rebuilding.
@@ -150,7 +96,58 @@ internal class ElementsPage : DemoPage() {
         list.append(HtmlTagName.li { textContent = "entry $entries" })
     }
 
-    companion object : CustomElementReferenceAdapter<ElementsPage>(ElementsPage::class.js, "demo-elements-page")
+    companion object : CustomElementReferenceAdapter<ElementsPage>(ElementsPage::class.js, "demo-elements-page") {
+
+        private val elementsEnglish: ElementsTexts = ElementsTexts(
+            title = "Element creation",
+            summary = "Every HTML tag has a typed constant in kotlin-browser; dom-kit's createElement carries that " +
+                "type through to the created node.",
+            typedHeading = "The tag decides the type",
+            typedHint = "Every node in this example was built from a typed tag — not one string tag name in sight.",
+            typedExample = "HtmlTagName.h2 / HtmlTagName.p / HtmlTagName.a / HtmlTagName.code",
+            typedNode = "Created with a typed tag",
+            typedNote = "No cast and no querySelector: the created node already is the element type.",
+            collectionHeading = "Updating a collection in place",
+            collectionHint = "Adding an entry appends one item; nothing is cleared and the page is not rebuilt.",
+            addLabel = "Add entry",
+            collectionNote = "The list keeps its own nodes: a new entry is one more li, the rest are untouched.",
+            subtreeHeading = "One expression, one subtree",
+            subtreeHint = "The operator creates the child and appends it to the element being built; its value is " +
+                "the child, so the same call works when the builder needs the node later.",
+            subtreeCode = "+HtmlTagName.li { textContent = line }",
+            subtreeNote = "The tree below is one expression: article, heading, paragraph, list — and every list " +
+                "item again built with the same operator.",
+        )
+        private val elementsChinese: ElementsTexts = ElementsTexts(
+            title = "元素创建",
+            summary = "kotlin-browser 给每个 HTML 标签都提供了类型化常量，dom-kit 的 createElement 把这个类型一直带到创建结果。",
+            typedHeading = "标签决定类型",
+            typedHint = "下面每个节点都是从类型化标签建出来的，一个字符串标签都没有。",
+            typedExample = "HtmlTagName.h2 / HtmlTagName.p / HtmlTagName.a / HtmlTagName.code",
+            typedNode = "用类型化标签建出来的节点",
+            typedNote = "不需要强转，也不需要 querySelector：建出来的就是那个元素类型。",
+            collectionHeading = "就地更新集合",
+            collectionHint = "新增条目只 append 一项，不清空，也不重建页面。",
+            addLabel = "新增一条",
+            collectionNote = "列表自己持有节点：新增一条只是多一个 li，其余节点不动。",
+            subtreeHeading = "一个表达式，一棵子树",
+            subtreeHint = "这个运算符建出子节点并挂进正在构建的元素，表达式的值就是子节点，所以构建者需要留住它时" +
+                "也是同一个写法。",
+            subtreeCode = "+HtmlTagName.li { textContent = line }",
+            subtreeNote = "下面这棵树就是一个表达式：article、标题、段落、列表，列表的每一项同样用这个运算符建。",
+        )
+        private val elementsTexts: Translations<ElementsTexts> = texts(
+            Langs.EN to elementsEnglish,
+            Langs.ZH_HANS to elementsChinese,
+        )
+        private val SUBTREE: ClassName = ClassName("elements__subtree")
+        /** The lines the built subtree shows, and the code the page quotes next to it. */
+        private val SUBTREE_LINES: List<String> = listOf(
+            "+HtmlTagName.h3 { textContent = \"…\" }",
+            "texts.bind(+HtmlTagName.p { }, { it.subtreeNote })",
+            "+HtmlTagName.ul { lines.forEach { +HtmlTagName.li { +codeText(it) } } }",
+        )
+    }
 }
 
 /** Creates a defined `<demo-elements-page>`. */

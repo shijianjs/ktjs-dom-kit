@@ -21,31 +21,6 @@ import web.events.addHandler
 import web.html.HTMLSpanElement
 import web.html.HtmlTagName
 
-/** Class names this file's markup and sheet agree on; both live here, next to their rule. */
-private val COUNTER: ClassName = ClassName("counter")
-
-private val VALUE: ClassName = ClassName("counter__value")
-
-private val INCREMENT: ClassName = ClassName("counter__increment")
-
-/** The counter's own sheet: it is adopted once and shared by every instance. */
-private val COUNTER_SHEET: CSSStyleSheet = cssSheet {
-    COUNTER {
-        display = Display.flex
-        alignItems = AlignItems.center
-        columnGap = 12.px
-        color = Palette.text
-    }
-
-    VALUE {
-        fontSize = 26.px
-        fontWeight = FontWeight.bold
-        minWidth = 32.px
-    }
-
-    INCREMENT { fontSize = 14.px }
-}
-
 /**
  * `<demo-counter value="0">`: one instance of a custom element.
  *
@@ -83,7 +58,30 @@ class DemoCounter : CustomElementAdapter() {
         incrementElement.textContent = change.newValue
     }
 
-    companion object : CustomElementReferenceAdapter<DemoCounter>(DemoCounter::class.js, "demo-counter")
+    companion object : CustomElementReferenceAdapter<DemoCounter>(DemoCounter::class.js, "demo-counter") {
+
+        /** Class names this file's markup and sheet agree on; both live here, next to their rule. */
+        private val COUNTER: ClassName = ClassName("counter")
+        private val VALUE: ClassName = ClassName("counter__value")
+        private val INCREMENT: ClassName = ClassName("counter__increment")
+        /** The counter's own sheet: it is adopted once and shared by every instance. */
+        private val COUNTER_SHEET: CSSStyleSheet = cssSheet {
+            COUNTER {
+                display = Display.flex
+                alignItems = AlignItems.center
+                columnGap = 12.px
+                color = Palette.text
+            }
+
+            VALUE {
+                fontSize = 26.px
+                fontWeight = FontWeight.bold
+                minWidth = 32.px
+            }
+
+            INCREMENT { fontSize = 14.px }
+        }
+    }
 }
 
 /** Creates a defined `<demo-counter>`; callers set [DemoCounter.value] and [DemoCounter.incrementLabel]. */

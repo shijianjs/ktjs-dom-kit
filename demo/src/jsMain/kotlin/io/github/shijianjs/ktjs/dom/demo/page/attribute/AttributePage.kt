@@ -29,65 +29,6 @@ import web.events.addHandler
 import web.html.HTMLElement
 import js.reflect.unsafeCast
 
-private val attributeEnglish: AttributeTexts = AttributeTexts(
-    title = "Attribute-backed properties",
-    summary = "attr turns an HTML attribute into a typed Kotlin property: the getter decodes, the setter " +
-        "encodes, and the change handler runs on both paths.",
-    demoHeading = "One attribute, three ways in",
-    demoHint = "The value on screen is the attribute, not a copy kept in a field.",
-    incrementLabel = "step + 1",
-    externalLabel = "setAttribute from outside",
-    demoNote = "Both buttons end in the same place: the attribute changes, the handler repaints, the getter reads back.",
-    declaredHeading = "Declared once",
-    declaredHint = "The default, the codec and the reaction to a change all live in one delegation.",
-    declaredNote = "A different codec changes the property type, not the attribute name; nothing else in the component moves.",
-    wrapperHeading = "Someone else's element",
-    wrapperHint = "A wrapper element is an external class: give it an extension property that hands out the " +
-        "attribute object, then operate on that object.",
-    wrapperToggleLabel = "toggle primary",
-    wrapperRawLabel = "write messy text",
-    wrapperNote = "The attribute is the state. Write it from anywhere — here with a deliberately messy " +
-        "setAttribute — and the next read already sees the normalised list.",
-    typedHeading = "Values a wrapper actually needs",
-    typedHint = "An absent attribute is not an empty one, and a closed vocabulary beats a bare string.",
-    labelSetLabel = "label: Close",
-    labelClearLabel = "clear label",
-    densityLabel = "density: comfortable",
-    typedNote = "aria-label absent reads as null while \"\" stays \"\"; the density vocabulary comes " +
-        "from a table, so a value outside it cannot be compiled; and observe fires for the click and " +
-        "for any raw setAttribute alike.",
-)
-
-private val attributeChinese: AttributeTexts = AttributeTexts(
-    title = "属性绑定",
-    summary = "attr 把 HTML 属性变成类型化的 Kotlin 属性：getter 解码、setter 编码，变化回调两条路径都会触发。",
-    demoHeading = "一个属性，三种入口",
-    demoHint = "界面上的值是属性本身，不是字段里另存的一份副本。",
-    incrementLabel = "step + 1",
-    externalLabel = "外部 setAttribute",
-    demoNote = "两个按钮殊途同归：属性变化、回调重绘、getter 读回同一个值。",
-    declaredHeading = "只声明一处",
-    declaredHint = "默认值、codec 和变化反应都在同一个委托里。",
-    declaredNote = "换一个 codec 只改变属性类型，不改变属性名，组件里其他地方一行都不用动。",
-    wrapperHeading = "别人的元素",
-    wrapperHint = "wrapper 元素是 external 类：给它一个扩展属性、把属性对象交出来，然后在这个对象上操作。",
-    wrapperToggleLabel = "切换 primary",
-    wrapperRawLabel = "写入脏文本",
-    wrapperNote = "属性就是状态。谁都能写——这里故意用 setAttribute 写一段脏文本，下一次读取已经是规整的列表。",
-    typedHeading = "wrapper 真正需要的取值能力",
-    typedHint = "属性缺失不等于空串，封闭词表也比裸字符串靠谱。",
-    labelSetLabel = "设置 label",
-    labelClearLabel = "清除 label",
-    densityLabel = "密度：comfortable",
-    typedNote = "aria-label 缺失读作 null，而 \"\" 仍然是 \"\"；密度词表来自一张表，表外取值根本编译不过；" +
-        "observe 对点击和任何裸 setAttribute 一视同仁。",
-)
-
-private val attributeTexts: Translations<AttributeTexts> = texts(
-    Langs.EN to attributeEnglish,
-    Langs.ZH_HANS to attributeChinese,
-)
-
 /**
  * `attr { }`: a property backed by an HTML attribute. The demo drives the same attribute through two
  * paths — the property setter and a raw `setAttribute` — and shows that both land in one handler.
@@ -258,7 +199,65 @@ internal class AttributePage : DemoPage() {
         )
     }
 
-    companion object : CustomElementReferenceAdapter<AttributePage>(AttributePage::class.js, "demo-attribute-page")
+    companion object : CustomElementReferenceAdapter<AttributePage>(AttributePage::class.js, "demo-attribute-page") {
+
+        private val attributeEnglish: AttributeTexts = AttributeTexts(
+            title = "Attribute-backed properties",
+            summary = "attr turns an HTML attribute into a typed Kotlin property: the getter decodes, the setter " +
+                "encodes, and the change handler runs on both paths.",
+            demoHeading = "One attribute, three ways in",
+            demoHint = "The value on screen is the attribute, not a copy kept in a field.",
+            incrementLabel = "step + 1",
+            externalLabel = "setAttribute from outside",
+            demoNote = "Both buttons end in the same place: the attribute changes, the handler repaints, the getter reads back.",
+            declaredHeading = "Declared once",
+            declaredHint = "The default, the codec and the reaction to a change all live in one delegation.",
+            declaredNote = "A different codec changes the property type, not the attribute name; nothing else in the component moves.",
+            wrapperHeading = "Someone else's element",
+            wrapperHint = "A wrapper element is an external class: give it an extension property that hands out the " +
+                "attribute object, then operate on that object.",
+            wrapperToggleLabel = "toggle primary",
+            wrapperRawLabel = "write messy text",
+            wrapperNote = "The attribute is the state. Write it from anywhere — here with a deliberately messy " +
+                "setAttribute — and the next read already sees the normalised list.",
+            typedHeading = "Values a wrapper actually needs",
+            typedHint = "An absent attribute is not an empty one, and a closed vocabulary beats a bare string.",
+            labelSetLabel = "label: Close",
+            labelClearLabel = "clear label",
+            densityLabel = "density: comfortable",
+            typedNote = "aria-label absent reads as null while \"\" stays \"\"; the density vocabulary comes " +
+                "from a table, so a value outside it cannot be compiled; and observe fires for the click and " +
+                "for any raw setAttribute alike.",
+        )
+        private val attributeChinese: AttributeTexts = AttributeTexts(
+            title = "属性绑定",
+            summary = "attr 把 HTML 属性变成类型化的 Kotlin 属性：getter 解码、setter 编码，变化回调两条路径都会触发。",
+            demoHeading = "一个属性，三种入口",
+            demoHint = "界面上的值是属性本身，不是字段里另存的一份副本。",
+            incrementLabel = "step + 1",
+            externalLabel = "外部 setAttribute",
+            demoNote = "两个按钮殊途同归：属性变化、回调重绘、getter 读回同一个值。",
+            declaredHeading = "只声明一处",
+            declaredHint = "默认值、codec 和变化反应都在同一个委托里。",
+            declaredNote = "换一个 codec 只改变属性类型，不改变属性名，组件里其他地方一行都不用动。",
+            wrapperHeading = "别人的元素",
+            wrapperHint = "wrapper 元素是 external 类：给它一个扩展属性、把属性对象交出来，然后在这个对象上操作。",
+            wrapperToggleLabel = "切换 primary",
+            wrapperRawLabel = "写入脏文本",
+            wrapperNote = "属性就是状态。谁都能写——这里故意用 setAttribute 写一段脏文本，下一次读取已经是规整的列表。",
+            typedHeading = "wrapper 真正需要的取值能力",
+            typedHint = "属性缺失不等于空串，封闭词表也比裸字符串靠谱。",
+            labelSetLabel = "设置 label",
+            labelClearLabel = "清除 label",
+            densityLabel = "密度：comfortable",
+            typedNote = "aria-label 缺失读作 null，而 \"\" 仍然是 \"\"；密度词表来自一张表，表外取值根本编译不过；" +
+                "observe 对点击和任何裸 setAttribute 一视同仁。",
+        )
+        private val attributeTexts: Translations<AttributeTexts> = texts(
+            Langs.EN to attributeEnglish,
+            Langs.ZH_HANS to attributeChinese,
+        )
+    }
 }
 
 /** Creates a defined `<demo-attribute-page>`. */
