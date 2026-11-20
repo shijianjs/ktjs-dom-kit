@@ -45,7 +45,7 @@ flowchart LR
 **不**在这里的（留在 `ktjs-dom-kit`，因为那是给**自己拥有的**元素用的，且会随 kit 的编写侧持续演进）：
 
 - `attr` 委托，连同注册、默认值与变更回调（`AttributeChange`）；
-- `CustomElementAdapter`、`defineIfMissing`、`attachStyledShadow` 等 shadow root 辅助；
+- `CustomElementAdapter`、`CustomElementReferenceAdapter`、`defineIfMissing`、`attachStyledShadow` 等 shadow root 辅助；
 - 建节点（`TagName<T>.createElement { … }`、`+tag { … }` 运算符）；
 - `HTMLElement.inlineStyle` 与 `cssSheet { … }`。
 

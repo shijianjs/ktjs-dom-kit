@@ -49,7 +49,7 @@ Deliberately **not** here — these stay in `ktjs-dom-kit`, because they are for
 (web components written in Kotlin) and they change as the kit's authoring side evolves:
 
 - the `attr` delegate with registration, defaults and change callbacks (`AttributeChange`);
-- `CustomElementAdapter`, `defineIfMissing`, `attachStyledShadow`, the shadow-root helpers;
+- `CustomElementAdapter`, `CustomElementReferenceAdapter`, `defineIfMissing`, `attachStyledShadow`, the shadow-root helpers;
 - element creation (`TagName<T>.createElement { … }`, the `+tag { … }` operator);
 - `HTMLElement.inlineStyle` and `cssSheet { … }`.
 

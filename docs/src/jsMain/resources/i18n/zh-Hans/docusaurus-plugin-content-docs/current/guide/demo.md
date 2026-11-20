@@ -14,7 +14,7 @@ fragment（`#/elements`）里，所以静态托管上的深链可用，刷新也
 | `#/elements` | `TagName<T>.createElement { }` —— 标签决定元素类型 |
 | `#/attributes` | `attr { }` —— 属性即属性，Kotlin 侧与 `setAttribute` 侧写同一个值 |
 | `#/stylesheets` | `cssSheet { }` 由组件的 shadow root adopt，含内联样式表达不了的 `:hover` |
-| `#/custom-elements` | `CustomElementAdapter` + `defineIfMissing`，同一标签的两个独立实例 |
+| `#/custom-elements` | `CustomElementAdapter` + 会自注册的 companion，同一标签的两个独立实例 |
 
 页面守住两条不变量，端到端测试逐条断言：
 

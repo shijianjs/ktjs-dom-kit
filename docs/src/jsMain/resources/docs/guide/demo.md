@@ -15,7 +15,7 @@ static host and survives a reload.
 | `#/elements` | `TagName<T>.createElement { }` — the tag decides the element type |
 | `#/attributes` | `attr { }` — a property backed by an HTML attribute, written from Kotlin and from `setAttribute` alike |
 | `#/stylesheets` | `cssSheet { }`, adopted by a component's shadow root, with a `:hover` rule that inline styles could not express |
-| `#/custom-elements` | `CustomElementAdapter` + `defineIfMissing`, two independent instances of one tag |
+| `#/custom-elements` | `CustomElementAdapter` + a registering companion, two independent instances of one tag |
 
 Two invariants the page keeps, and the end-to-end suite asserts:
 

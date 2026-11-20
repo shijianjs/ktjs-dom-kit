@@ -61,7 +61,7 @@ flowchart LR
 | Package | Provides |
 | --- | --- |
 | `element/` | the generic element helpers: `TagName<T>.createElement { … }`, its `HtmlTagName.div { … }` shorthand, the `+tag { … }` append operator ([Building elements](./elements.md)), and `HTMLElement.inlineStyle`, the element's own style seen as `csstype.Properties` |
-| `webcomponent/` | what a custom element is built from: `CustomElementAdapter` (the lifecycle hooks under their native names, the `attr` delegate host), `defineIfMissing`, [`stripBridgesFrom`](./custom-elements.md), and `attachShadowRoot` / `attachStyledShadow` |
+| `webcomponent/` | what a custom element is built from: `CustomElementAdapter` (the lifecycle hooks under their native names, the `attr` delegate host), `CustomElementReferenceAdapter` (the companion that registers the tag), `defineIfMissing`, [`stripBridgesFrom`](./custom-elements.md), and `attachShadowRoot` / `attachStyledShadow` |
 | `attribute/` | the `attr` property delegate: `attr`, `AttributeChange`, the provider and the delegate behind it, and the property-name rule; `attribute/types/` holds the codecs — one per type the delegate knows, plus `enumAttributeCodec` |
 | `css/` | `cssSheet { … }` / `cssText { … }`, and the typed values cssom does not model (`RadialGradientShape`, `radialGradient`, `pointerEventsNone`, `SupportsQuery`, …); `css/dsl/` holds the sugar written inside a sheet — `Pseudos` / `pseudo` / `pseudos`, the `supports { … }` at-rule and `webkitBackgroundClip` |
 | `loadjs/` | a wrapper for the [`loadjs`](https://github.com/kubetail-org/loadjs) loader: its four call shapes as overloads, the path prefixes (`css!`, `img!`, `module!`, `nomodule!`), and the bundle registry (`ready` / `done` / `reset` / `isDefined`) |
