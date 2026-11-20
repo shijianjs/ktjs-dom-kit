@@ -149,5 +149,3 @@ internal class ElementsPage : DemoPage() {
         )
     }
 }
-
-/** Creates a defined `<demo-elements-page>`. */

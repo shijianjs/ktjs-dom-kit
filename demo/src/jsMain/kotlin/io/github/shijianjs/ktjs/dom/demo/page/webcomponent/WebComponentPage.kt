@@ -109,5 +109,3 @@ internal class WebComponentPage : DemoPage() {
         )
     }
 }
-
-/** Creates a defined `<demo-web-component-page>`. */

@@ -113,5 +113,3 @@ internal class StylingPage : DemoPage() {
         )
     }
 }
-
-/** Creates a defined `<demo-styling-page>`. */

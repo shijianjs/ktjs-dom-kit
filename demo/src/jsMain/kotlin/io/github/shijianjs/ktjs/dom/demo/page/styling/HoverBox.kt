@@ -48,6 +48,7 @@ class HoverBox : CustomElementAdapter() {
 
     companion object : CustomElementReferenceAdapter<HoverBox>(HoverBox::class.js, "demo-hover-box") {
         private val BOX: ClassName = ClassName("hover-box")
+
         /**
          * The box's own sheet: its resting surface, the transition, and the `:hover` state that changes it.
          *
@@ -68,5 +69,3 @@ class HoverBox : CustomElementAdapter() {
         }
     }
 }
-
-/** Creates a defined `<demo-hover-box>`; callers set [HoverBox.labelText]. */

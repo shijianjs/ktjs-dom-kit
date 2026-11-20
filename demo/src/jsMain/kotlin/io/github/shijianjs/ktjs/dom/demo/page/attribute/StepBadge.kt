@@ -54,5 +54,3 @@ class StepBadge : CustomElementAdapter() {
         }
     }
 }
-
-/** Creates a defined `<demo-step-badge>`; callers configure it through [StepBadge.step]. */

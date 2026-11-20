@@ -64,6 +64,7 @@ class SelectorStrip : CustomElementAdapter() {
         private val SELECTED_CHIP: CssSelector = compound(className(CHIP), className(SELECTED))
         /** `.selector-strip__row > [aria-current]` — the selected chip, seen from the row. */
         private val CURRENT_CHIP_IN_ROW: CssSelector = className(ROW) child attributeSelector("aria-current")
+
         /**
          * The rule keys are values that were built, not pasted strings.
          *
@@ -94,5 +95,3 @@ class SelectorStrip : CustomElementAdapter() {
         }
     }
 }
-
-/** Creates a defined `<demo-selector-strip>`; callers set [SelectorStrip.setLabels]. */

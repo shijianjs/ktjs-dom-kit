@@ -259,5 +259,3 @@ internal class AttributePage : DemoPage() {
         )
     }
 }
-
-/** Creates a defined `<demo-attribute-page>`. */

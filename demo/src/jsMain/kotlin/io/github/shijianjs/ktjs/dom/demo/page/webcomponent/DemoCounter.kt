@@ -83,5 +83,3 @@ class DemoCounter : CustomElementAdapter() {
         }
     }
 }
-
-/** Creates a defined `<demo-counter>`; callers set [DemoCounter.value] and [DemoCounter.incrementLabel]. */

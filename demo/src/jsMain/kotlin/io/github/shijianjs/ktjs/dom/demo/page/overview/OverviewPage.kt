@@ -117,5 +117,3 @@ internal class OverviewPage : DemoPage() {
         )
     }
 }
-
-/** Creates a defined `<demo-overview-page>`. */
