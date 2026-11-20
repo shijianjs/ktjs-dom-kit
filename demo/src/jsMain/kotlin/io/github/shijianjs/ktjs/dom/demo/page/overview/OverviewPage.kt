@@ -7,14 +7,13 @@ import io.github.shijianjs.ktjs.demo.i18n.Lang
 import io.github.shijianjs.ktjs.demo.i18n.Langs
 import io.github.shijianjs.ktjs.demo.page.DemoPage
 import io.github.shijianjs.ktjs.dom.webcomponent.defineIfMissing
-import web.components.CustomElementReference
-import web.dom.TagName
+import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementReferenceAdapter
 import io.github.shijianjs.ktjs.demo.i18n.Translations
-import io.github.shijianjs.ktjs.demo.page.anchor
-import io.github.shijianjs.ktjs.demo.page.codeText
-import io.github.shijianjs.ktjs.demo.page.paragraph
-import io.github.shijianjs.ktjs.demo.page.row
-import io.github.shijianjs.ktjs.demo.page.sectionBlock
+import io.github.shijianjs.ktjs.demo.page.Blocks.anchor
+import io.github.shijianjs.ktjs.demo.page.Blocks.codeText
+import io.github.shijianjs.ktjs.demo.page.Blocks.paragraph
+import io.github.shijianjs.ktjs.demo.page.Blocks.row
+import io.github.shijianjs.ktjs.demo.page.SectionBlock
 import io.github.shijianjs.ktjs.demo.i18n.texts
 import io.github.shijianjs.ktjs.dom.demo.API_URL
 import web.html.HtmlTagName
@@ -104,7 +103,7 @@ internal class OverviewPage : DemoPage() {
         addLink(texts.bind(anchor("", "#/custom-elements"), { it.customElementsLink }))
         addLink(texts.bind(anchor("", API_URL, external = true), { it.apiLink }))
 
-        val purpose = sectionBlock()
+        val purpose = SectionBlock.NAME { show() }
         texts.bind(purpose.heading, { it.purposeHeading })
 
         val bullets = HtmlTagName.ul {
@@ -114,7 +113,7 @@ internal class OverviewPage : DemoPage() {
         }
         purpose.body.append(texts.bind(paragraph(), { it.body }), bullets)
 
-        val coordinates = sectionBlock()
+        val coordinates = SectionBlock.NAME { show() }
         texts.bind(coordinates.heading, { it.coordinatesHeading })
         texts.bind(coordinates.hint, { it.coordinatesNote })
         coordinates.body.append(
@@ -122,7 +121,7 @@ internal class OverviewPage : DemoPage() {
             row(texts.bind(anchor("", "https://github.com/shijianjs/ktjs-dom-kit", external = true), { it.sourceLabel })),
         )
 
-        val next = sectionBlock()
+        val next = SectionBlock.NAME { show() }
         texts.bind(next.heading, { it.nextHeading })
         next.body.append(texts.bind(paragraph(), { it.nextBody }))
 
@@ -136,17 +135,7 @@ internal class OverviewPage : DemoPage() {
         texts.apply(lang)
     }
 
-    companion object : CustomElementReference<OverviewPage>(OverviewPage::class.js) {
-        val NAME: TagName<OverviewPage> = TagName("demo-overview-page")
-
-        fun define() {
-            defineIfMissing(NAME, this)
-        }
-    }
+    companion object : CustomElementReferenceAdapter<OverviewPage>(OverviewPage::class.js, "demo-overview-page")
 }
 
 /** Creates a defined `<demo-overview-page>`. */
-internal fun newOverviewPage(): OverviewPage {
-    OverviewPage.define()
-    return OverviewPage.NAME()
-}

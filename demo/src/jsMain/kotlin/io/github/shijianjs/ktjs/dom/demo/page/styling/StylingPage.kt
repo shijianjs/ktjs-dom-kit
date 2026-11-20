@@ -5,15 +5,13 @@ import io.github.shijianjs.ktjs.demo.i18n.Lang
 import io.github.shijianjs.ktjs.demo.i18n.Langs
 import io.github.shijianjs.ktjs.demo.page.DemoPage
 import io.github.shijianjs.ktjs.dom.element.invoke
-import io.github.shijianjs.ktjs.dom.webcomponent.defineIfMissing
-import web.components.CustomElementReference
-import web.dom.TagName
+import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementReferenceAdapter
 import io.github.shijianjs.ktjs.demo.i18n.Translations
-import io.github.shijianjs.ktjs.demo.page.codeText
-import io.github.shijianjs.ktjs.demo.page.exampleBox
-import io.github.shijianjs.ktjs.demo.page.paragraph
-import io.github.shijianjs.ktjs.demo.page.row
-import io.github.shijianjs.ktjs.demo.page.sectionBlock
+import io.github.shijianjs.ktjs.demo.page.Blocks.codeText
+import io.github.shijianjs.ktjs.demo.page.Blocks.exampleBox
+import io.github.shijianjs.ktjs.demo.page.Blocks.paragraph
+import io.github.shijianjs.ktjs.demo.page.Blocks.row
+import io.github.shijianjs.ktjs.demo.page.SectionBlock
 import io.github.shijianjs.ktjs.demo.i18n.texts
 
 private class StylingTexts(
@@ -88,13 +86,13 @@ internal class StylingPage : DemoPage() {
 
     private val texts = Binder(stylingTexts)
 
-    private val hoverBox = newHoverBox()
+    private val hoverBox = HoverBox.NAME()
 
-    private val selectorStrip = newSelectorStrip()
+    private val selectorStrip = SelectorStrip.NAME()
 
 
     init {
-        val adopted = sectionBlock()
+        val adopted = SectionBlock.NAME { show() }
         texts.bind(adopted.heading, { it.adoptedHeading })
         texts.bind(adopted.hint, { it.adoptedHint })
         adopted.body.append(
@@ -103,7 +101,7 @@ internal class StylingPage : DemoPage() {
             row(codeText("attachStyledShadow(RESET, BOX_SHEET)")),
         )
 
-        val ladder = sectionBlock()
+        val ladder = SectionBlock.NAME { show() }
         texts.bind(ladder.heading, { it.ladderHeading })
         ladder.body.append(
             exampleBox(null, texts.bind(paragraph(), { it.inlineStep })),
@@ -111,7 +109,7 @@ internal class StylingPage : DemoPage() {
             exampleBox(null, texts.bind(paragraph(), { it.sharedStep })),
         )
 
-        val selector = sectionBlock()
+        val selector = SectionBlock.NAME { show() }
         texts.bind(selector.heading, { it.selectorHeading })
         texts.bind(selector.hint, { it.selectorHint })
         selector.body.append(
@@ -133,17 +131,7 @@ internal class StylingPage : DemoPage() {
         selectorStrip.setLabels(current.chipPlain, current.chipSelected)
     }
 
-    companion object : CustomElementReference<StylingPage>(StylingPage::class.js) {
-        val NAME: TagName<StylingPage> = TagName("demo-styling-page")
-
-        fun define() {
-            defineIfMissing(NAME, this)
-        }
-    }
+    companion object : CustomElementReferenceAdapter<StylingPage>(StylingPage::class.js, "demo-styling-page")
 }
 
 /** Creates a defined `<demo-styling-page>`. */
-internal fun newStylingPage(): StylingPage {
-    StylingPage.define()
-    return StylingPage.NAME()
-}

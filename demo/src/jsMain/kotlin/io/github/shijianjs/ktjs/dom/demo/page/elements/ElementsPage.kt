@@ -6,16 +6,15 @@ import io.github.shijianjs.ktjs.demo.i18n.Binder
 import io.github.shijianjs.ktjs.demo.i18n.Lang
 import io.github.shijianjs.ktjs.demo.i18n.Langs
 import io.github.shijianjs.ktjs.demo.page.DemoPage
-import io.github.shijianjs.ktjs.dom.webcomponent.defineIfMissing
-import web.components.CustomElementReference
+import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementReferenceAdapter
 import web.dom.TagName
 import io.github.shijianjs.ktjs.demo.i18n.Translations
-import io.github.shijianjs.ktjs.demo.page.codeText
-import io.github.shijianjs.ktjs.demo.page.exampleBox
-import io.github.shijianjs.ktjs.demo.page.heading
-import io.github.shijianjs.ktjs.demo.page.paragraph
-import io.github.shijianjs.ktjs.demo.page.row
-import io.github.shijianjs.ktjs.demo.page.sectionBlock
+import io.github.shijianjs.ktjs.demo.page.Blocks.codeText
+import io.github.shijianjs.ktjs.demo.page.Blocks.exampleBox
+import io.github.shijianjs.ktjs.demo.page.Blocks.heading
+import io.github.shijianjs.ktjs.demo.page.Blocks.paragraph
+import io.github.shijianjs.ktjs.demo.page.Blocks.row
+import io.github.shijianjs.ktjs.demo.page.SectionBlock
 import io.github.shijianjs.ktjs.demo.i18n.texts
 import io.github.shijianjs.ktjs.vaadin.button.createButton
 import io.github.shijianjs.ktjs.vaadin.themablemixin.addTheme
@@ -116,7 +115,7 @@ internal class ElementsPage : DemoPage() {
 
 
     init {
-        val typed = sectionBlock()
+        val typed = SectionBlock.NAME { show() }
         texts.bind(typed.heading, { it.typedHeading })
         texts.bind(typed.hint, { it.typedHint })
         typed.body.append(
@@ -129,7 +128,7 @@ internal class ElementsPage : DemoPage() {
             ),
         )
 
-        val collection = sectionBlock()
+        val collection = SectionBlock.NAME { show() }
         texts.bind(collection.heading, { it.collectionHeading })
         texts.bind(collection.hint, { it.collectionHint })
 
@@ -138,7 +137,7 @@ internal class ElementsPage : DemoPage() {
 
         collection.body.append(exampleBox(null, addButton, list, texts.bind(paragraph(), { it.collectionNote })))
 
-        val subtree = sectionBlock()
+        val subtree = SectionBlock.NAME { show() }
         texts.bind(subtree.heading, { it.subtreeHeading })
         texts.bind(subtree.hint, { it.subtreeHint })
 
@@ -170,17 +169,7 @@ internal class ElementsPage : DemoPage() {
         list.append(HtmlTagName.li { textContent = "entry $entries" })
     }
 
-    companion object : CustomElementReference<ElementsPage>(ElementsPage::class.js) {
-        val NAME: TagName<ElementsPage> = TagName("demo-elements-page")
-
-        fun define() {
-            defineIfMissing(NAME, this)
-        }
-    }
+    companion object : CustomElementReferenceAdapter<ElementsPage>(ElementsPage::class.js, "demo-elements-page")
 }
 
 /** Creates a defined `<demo-elements-page>`. */
-internal fun newElementsPage(): ElementsPage {
-    ElementsPage.define()
-    return ElementsPage.NAME()
-}

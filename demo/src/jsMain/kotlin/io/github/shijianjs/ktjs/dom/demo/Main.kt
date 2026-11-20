@@ -21,7 +21,8 @@ fun main() {
     val theme = Theme()
     theme.applyStored()
 
-    DemoLayout.define()
+    // Touching the companion registers the tag; `index.html` owns the element and this code mounts it.
+    DemoLayout.NAME
     val layout = document.getElementById(ElementId("demo")) as? DemoLayout
         ?: error("index.html has no <ktjs-demo-layout id=\"demo\">")
 

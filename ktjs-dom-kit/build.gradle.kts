@@ -54,7 +54,7 @@ kotlin {
             api(project(":ktjs-wrapper-kit"))
             // `api`: the public surface exposes kotlin-browser types (`HTMLElement`, `Element`, …)
             // and kotlin-csstype's `Properties`, the typed view of an element's inline style.
-            api("org.jetbrains.kotlin-wrappers:kotlin-browser:2026.11.1")
+            api("org.jetbrains.kotlin-wrappers:kotlin-browser:2026.11.2")
             api("org.jetbrains.kotlin-wrappers:kotlin-csstype:2026.11.1-3.2.3")
             // `cssSheet` serializes csstype rules with emotion's own text pipeline: serializeStyles
             // writes declarations, stylis resolves the nested selectors. `implementation` since

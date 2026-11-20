@@ -5,18 +5,16 @@ import io.github.shijianjs.ktjs.demo.nav.Page
 import io.github.shijianjs.ktjs.demo.style.RESET
 import io.github.shijianjs.ktjs.dom.element.invoke
 import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementAdapter
+import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementReferenceAdapter
 import io.github.shijianjs.ktjs.dom.webcomponent.attachStyledShadow
-import io.github.shijianjs.ktjs.dom.webcomponent.defineIfMissing
 import io.github.shijianjs.ktjs.vaadin.themablemixin.addTheme
 import io.github.shijianjs.ktjs.vaadin.verticallayout.VerticalLayoutVariants
 import io.github.shijianjs.ktjs.vaadin.verticallayout.VerticalLayoutElement
 import io.github.shijianjs.ktjs.vaadin.verticallayout.createVerticalLayout
-import web.components.CustomElementReference
 import js.array.jsArrayOf
 import web.components.ShadowRoot
 import web.cssom.CSSStyleSheet
 import web.dom.Node
-import web.dom.TagName
 import web.dom.document
 import web.html.HTMLHeadingElement
 import web.html.HTMLParagraphElement
@@ -30,8 +28,6 @@ import web.html.HtmlTagName
  * is a custom element, pages included: a page is a component like a counter or a styling box, it owns
  * its nodes and its text, and the router mounts it by tag instead of calling a function that returns
  * markup. A function returning a page is the one shape this architecture does not allow.
- *
- * [newPage] still creates the bare frame, for a site whose pages are not components yet.
  */
 open class DemoPage : CustomElementAdapter(), Page {
     private val titleElement: HTMLHeadingElement = HtmlTagName.h1 { classList.add(PAGE_TITLE) }
@@ -133,66 +129,55 @@ open class DemoPage : CustomElementAdapter(), Page {
         return false
     }
 
-    companion object : CustomElementReference<DemoPage>(DemoPage::class.js) {
-        val NAME: TagName<DemoPage> = TagName("ktjs-demo-page")
+    companion object : CustomElementReferenceAdapter<DemoPage>(DemoPage::class.js, "ktjs-demo-page") {
+        /** `new URL(value, base).href`: the browser's own resolver, so a relative path stays correct. */
+        private val resolveUrl: (String, String) -> String = js("(value, base) => new URL(value, base).href")
 
-        /** Defines the tag once; every page creation goes through [newPage]. */
-        fun define() {
-            defineIfMissing(NAME, this)
+        /**
+         * Re-points `:root` at `:host` in one rule.
+         *
+         * A library's theme declares its design tokens on `:root`; inside a shadow tree that selector
+         * matches nothing, so the tokens never exist and every `var(--token)` in the rest of the sheet
+         * is invalid at computed-value time — the widget renders uncoloured, without borders, and
+         * without an error. `:host` is the same element as far as the page is concerned, and the tokens
+         * inherit down the tree.
+         *
+         * `:root` only ever appears as a selector here, so a plain replacement is exact.
+         */
+        private fun hostScoped(css: String): String =
+            if (css.contains(":root")) css.replace(":root", ":host") else css
+
+        /**
+         * Rewrites every relative `url(...)` in one rule to an absolute one, resolved against [base].
+         *
+         * Only values the browser would resolve relative to the stylesheet are rewritten: `data:` URIs,
+         * fragment references and absolute URLs stay as they are.
+         */
+        private fun absolutizeUrls(css: String, base: String): String {
+            if (!css.contains("url(")) return css
+            val out = StringBuilder(css.length + 64)
+            var index = 0
+            while (index < css.length) {
+                val start = css.indexOf("url(", index)
+                if (start < 0) {
+                    out.append(css, index, css.length)
+                    break
+                }
+                val end = css.indexOf(')', start)
+                if (end < 0) {
+                    out.append(css, index, css.length)
+                    break
+                }
+                out.append(css, index, start)
+                val raw = css.substring(start + 4, end).trim().trim('"', '\'')
+                val absolute = when {
+                    raw.startsWith("data:") || raw.startsWith("#") || raw.contains("://") -> raw
+                    else -> resolveUrl(raw, base)
+                }
+                out.append("url(\"").append(absolute).append("\")")
+                index = end + 1
+            }
+            return out.toString()
         }
     }
-}
-
-/** Creates an empty page frame; [DemoPage.define] has to have run. */
-fun newPage(): DemoPage {
-    DemoPage.define()
-    return DemoPage.NAME()
-}
-
-/** `new URL(value, base).href`: the browser's own resolver, so a relative path stays correct. */
-private val resolveUrl: (String, String) -> String = js("(value, base) => new URL(value, base).href")
-
-/**
- * Re-points `:root` at `:host` in one rule.
- *
- * A library's theme declares its design tokens on `:root`; inside a shadow tree that selector matches
- * nothing, so the tokens never exist and every `var(--token)` in the rest of the sheet is invalid at
- * computed-value time — the widget renders uncoloured, without borders, and without an error.
- * `:host` is the same element as far as the page is concerned, and the tokens inherit down the tree.
- *
- * `:root` only ever appears as a selector here, so a plain replacement is exact.
- */
-private fun hostScoped(css: String): String = if (css.contains(":root")) css.replace(":root", ":host") else css
-
-/**
- * Rewrites every relative `url(...)` in one rule to an absolute one, resolved against [base].
- *
- * Only values the browser would resolve relative to the stylesheet are rewritten: `data:` URIs,
- * fragment references and absolute URLs stay as they are.
- */
-private fun absolutizeUrls(css: String, base: String): String {
-    if (!css.contains("url(")) return css
-    val out = StringBuilder(css.length + 64)
-    var index = 0
-    while (index < css.length) {
-        val start = css.indexOf("url(", index)
-        if (start < 0) {
-            out.append(css, index, css.length)
-            break
-        }
-        val end = css.indexOf(')', start)
-        if (end < 0) {
-            out.append(css, index, css.length)
-            break
-        }
-        out.append(css, index, start)
-        val raw = css.substring(start + 4, end).trim().trim('"', '\'')
-        val absolute = when {
-            raw.startsWith("data:") || raw.startsWith("#") || raw.contains("://") -> raw
-            else -> resolveUrl(raw, base)
-        }
-        out.append("url(\"").append(absolute).append("\")")
-        index = end + 1
-    }
-    return out.toString()
 }

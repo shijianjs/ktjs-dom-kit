@@ -12,8 +12,7 @@ import io.github.shijianjs.ktjs.dom.css.dsl.invoke
 import io.github.shijianjs.ktjs.dom.element.invoke
 import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementAdapter
 import io.github.shijianjs.ktjs.dom.webcomponent.attachStyledShadow
-import io.github.shijianjs.ktjs.dom.webcomponent.defineIfMissing
-import web.components.CustomElementReference
+import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementReferenceAdapter
 import web.cssom.Border
 import web.cssom.ClassName
 import web.cssom.CSSStyleSheet
@@ -22,7 +21,6 @@ import web.cssom.LineStyle
 import web.cssom.Padding
 import web.cssom.integer
 import web.cssom.px
-import web.dom.TagName
 import web.html.HTMLSpanElement
 import web.html.HtmlTagName
 
@@ -97,17 +95,7 @@ class SelectorStrip : CustomElementAdapter() {
         chips[1].textContent = selected
     }
 
-    companion object : CustomElementReference<SelectorStrip>(SelectorStrip::class.js) {
-        val NAME: TagName<SelectorStrip> = TagName("demo-selector-strip")
-
-        fun define() {
-            defineIfMissing(NAME, this)
-        }
-    }
+    companion object : CustomElementReferenceAdapter<SelectorStrip>(SelectorStrip::class.js, "demo-selector-strip")
 }
 
 /** Creates a defined `<demo-selector-strip>`; callers set [SelectorStrip.setLabels]. */
-fun newSelectorStrip(): SelectorStrip {
-    SelectorStrip.define()
-    return SelectorStrip.NAME()
-}

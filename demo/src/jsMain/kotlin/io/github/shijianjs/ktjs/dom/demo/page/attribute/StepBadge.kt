@@ -7,13 +7,11 @@ import io.github.shijianjs.ktjs.dom.css.cssSheet
 import io.github.shijianjs.ktjs.dom.element.invoke
 import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementAdapter
 import io.github.shijianjs.ktjs.dom.webcomponent.attachStyledShadow
-import io.github.shijianjs.ktjs.dom.webcomponent.defineIfMissing
-import web.components.CustomElementReference
+import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementReferenceAdapter
 import web.cssom.CSSStyleSheet
 import web.cssom.ClassName
 import web.cssom.Padding
 import web.cssom.px
-import web.dom.TagName
 import web.html.HtmlTagName
 
 private val BADGE_CLASS: ClassName = ClassName("step-badge")
@@ -54,17 +52,7 @@ class StepBadge : CustomElementAdapter() {
         label.textContent = "step = ${change.newValue}"
     }
 
-    companion object : CustomElementReference<StepBadge>(StepBadge::class.js) {
-        val NAME: TagName<StepBadge> = TagName("demo-step-badge")
-
-        fun define() {
-            defineIfMissing(NAME, this)
-        }
-    }
+    companion object : CustomElementReferenceAdapter<StepBadge>(StepBadge::class.js, "demo-step-badge")
 }
 
 /** Creates a defined `<demo-step-badge>`; callers configure it through [StepBadge.step]. */
-fun newStepBadge(): StepBadge {
-    StepBadge.define()
-    return StepBadge.NAME()
-}

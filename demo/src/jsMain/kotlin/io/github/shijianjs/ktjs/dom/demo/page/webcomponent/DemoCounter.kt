@@ -7,9 +7,8 @@ import io.github.shijianjs.ktjs.dom.css.cssSheet
 import io.github.shijianjs.ktjs.dom.element.invoke
 import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementAdapter
 import io.github.shijianjs.ktjs.dom.webcomponent.attachStyledShadow
-import io.github.shijianjs.ktjs.dom.webcomponent.defineIfMissing
 import io.github.shijianjs.ktjs.vaadin.button.createButton
-import web.components.CustomElementReference
+import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementReferenceAdapter
 import web.cssom.AlignItems
 import web.cssom.ClassName
 import web.cssom.CSSStyleSheet
@@ -17,7 +16,6 @@ import web.cssom.Display
 import web.cssom.FontWeight
 import web.cssom.integer
 import web.cssom.px
-import web.dom.TagName
 import web.dom.clickEvent
 import web.events.addHandler
 import web.html.HTMLSpanElement
@@ -85,17 +83,7 @@ class DemoCounter : CustomElementAdapter() {
         incrementElement.textContent = change.newValue
     }
 
-    companion object : CustomElementReference<DemoCounter>(DemoCounter::class.js) {
-        val NAME: TagName<DemoCounter> = TagName("demo-counter")
-
-        fun define() {
-            defineIfMissing(NAME, this)
-        }
-    }
+    companion object : CustomElementReferenceAdapter<DemoCounter>(DemoCounter::class.js, "demo-counter")
 }
 
 /** Creates a defined `<demo-counter>`; callers set [DemoCounter.value] and [DemoCounter.incrementLabel]. */
-fun newCounter(): DemoCounter {
-    DemoCounter.define()
-    return DemoCounter.NAME()
-}

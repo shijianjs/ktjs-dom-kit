@@ -6,14 +6,13 @@ import io.github.shijianjs.ktjs.demo.i18n.Lang
 import io.github.shijianjs.ktjs.demo.i18n.Langs
 import io.github.shijianjs.ktjs.demo.page.DemoPage
 import io.github.shijianjs.ktjs.dom.webcomponent.defineIfMissing
-import web.components.CustomElementReference
-import web.dom.TagName
+import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementReferenceAdapter
 import io.github.shijianjs.ktjs.demo.i18n.Translations
-import io.github.shijianjs.ktjs.demo.page.codeText
-import io.github.shijianjs.ktjs.demo.page.exampleBox
-import io.github.shijianjs.ktjs.demo.page.paragraph
-import io.github.shijianjs.ktjs.demo.page.row
-import io.github.shijianjs.ktjs.demo.page.sectionBlock
+import io.github.shijianjs.ktjs.demo.page.Blocks.codeText
+import io.github.shijianjs.ktjs.demo.page.Blocks.exampleBox
+import io.github.shijianjs.ktjs.demo.page.Blocks.paragraph
+import io.github.shijianjs.ktjs.demo.page.Blocks.row
+import io.github.shijianjs.ktjs.demo.page.SectionBlock
 import io.github.shijianjs.ktjs.demo.i18n.texts
 import io.github.shijianjs.ktjs.vaadin.button.createButton
 import web.dom.clickEvent
@@ -82,7 +81,7 @@ internal class WebComponentPage : DemoPage() {
 
 
     init {
-        val instances = sectionBlock()
+        val instances = SectionBlock.NAME { show() }
         texts.bind(instances.heading, { it.instancesHeading })
         texts.bind(instances.hint, { it.instancesHint })
 
@@ -94,7 +93,7 @@ internal class WebComponentPage : DemoPage() {
             exampleBox(null, addInstance, instanceHost, texts.bind(paragraph(), { it.instancesNote })),
         )
 
-        val definition = sectionBlock()
+        val definition = SectionBlock.NAME { show() }
         texts.bind(definition.heading, { it.definitionHeading })
         texts.bind(definition.hint, { it.definitionHint })
         definition.body.append(
@@ -117,23 +116,13 @@ internal class WebComponentPage : DemoPage() {
     }
 
     private fun appendCounter() {
-        val counter = newCounter()
+        val counter = DemoCounter.NAME()
         counter.incrementLabel = incrementLabel
         counters += counter
         instanceHost.append(counter)
     }
 
-    companion object : CustomElementReference<WebComponentPage>(WebComponentPage::class.js) {
-        val NAME: TagName<WebComponentPage> = TagName("demo-web-component-page")
-
-        fun define() {
-            defineIfMissing(NAME, this)
-        }
-    }
+    companion object : CustomElementReferenceAdapter<WebComponentPage>(WebComponentPage::class.js, "demo-web-component-page")
 }
 
 /** Creates a defined `<demo-web-component-page>`. */
-internal fun newWebComponentPage(): WebComponentPage {
-    WebComponentPage.define()
-    return WebComponentPage.NAME()
-}

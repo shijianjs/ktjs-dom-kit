@@ -9,8 +9,7 @@ import io.github.shijianjs.ktjs.dom.css.dsl.invoke
 import io.github.shijianjs.ktjs.dom.element.invoke
 import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementAdapter
 import io.github.shijianjs.ktjs.dom.webcomponent.attachStyledShadow
-import io.github.shijianjs.ktjs.dom.webcomponent.defineIfMissing
-import web.components.CustomElementReference
+import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementReferenceAdapter
 import web.cssom.Border
 import web.cssom.ClassName
 import web.cssom.CSSStyleSheet
@@ -21,7 +20,6 @@ import web.cssom.Transition
 import web.cssom.TransitionTimingFunction
 import web.cssom.ms
 import web.cssom.px
-import web.dom.TagName
 import web.html.HTMLSpanElement
 import web.html.HtmlTagName
 
@@ -69,17 +67,7 @@ class HoverBox : CustomElementAdapter() {
         label.textContent = change.newValue
     }
 
-    companion object : CustomElementReference<HoverBox>(HoverBox::class.js) {
-        val NAME: TagName<HoverBox> = TagName("demo-hover-box")
-
-        fun define() {
-            defineIfMissing(NAME, this)
-        }
-    }
+    companion object : CustomElementReferenceAdapter<HoverBox>(HoverBox::class.js, "demo-hover-box")
 }
 
 /** Creates a defined `<demo-hover-box>`; callers set [HoverBox.labelText]. */
-fun newHoverBox(): HoverBox {
-    HoverBox.define()
-    return HoverBox.NAME()
-}

@@ -11,16 +11,13 @@ import io.github.shijianjs.ktjs.demo.i18n.Translations
 import io.github.shijianjs.ktjs.demo.i18n.texts
 import io.github.shijianjs.ktjs.demo.page.DemoPage
 import io.github.shijianjs.ktjs.dom.element.invoke
-import io.github.shijianjs.ktjs.dom.webcomponent.defineIfMissing
-import web.components.CustomElementReference
-import web.dom.TagName
-import io.github.shijianjs.ktjs.demo.page.newReadout
+import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementReferenceAdapter
+import io.github.shijianjs.ktjs.demo.page.Readout
 import io.github.shijianjs.ktjs.demo.page.SectionBlock
-import io.github.shijianjs.ktjs.demo.page.codeText
-import io.github.shijianjs.ktjs.demo.page.exampleBox
-import io.github.shijianjs.ktjs.demo.page.paragraph
-import io.github.shijianjs.ktjs.demo.page.row
-import io.github.shijianjs.ktjs.demo.page.sectionBlock
+import io.github.shijianjs.ktjs.demo.page.Blocks.codeText
+import io.github.shijianjs.ktjs.demo.page.Blocks.exampleBox
+import io.github.shijianjs.ktjs.demo.page.Blocks.paragraph
+import io.github.shijianjs.ktjs.demo.page.Blocks.row
 import io.github.shijianjs.ktjs.dom.demo.wrapper.themeAttr
 import io.github.shijianjs.ktjs.vaadin.button.createButton
 import io.github.shijianjs.ktjs.vaadin.themablemixin.ThemePropertyMixin
@@ -143,13 +140,13 @@ internal class AttributePage : DemoPage() {
 
     private val texts = Binder(attributeTexts)
 
-    private val badge = newStepBadge()
+    private val badge = StepBadge.NAME()
 
-    private val readout = newReadout()
+    private val readout = Readout.NAME { show() }
 
-    private val wrapperReadout = newReadout()
+    private val wrapperReadout = Readout.NAME { show() }
 
-    private val typedReadout = newReadout()
+    private val typedReadout = Readout.NAME { show() }
 
     /**
      * The `aria-label` subscription of the typed section. It lives as long as the page, which is the
@@ -159,7 +156,7 @@ internal class AttributePage : DemoPage() {
 
 
     init {
-        val demo = sectionBlock()
+        val demo = SectionBlock.NAME { show() }
         texts.bind(demo.heading, { it.demoHeading })
         texts.bind(demo.hint, { it.demoHint })
 
@@ -184,7 +181,7 @@ internal class AttributePage : DemoPage() {
             ),
         )
 
-        val declared = sectionBlock()
+        val declared = SectionBlock.NAME { show() }
         texts.bind(declared.heading, { it.declaredHeading })
         texts.bind(declared.hint, { it.declaredHint })
         declared.body.append(
@@ -218,7 +215,7 @@ internal class AttributePage : DemoPage() {
      * raw `setAttribute`, and both land in the same readout.
      */
     private fun wrapperSection(): SectionBlock {
-        val section = sectionBlock()
+        val section = SectionBlock.NAME { show() }
         texts.bind(section.heading, { it.wrapperHeading })
         texts.bind(section.hint, { it.wrapperHint })
 
@@ -263,7 +260,7 @@ internal class AttributePage : DemoPage() {
      * browser really delivered a change: `observe` is a `MutationObserver`, not a hook on the setter.
      */
     private fun typedSection(): SectionBlock {
-        val section = sectionBlock()
+        val section = SectionBlock.NAME { show() }
         texts.bind(section.heading, { it.typedHeading })
         texts.bind(section.hint, { it.typedHint })
 
@@ -306,17 +303,7 @@ internal class AttributePage : DemoPage() {
         )
     }
 
-    companion object : CustomElementReference<AttributePage>(AttributePage::class.js) {
-        val NAME: TagName<AttributePage> = TagName("demo-attribute-page")
-
-        fun define() {
-            defineIfMissing(NAME, this)
-        }
-    }
+    companion object : CustomElementReferenceAdapter<AttributePage>(AttributePage::class.js, "demo-attribute-page")
 }
 
 /** Creates a defined `<demo-attribute-page>`. */
-internal fun newAttributePage(): AttributePage {
-    AttributePage.define()
-    return AttributePage.NAME()
-}

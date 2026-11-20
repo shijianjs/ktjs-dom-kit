@@ -5,7 +5,7 @@ import io.github.shijianjs.ktjs.dom.webcomponent.attr.AttributeProvider
 import io.github.shijianjs.ktjs.dom.webcomponent.attr.attr
 import js.objects.unsafeJso
 import kotlin.js.JsAny
-import kotlin.js.JsName
+import web.components.CustomElement
 import web.html.HTMLElement
 import web.mutation.MutationObserver
 import web.mutation.MutationObserverInit
@@ -15,11 +15,11 @@ import web.mutation.MutationObserverInit
  *
  * It does three things a site should not have to repeat:
  *
- * 1. Declares **all** of `web.components.CustomElement`'s lifecycle hooks as overridable methods under
- *    their native names: `connectedCallback`, `connectedMoveCallback`, `disconnectedCallback`,
- *    `adoptedCallback`, `attributeChangedCallback`. The official interface spells these as `val`s,
- *    which Kotlin compiles to getters the browser never calls, so the interface is deliberately not
- *    implemented here. Element classes just `override fun connectedCallback()` and friends.
+ * 1. Implements `web.components.CustomElement.WithCallbacks` on top of `HTMLElement`, so every
+ *    lifecycle hook is the interface method the browser calls, spelled the native way:
+ *    `connectedCallback`, `connectedMoveCallback`, `disconnectedCallback`, `adoptedCallback`,
+ *    `attributeChangedCallback`. Element classes just `override fun connectedCallback()` and friends;
+ *    no `@JsName` is needed (and Kotlin forbids it on overrides anyway).
  *
  *    `attributeChangedCallback` only fires for attributes listed in the constructor's static
  *    `observedAttributes`; declaring that is up to the element class. The [attr] delegates below do
@@ -56,7 +56,7 @@ import web.mutation.MutationObserverInit
  *    class's prototype chain down to (but excluding) `HTMLElement.prototype` and deletes those names,
  *    so instance lookups fall through to the native DOM methods and the normal spelling works:
  *    `querySelectorAll(...)`, `append(...)`, `animate(...)`, `focus()`, … No `…Super` forwarders and
- *    no `@JsName` aliases are needed (`@JsName` is forbidden on overridden members anyway).
+ *    no aliases are needed.
  *
  * `getAttribute` / `setAttribute` / `hasAttribute` / `textContent` need no stripping: they are
  * abstract members of the external `Element` class, so no bridge is generated for them.
@@ -66,24 +66,20 @@ import web.mutation.MutationObserverInit
  * are the affected releases and this repository builds with 2.4.21, so the call stays; after an
  * upgrade it only deletes names the compiler no longer emits.
  */
-open class CustomElementAdapter : HTMLElement() {
+open class CustomElementAdapter : HTMLElement(), CustomElement.WithCallbacks {
 
     /** Every `attr` delegate of this instance, in declaration order. */
     private val attributeDelegates: MutableList<AttributeDelegate<*>> = mutableListOf()
 
     private var attributeObserver: MutationObserver? = null
 
-    @JsName("connectedCallback")
-    open fun connectedCallback() {}
+    override fun connectedCallback() {}
 
-    @JsName("connectedMoveCallback")
-    open fun connectedMoveCallback() {}
+    override fun connectedMoveCallback() {}
 
-    @JsName("disconnectedCallback")
-    open fun disconnectedCallback() {}
+    override fun disconnectedCallback() {}
 
-    @JsName("adoptedCallback")
-    open fun adoptedCallback() {}
+    override fun adoptedCallback() {}
 
     /**
      * Notifies every [attr] delegate of the value its attribute has right now.
@@ -130,6 +126,5 @@ open class CustomElementAdapter : HTMLElement() {
         for (delegate in attributeDelegates) delegate.sync()
     }
 
-    @JsName("attributeChangedCallback")
-    open fun attributeChangedCallback(name: String, oldValue: JsAny?, newValue: JsAny?) {}
+    override fun attributeChangedCallback(name: String, oldValue: JsAny?, newValue: JsAny?) {}
 }
