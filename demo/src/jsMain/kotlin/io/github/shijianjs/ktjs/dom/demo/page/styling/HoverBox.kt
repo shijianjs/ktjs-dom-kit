@@ -23,27 +23,6 @@ import web.cssom.px
 import web.html.HTMLSpanElement
 import web.html.HtmlTagName
 
-private val BOX: ClassName = ClassName("hover-box")
-
-/**
- * The box's own sheet: its resting surface, the transition, and the `:hover` state that changes it.
- *
- * A pseudo-class cannot be written inline — an inline declaration outranks any selector, so a hover
- * rule in `style` never fires. Both the base value and the hover value therefore live here, in a
- * sheet only this component adopts.
- */
-private val BOX_SHEET: CSSStyleSheet = cssSheet {
-    BOX {
-        padding = Padding(12.px, 14.px)
-        border = Border(1.px, LineStyle.solid, Palette.border)
-        borderRadius = 8.px
-        backgroundColor = Palette.surface
-        color = Palette.text
-        transition = Transition(PropertyName.backgroundColor, 150.ms, TransitionTimingFunction.ease)
-        Pseudos.hover { backgroundColor = Palette.surfaceRaised }
-    }
-}
-
 /**
  * `<demo-hover-box label="…">`: a box whose `:hover` state is painted by its own sheet.
  *
@@ -67,7 +46,27 @@ class HoverBox : CustomElementAdapter() {
         label.textContent = change.newValue
     }
 
-    companion object : CustomElementReferenceAdapter<HoverBox>(HoverBox::class.js, "demo-hover-box")
+    companion object : CustomElementReferenceAdapter<HoverBox>(HoverBox::class.js, "demo-hover-box") {
+        private val BOX: ClassName = ClassName("hover-box")
+        /**
+         * The box's own sheet: its resting surface, the transition, and the `:hover` state that changes it.
+         *
+         * A pseudo-class cannot be written inline — an inline declaration outranks any selector, so a hover
+         * rule in `style` never fires. Both the base value and the hover value therefore live here, in a
+         * sheet only this component adopts.
+         */
+        private val BOX_SHEET: CSSStyleSheet = cssSheet {
+            BOX {
+                padding = Padding(12.px, 14.px)
+                border = Border(1.px, LineStyle.solid, Palette.border)
+                borderRadius = 8.px
+                backgroundColor = Palette.surface
+                color = Palette.text
+                transition = Transition(PropertyName.backgroundColor, 150.ms, TransitionTimingFunction.ease)
+                Pseudos.hover { backgroundColor = Palette.surfaceRaised }
+            }
+        }
+    }
 }
 
 /** Creates a defined `<demo-hover-box>`; callers set [HoverBox.labelText]. */

@@ -24,45 +24,6 @@ import web.cssom.px
 import web.html.HTMLSpanElement
 import web.html.HtmlTagName
 
-private val CHIP: ClassName = ClassName("selector-chip")
-private val SELECTED: ClassName = ClassName("is-selected")
-private val ROW: ClassName = ClassName("selector-strip__row")
-
-/** `.selector-chip.is-selected` — one element carrying both classes. */
-private val SELECTED_CHIP: CssSelector = compound(className(CHIP), className(SELECTED))
-
-/** `.selector-strip__row > [aria-current]` — the selected chip, seen from the row. */
-private val CURRENT_CHIP_IN_ROW: CssSelector = className(ROW) child attributeSelector("aria-current")
-
-/**
- * The rule keys are values that were built, not pasted strings.
- *
- * Both come from `compound(…)` and the `child` combinator, so a typo in a class name is a compile
- * error instead of a rule that silently never matches.
- */
-private val STRIP_SHEET: CSSStyleSheet = cssSheet {
-    ROW {
-        display = Display.flex
-    }
-
-    CHIP {
-        padding = Padding(4.px, 10.px)
-        marginRight = 8.px
-        border = Border(1.px, LineStyle.solid, Palette.border)
-        borderRadius = 6.px
-    }
-
-    SELECTED_CHIP {
-        borderColor = Palette.accent
-        color = Palette.accent
-        fontWeight = integer(600)
-    }
-
-    CURRENT_CHIP_IN_ROW {
-        backgroundColor = Palette.surface
-    }
-}
-
 /**
  * `<demo-selector-strip>`: three chips of one class, the middle one also carrying `is-selected` and
  * `aria-current`.
@@ -95,7 +56,43 @@ class SelectorStrip : CustomElementAdapter() {
         chips[1].textContent = selected
     }
 
-    companion object : CustomElementReferenceAdapter<SelectorStrip>(SelectorStrip::class.js, "demo-selector-strip")
+    companion object : CustomElementReferenceAdapter<SelectorStrip>(SelectorStrip::class.js, "demo-selector-strip") {
+        private val CHIP: ClassName = ClassName("selector-chip")
+        private val SELECTED: ClassName = ClassName("is-selected")
+        private val ROW: ClassName = ClassName("selector-strip__row")
+        /** `.selector-chip.is-selected` — one element carrying both classes. */
+        private val SELECTED_CHIP: CssSelector = compound(className(CHIP), className(SELECTED))
+        /** `.selector-strip__row > [aria-current]` — the selected chip, seen from the row. */
+        private val CURRENT_CHIP_IN_ROW: CssSelector = className(ROW) child attributeSelector("aria-current")
+        /**
+         * The rule keys are values that were built, not pasted strings.
+         *
+         * Both come from `compound(…)` and the `child` combinator, so a typo in a class name is a compile
+         * error instead of a rule that silently never matches.
+         */
+        private val STRIP_SHEET: CSSStyleSheet = cssSheet {
+            ROW {
+                display = Display.flex
+            }
+
+            CHIP {
+                padding = Padding(4.px, 10.px)
+                marginRight = 8.px
+                border = Border(1.px, LineStyle.solid, Palette.border)
+                borderRadius = 6.px
+            }
+
+            SELECTED_CHIP {
+                borderColor = Palette.accent
+                color = Palette.accent
+                fontWeight = integer(600)
+            }
+
+            CURRENT_CHIP_IN_ROW {
+                backgroundColor = Palette.surface
+            }
+        }
+    }
 }
 
 /** Creates a defined `<demo-selector-strip>`; callers set [SelectorStrip.setLabels]. */
