@@ -69,11 +69,18 @@ class KtjsChip : CustomElementAdapter() {
     }
 
     override fun connectedCallback() {
-        // Markup that was already parsed never reached the property setter above.
+        // Markup that was already parsed reached the delegates on upgrade; this is the catch-up
+        // that also copies defaults in when asked to.
         applyInitialAttributes()
     }
 
-    companion object : CustomElementReferenceAdapter<KtjsChip>(KtjsChip::class.js, "ktjs-chip") {
+    // `observedAttributes` lists the attributes `attributeChangedCallback` reports — one entry per
+    // `by attr` property. The browser reads it once, when the tag is defined.
+    companion object : CustomElementReferenceAdapter<KtjsChip>(
+        KtjsChip::class.js,
+        "ktjs-chip",
+        observedAttributes = arrayOf("text"),
+    ) {
         private val SHEET: CSSStyleSheet = cssSheet {
             pseudo(Pseudos.host) {
                 display = Display.block

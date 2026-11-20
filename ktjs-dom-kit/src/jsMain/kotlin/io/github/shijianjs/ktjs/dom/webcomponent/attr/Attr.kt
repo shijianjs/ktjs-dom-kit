@@ -39,9 +39,14 @@ import js.reflect.unsafeCast
  *   `setAttribute` would have put it; a value of the property's own type still goes through [codec].
  * - **[default] is not written to the markup**; it is what the getter returns while the attribute is
  *   absent. Removing the attribute goes back to it.
- * - **[onChange] runs whenever the decoded value really changed** — from the setter, from outside, or
- *   from [CustomElementAdapter.applyInitialAttributes] during `connectedCallback`. Writing the same
- *   value again is not a change, and removing the attribute is one.
+ * - **[onChange] runs whenever the decoded value really changed** — from the setter, from outside
+ *   through the element's `attributeChangedCallback` (synchronously, inside the write), or from
+ *   [CustomElementAdapter.applyInitialAttributes] during `connectedCallback`. Writing the same value
+ *   again is not a change, and removing the attribute is one.
+ * - **The name has to be registered.** `attributeChangedCallback` only fires for attributes the element
+ *   class lists in its static `observedAttributes`, and that list is read once, at
+ *   `customElements.define`. List every name a `by attr` property stands for there, or a later external
+ *   write to it goes unreported; the list belongs next to the tag in the companion object.
  *
  * Only *reflecting* properties belong here: `attr` writes the attribute, and an element that reads
  * its own attribute back (as these components do) is a reflecting property. `input.value` is not one

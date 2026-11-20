@@ -21,9 +21,13 @@ attribute 就是这个属性。getter 读它并解码，setter 编码并写它�
 flowchart LR
   SET["Kotlin setter"] --> ENC["codec.encode"] --> WR["setAttribute(name, raw)"]
   EXT["标记 · setAttribute · devtools"] --> WR
-  WR --> OB["MutationObserver<br/>排一个微任务"] --> DEC["codec.decode"] --> CH["AttributeChange<br/>name · 新旧值 · isRemoval"] --> CB["变化回调"] --> NODE["这个元素自己持有的节点"]
+  WR --> AC["attributeChangedCallback<br/>同步"] --> DEC["codec.decode"] --> CH["AttributeChange<br/>name · 新旧值 · isRemoval"] --> CB["变化回调"] --> NODE["这个元素自己持有的节点"]
   GET["Kotlin getter"] --> RD["getAttribute → codec.decode<br/>缺失 → default / absent"]
 ```
+
+来自外部的写入走浏览器自己的 `attributeChangedCallback`：同步触发，且**只**为类里静态
+`observedAttributes` 列出的属性触发。所以每个 `by attr` 属性都要把名字列进那份名单——见
+[注册契约](custom-elements.md#observedattributes-就是契约)。
 
 
 `attr` 是 inline 函数，`name`、`default`、`codec` 与变化回调都可省：
@@ -180,12 +184,13 @@ override fun connectedCallback() {
 ## 回调什么时候跑
 
 - **来自 setter：** 同步。
-- **来自外部**（`setAttribute`、devtools、别的元素）：微任务里。元素用 `MutationObserver` 观察自己，而不是
-  声明 `observedAttributes`——那份名单由 `customElements.define` 从静态 getter 读取，那时任何委托都还没
-  创建；而且 `MutationObserver` 还能看到没人声明过的属性，未挂载的元素也一样。
-- **连接时：** 来自 `applyInitialAttributes()`。标签上原本就有的标记不会经过 setter，这是回调第一次得知
-  它们的途径。它是幂等的——已经上报过值的委托会被跳过——所以重新连接时再调一次不会重绘，而且它会顺手丢掉
-  观察器排队的记录，避免上报两遍。
+- **来自外部**（`setAttribute`、devtools、别的元素）：同样同步——就在那次 `setAttribute` 调用内部。浏览器
+  把它交给 `attributeChangedCallback`，基类再转给该属性名对应的委托，所以写属性那行返回时，property
+  报的已经是新值。删除走同一条路，`newValue == null`。
+- **升级时：** `customElements.define` 升级页面上已有的元素时，会给它原本就带的每个已观察属性各触发一次，
+  所以定义类之前解析出来的标记不用额外帮忙就能到委托。
+- **连接时：** 来自 `applyInitialAttributes()`，如今它是兜底而非常规路径：按当前 attribute 上报一遍；传
+  `writeDefaults = true` 时先把默认值写进去。它是幂等的——已上报过的委托会被跳过——所以重连时再调不会重绘。
 
 只有真实变化才上报。写回同样的解码值不算变化，删除 attribute 算。回调里写自己的属性不会自我重入，因此
 元素可以规范化它拿到的值。

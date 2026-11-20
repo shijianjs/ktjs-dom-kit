@@ -68,11 +68,17 @@ class KtjsChip : CustomElementAdapter() {
     }
 
     override fun connectedCallback() {
-        // 已经解析出来的标记从未经过上面的属性 setter。
+        // 已经解析出来的标记在升级时就走到了委托；这里是一次幂等的兜底，顺带按需写入默认值。
         applyInitialAttributes()
     }
 
-    companion object : CustomElementReferenceAdapter<KtjsChip>(KtjsChip::class.js, "ktjs-chip") {
+    // `observedAttributes` 列出 `attributeChangedCallback` 会上报的属性，每个 `by attr` 属性一条。
+    // 浏览器只在定义标签时读一次。
+    companion object : CustomElementReferenceAdapter<KtjsChip>(
+        KtjsChip::class.js,
+        "ktjs-chip",
+        observedAttributes = arrayOf("text"),
+    ) {
         private val SHEET: CSSStyleSheet = cssSheet {
             pseudo(Pseudos.host) {
                 display = Display.block

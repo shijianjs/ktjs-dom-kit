@@ -3,12 +3,9 @@ package io.github.shijianjs.ktjs.dom.webcomponent
 import io.github.shijianjs.ktjs.dom.webcomponent.attr.AttributeDelegate
 import io.github.shijianjs.ktjs.dom.webcomponent.attr.AttributeProvider
 import io.github.shijianjs.ktjs.dom.webcomponent.attr.attr
-import js.objects.unsafeJso
 import kotlin.js.JsAny
 import web.components.CustomElement
 import web.html.HTMLElement
-import web.mutation.MutationObserver
-import web.mutation.MutationObserverInit
 
 /**
  * Base class for a custom element written in Kotlin.
@@ -21,29 +18,28 @@ import web.mutation.MutationObserverInit
  *    `attributeChangedCallback`. Element classes just `override fun connectedCallback()` and friends;
  *    no `@JsName` is needed (and Kotlin forbids it on overrides anyway).
  *
- *    `attributeChangedCallback` only fires for attributes listed in the constructor's static
- *    `observedAttributes`; declaring that is up to the element class. The [attr] delegates below do
- *    not go through it — see [applyInitialAttributes].
- *
- * 2. Hosts the [attr] delegates of its subclasses. Each delegate is registered here when the property
- *    is initialised, and a [MutationObserver] on this element feeds every later attribute change back
- *    into them, so a property and its attribute cannot disagree:
+ * 2. Hosts the [attr] delegates of its subclasses and feeds the browser's
+ *    `attributeChangedCallback` into them, so a property and its attribute cannot disagree:
  *
  *    ```kotlin
  *    class MyElement : CustomElementAdapter() {
  *        val badge: HTMLElement = …
  *        var label: String by attr { change -> badge.textContent = change.newValue }
  *
- *        override fun connectedCallback() {
- *            applyInitialAttributes()   // markup that was already there, once
- *        }
+ *        companion object : CustomElementReferenceAdapter<MyElement>(
+ *            MyElement::class.js, "my-element",
+ *            observedAttributes = arrayOf("label"),
+ *        )
  *    }
  *    ```
  *
- *    The observer is used instead of the spec's `observedAttributes` on purpose: that list is read by
- *    `customElements.define` from a static getter on the class, and the attribute names are only known
- *    per property, at construction. A `MutationObserver` also sees attributes nobody declared, and it
- *    reports them for a detached element too.
+ *    The callback is synchronous, so the report happens before the statement that changed the
+ *    attribute returns — no microtask, no frame in which the property and the attribute disagree.
+ *    Its price is the contract the platform itself imposes: `attributeChangedCallback` only fires for
+ *    attributes the constructor's static `observedAttributes` lists, and that list is read once, at
+ *    `customElements.define` time. **Every attribute a `by attr` property stands for must therefore
+ *    be listed there**, or an external write to it goes unreported. See [applyInitialAttributes] for
+ *    the one-time catch-up that keeps a missing entry from silently doing nothing at startup.
  *
  * 3. Removes the self-recursive bridges Kotlin/JS emits for every external DOM member (`ParentNode`,
  *    `ChildNode`, `Animatable`, `HTMLOrSVGOrMathMLElement`, `EventTargetLike`, …):
@@ -71,7 +67,14 @@ open class CustomElementAdapter : HTMLElement(), CustomElement.WithCallbacks {
     /** Every `attr` delegate of this instance, in declaration order. */
     private val attributeDelegates: MutableList<AttributeDelegate<*>> = mutableListOf()
 
-    private var attributeObserver: MutationObserver? = null
+    /**
+     * The same delegates, looked up by attribute name: [attributeChangedCallback] is handed a name
+     * and must reach the one property that stands for it without walking the whole list.
+     *
+     * A name can back more than one property (`by attr("second")` declared twice), so the value is a
+     * list; every one of them is re-read on a change.
+     */
+    private val delegatesByAttribute: MutableMap<String, MutableList<AttributeDelegate<*>>> = mutableMapOf()
 
     override fun connectedCallback() {}
 
@@ -84,19 +87,18 @@ open class CustomElementAdapter : HTMLElement(), CustomElement.WithCallbacks {
     /**
      * Notifies every [attr] delegate of the value its attribute has right now.
      *
-     * Markup that was already parsed — and anything set before the element was constructed — never
-     * reaches a property setter, so the callbacks have not seen it. Call this once from
-     * `connectedCallback`, after the properties are initialised:
+     * The browser already reports an observed attribute once the element is upgraded, so this is not
+     * the primary path any more; what it is for:
      *
-     * ```kotlin
-     * override fun connectedCallback() {
-     *     applyInitialAttributes()
-     * }
-     * ```
+     * - **Defaults.** With `writeDefaults = true` it copies each `default` into a missing attribute
+     *   first, so the markup a page is handed matches the values the properties report.
+     * - **Catch-up.** A delegate whose name is missing from `observedAttributes` never hears about
+     *   later writes, but the value the attribute has at this point is still reported — which is
+     *   exactly the markup case, and the reason a forgotten entry does not turn startup silent.
      *
-     * Nothing is written back to the markup and no delegate is notified twice: a delegate that has
-     * already reported a value is skipped unless the attribute changed in the meantime. Calling it
-     * again (on reconnect, for instance) is therefore safe.
+     * Nothing is written back to the markup beyond the defaults, and no delegate is notified twice:
+     * a delegate that has already reported a value is skipped unless the attribute changed in the
+     * meantime. Calling it again (on reconnect, for instance) is therefore safe.
      *
      * @param writeDefaults also copies each delegate's `default` into its attribute when the
      *   attribute is absent. `false` keeps the markup as written — a default is a Kotlin-side value,
@@ -106,25 +108,30 @@ open class CustomElementAdapter : HTMLElement(), CustomElement.WithCallbacks {
         for (delegate in attributeDelegates) {
             if (writeDefaults) delegate.writeDefault()
         }
-        // Whatever the observer has queued is about to be read anyway; dropping the records keeps
-        // its callback from walking the delegates a second time.
-        attributeObserver?.takeRecords()
         syncAttributeDelegates()
     }
 
-    /** Called by [AttributeProvider.provideDelegate]; one observer per element, installed on first use. */
+    /** Called by [AttributeProvider.provideDelegate]; registers the delegate under its attribute name. */
     internal fun registerAttributeDelegate(delegate: AttributeDelegate<*>) {
         attributeDelegates.add(delegate)
-        if (attributeObserver != null) return
-
-        val observer = MutationObserver { _, _ -> syncAttributeDelegates() }
-        observer.observe(this, unsafeJso<MutationObserverInit> { attributes = true })
-        attributeObserver = observer
+        delegatesByAttribute.getOrPut(delegate.name) { mutableListOf() }.add(delegate)
     }
 
     private fun syncAttributeDelegates() {
         for (delegate in attributeDelegates) delegate.sync()
     }
 
-    override fun attributeChangedCallback(name: String, oldValue: JsAny?, newValue: JsAny?) {}
+    /**
+     * The platform hook: called synchronously for every change to an attribute listed in the class's
+     * static `observedAttributes` — a write from anywhere, a removal, and once per attribute the
+     * element already carried when `customElements.define` upgraded it.
+     *
+     * The value is not read from [newValue]: a delegate re-reads its attribute, which keeps the
+     * codec's `absent` / `default` handling in one place, and makes "the property is the attribute"
+     * true regardless of which path asked.
+     */
+    override fun attributeChangedCallback(name: String, oldValue: JsAny?, newValue: JsAny?) {
+        val delegates = delegatesByAttribute[name] ?: return
+        for (delegate in delegates) delegate.sync()
+    }
 }

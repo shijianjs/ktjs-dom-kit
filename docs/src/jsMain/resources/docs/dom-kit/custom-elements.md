@@ -24,7 +24,10 @@ class KtjsBadge : CustomElementAdapter() {
         applyInitialAttributes()
     }
 
-    companion object : CustomElementReferenceAdapter<KtjsBadge>(KtjsBadge::class.js, "ktjs-badge")
+    companion object : CustomElementReferenceAdapter<KtjsBadge>(
+      KtjsBadge::class.js, "ktjs-badge",
+      observedAttributes = arrayOf("href"),
+  )
 }
 
 val badge: KtjsBadge = KtjsBadge.NAME { href = "docs/intro" }
@@ -40,15 +43,41 @@ in every class:
    `attributeChangedCallback`. An element class writes `override fun connectedCallback()` and the
    browser calls it.
 2. **The `attr` delegates** of its subclasses. Each property registers its delegate with the element
-   when it is initialised, and one `MutationObserver` on the element feeds every later attribute
-   change back into them, so a property and its attribute cannot disagree. See
+   when it is initialised, and the browser's synchronous `attributeChangedCallback` feeds every later
+   change of a *registered* attribute back into the delegate of that name, so a property and its
+   attribute cannot disagree — and they never do, not even for one microtask. See
    [Attributes](./attributes.md).
 3. **The bridge removal** described below, through `stripBridgesFrom`.
 
-`attributeChangedCallback` is declared for completeness: it only fires for the names listed in the
-class's static `observedAttributes`, which is the element class's own business. The `attr` delegates
-do not go through it — a delegate is not a static declaration, and it has to work for a detached
-element too.
+## `observedAttributes` is the contract
+
+`attributeChangedCallback` is the platform's own hook, and it only fires for attributes the class's
+static `observedAttributes` lists. That list is read once, by `customElements.define`, so it has to
+exist **before** the companion's `init` defines the tag — before any instance, and long before a
+delegate exists. The names therefore come from the class declaration:
+
+```kotlin
+class KtjsAction : CustomElementAdapter() {
+    var kind: ActionKind by attr(codec = enumAttributeCodec(ActionKind.entries))
+    var href: String by attr
+
+    companion object : CustomElementReferenceAdapter<KtjsAction>(
+        KtjsAction::class.js, "ktjs-action",
+        observedAttributes = arrayOf("kind", "href"),
+    )
+}
+```
+
+The price of a synchronous callback is that this list repeats what the `by attr` declarations already
+say, and a forgotten name is not a loud failure: the property still reads the attribute, the initial
+value still arrives (through `applyInitialAttributes()` or the upgrade callback), but a **later**
+external write to that attribute goes unreported. Two guards against that:
+
+- `applyInitialAttributes()` is the catch-up that runs once the element is connected, so a missed name
+  still reports the markup it was created with.
+- A generated list — one `object` per element holding the names, produced from the `by attr`
+  declarations — is the direction that removes the repetition; until then the list is written by hand
+  next to the tag it belongs to.
 
 ## The official `CustomElement` interface
 
@@ -126,8 +155,9 @@ flowchart TB
   I --> S["stripBridgesFrom(klass)<br/>delete the forwarding bridges on every prototype,<br/>stopping before HTMLElement.prototype"]
   S --> R["customElements.define(tag, companion)"]
   R --> U["matching markup upgrades now"]
-  U --> C["connectedCallback<br/>shadow subtree already built in the constructor"]
-  C --> A["applyInitialAttributes()<br/>parsed attributes reach the delegates"]
+  U --> AC["attributeChangedCallback<br/>once per observed attribute the markup carried"]
+  AC --> C["connectedCallback<br/>shadow subtree already built in the constructor"]
+  C --> A["applyInitialAttributes()<br/>defaults, plus an idempotent catch-up"]
   N["X.NAME { … }"] --> R
 ```
 

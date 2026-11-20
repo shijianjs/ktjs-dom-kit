@@ -13,7 +13,8 @@ import kotlin.reflect.KProperty
  */
 internal class AttributeDelegate<T>(
     private val element: CustomElementAdapter,
-    private val name: String,
+    /** The attribute this property stands for; [CustomElementAdapter] indexes its delegates by it. */
+    internal val name: String,
     private val default: T?,
     private val codec: AttributeCodec<T>,
     private val onChange: (AttributeChange<T>) -> Unit,
@@ -49,9 +50,11 @@ internal class AttributeDelegate<T>(
     /**
      * Reads the attribute again and reports it when the value differs from the last report.
      *
-     * This is the only path that calls [onChange] — setter, attribute observer and
-     * [CustomElementAdapter.applyInitialAttributes] all end up here — so the callback cannot be
-     * invoked twice for one change, and nothing here writes the attribute back.
+     * This is the only path that calls [onChange] — the property setter, the element's
+     * `attributeChangedCallback` and [CustomElementAdapter.applyInitialAttributes] all end up here —
+     * so the callback cannot be invoked twice for one change, and nothing here writes the attribute
+     * back. Every one of those callers runs synchronously around the DOM write, so a change is
+     * reported before the statement that caused it returns.
      */
     internal fun sync() {
         // A callback that writes its own property would otherwise re-enter in the middle of a report.

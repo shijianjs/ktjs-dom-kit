@@ -24,7 +24,10 @@ class KtjsBadge : CustomElementAdapter() {
         applyInitialAttributes()
     }
 
-    companion object : CustomElementReferenceAdapter<KtjsBadge>(KtjsBadge::class.js, "ktjs-badge")
+    companion object : CustomElementReferenceAdapter<KtjsBadge>(
+        KtjsBadge::class.js, "ktjs-badge",
+        observedAttributes = arrayOf("href"),
+    )
 }
 
 val badge: KtjsBadge = KtjsBadge.NAME { href = "docs/intro" }
@@ -37,12 +40,36 @@ val badge: KtjsBadge = KtjsBadge.NAME { href = "docs/intro" }
 1. **生命周期钩子**，按原生名字声明成可 override 的方法：`connectedCallback`、
    `connectedMoveCallback`、`disconnectedCallback`、`adoptedCallback`、`attributeChangedCallback`。
    元素类写一句 `override fun connectedCallback()`，浏览器就会调用它。
-2. **子类的 `attr` 委托**。每个属性初始化时把自己的委托注册到元素上，元素上的一个 `MutationObserver`
-   把之后的每次属性变化喂回它们，所以属性与 attribute 不可能对不上。详见[属性](./attributes.md)。
+2. **子类的 `attr` 委托**。每个属性初始化时把自己的委托注册到元素上，之后浏览器同步的
+   `attributeChangedCallback` 把**已注册**属性的每次变化转给同名委托，所以属性与 attribute 不可能对不上
+   ——连一个微任务的时间差都没有。详见[属性](./attributes.md)。
 3. **删桥**，即下面的 `stripBridgesFrom`。
 
-`attributeChangedCallback` 是为完整性声明的：它只为类里静态 `observedAttributes` 列出的名字触发，而那
-是元素类自己的事。`attr` 委托不走它——委托不是静态声明，而且对未挂载的元素也要能用。
+## `observedAttributes` 就是契约
+
+`attributeChangedCallback` 是平台自己的钩子，只为类里静态 `observedAttributes` 列出的属性触发。这份名单由
+`customElements.define` 读一次，所以它必须在 companion 的 `init` 定义标签**之前**就存在——比任何实例早，
+更比任何委托早。名字因此写在类声明里：
+
+```kotlin
+class KtjsAction : CustomElementAdapter() {
+    var kind: ActionKind by attr(codec = enumAttributeCodec(ActionKind.entries))
+    var href: String by attr
+
+    companion object : CustomElementReferenceAdapter<KtjsAction>(
+        KtjsAction::class.js, "ktjs-action",
+        observedAttributes = arrayOf("kind", "href"),
+    )
+}
+```
+
+同步回调的代价，就是这份名单把 `by attr` 声明已经说过的东西又说了一遍；而漏写一个名字不是响亮的失败：
+property 照样读得到 attribute，初始值照样会到（升级回调或 `applyInitialAttributes()`），但**之后**对这个
+attribute 的外部写入没人上报。两道防护：
+
+- `applyInitialAttributes()` 是元素连上后的兜底，漏写的名字至少还能报出它创建时带的那份标记。
+- 一条生成出来的名单——每个元素一个 `object`，由 `by attr` 声明推出——是消掉重复的方向；在那之前，名单
+  手写在它所属的标签旁边。
 
 ## 官方 `CustomElement` 接口
 
@@ -106,8 +133,9 @@ flowchart TB
   I --> S["stripBridgesFrom(klass)<br/>沿原型链逐层删掉转发桥，<br/>删到 HTMLElement.prototype 之前为止"]
   S --> R["customElements.define(tag, companion)"]
   R --> U["文档里已有的同类元素立即升级"]
-  U --> C["connectedCallback<br/>shadow 子树在构造函数里就已建好"]
-  C --> A["applyInitialAttributes()<br/>解析出来的属性这才到达各个委托"]
+  U --> AC["attributeChangedCallback<br/>标记带的每个已观察属性各一次"]
+  AC --> C["connectedCallback<br/>shadow 子树在构造函数里就已建好"]
+  C --> A["applyInitialAttributes()<br/>写默认值，兼一次幂等兜底"]
   N["X.NAME { … }"] --> R
 ```
 

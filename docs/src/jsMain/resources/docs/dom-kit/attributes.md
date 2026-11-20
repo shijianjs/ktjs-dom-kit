@@ -22,9 +22,14 @@ place, so there is no second copy to keep in sync.
 flowchart LR
   SET["Kotlin setter"] --> ENC["codec.encode"] --> WR["setAttribute(name, raw)"]
   EXT["markup · setAttribute · devtools"] --> WR
-  WR --> OB["MutationObserver<br/>queued microtask"] --> DEC["codec.decode"] --> CH["AttributeChange<br/>name · old/new · isRemoval"] --> CB["the change callback"] --> NODE["the nodes this element owns"]
+  WR --> AC["attributeChangedCallback<br/>synchronous"] --> DEC["codec.decode"] --> CH["AttributeChange<br/>name · old/new · isRemoval"] --> CB["the change callback"] --> NODE["the nodes this element owns"]
   GET["Kotlin getter"] --> RD["getAttribute → codec.decode<br/>absent → default / absent"]
 ```
+
+External writes arrive through the browser's own `attributeChangedCallback`, which is synchronous and
+only fires for attributes the element's class lists in its static `observedAttributes`. A `by attr`
+property therefore needs its name in that list — see
+[the registration contract](custom-elements.md#observedattributes-is-the-contract).
 
 
 `attr` is an inline function taking `name`, `default`, `codec` and the change callback, all optional:
@@ -195,14 +200,17 @@ override fun connectedCallback() {
 ## When the callback runs
 
 - **From the setter:** synchronously.
-- **From outside** (`setAttribute`, devtools, another element): on a microtask. The element watches
-  itself with a `MutationObserver` instead of declaring `observedAttributes`, because that list is
-  read by `customElements.define` from a static getter, before any delegate exists — and a
-  `MutationObserver` also sees attributes nobody declared, including on a detached element.
-- **On connect:** from `applyInitialAttributes()`. Markup that was already parsed never passes
-  through a setter, so this is how the callbacks first hear about it. It is idempotent — a delegate
-  that has already reported a value is skipped — so calling it again on a reconnect does not repaint
-  anything, and it drops whatever the observer had queued rather than reporting twice.
+- **From outside** (`setAttribute`, devtools, another element): synchronously too — inside the very
+  `setAttribute` call. The browser routes it to `attributeChangedCallback`, which forwards to the
+  delegate of that attribute name, so the property already reports the new value when the writing
+  line returns. A removal takes the same path, with `newValue == null`.
+- **On upgrade:** once per attribute the element already carried when
+  `customElements.define` upgraded it, so markup parsed before the class was defined is reported
+  without any help.
+- **On connect:** from `applyInitialAttributes()`, which is now the catch-up rather than the main
+  path: it reports whatever the current attributes say, and with `writeDefaults = true` it first
+  copies the defaults in. It is idempotent — a delegate that has already reported a value is skipped
+  — so calling it again on a reconnect does not repaint anything.
 
 Only real changes are reported. Writing the same decoded value again is not a change; removing the
 attribute is. A callback that writes its own property does not re-enter itself, so an element can

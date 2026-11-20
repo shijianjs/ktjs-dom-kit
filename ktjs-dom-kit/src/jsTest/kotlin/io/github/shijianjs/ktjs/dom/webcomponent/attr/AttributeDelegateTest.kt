@@ -2,8 +2,8 @@ package io.github.shijianjs.ktjs.dom.webcomponent.attr
 
 import io.github.shijianjs.ktjs.dom.element.invoke
 import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementAdapter
+import io.github.shijianjs.ktjs.dom.webcomponent.defineIfMissing
 import js.reflect.unsafeCast
-import kotlin.js.Promise
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -12,16 +12,14 @@ import kotlin.test.assertTrue
 import web.dom.document
 import web.html.HtmlSource
 
-/** Resolves after the microtask `MutationObserver` queues for its callback. */
-private fun nextMicrotask(): Promise<Unit> = Promise.resolve(Unit).then { }.then { }
-
 /**
  * The `attr` delegate against a real custom element in a real browser: the attribute is the only
  * state, so every case is checked from both sides — the Kotlin property and `getAttribute`.
  *
- * The `MutationObserver` delivers external changes on a microtask. These tests take the same path
- * synchronously through [CustomElementAdapter.applyInitialAttributes], which is also what
- * `connectedCallback` does; that makes the assertions deterministic without faking the DOM.
+ * Changes made outside a property setter arrive through the browser's synchronous
+ * `attributeChangedCallback`, so a write is reported before the line that made it returns.
+ * [CustomElementAdapter.applyInitialAttributes] is checked separately: it is the startup catch-up
+ * (and the path a name missing from `observedAttributes` would rely on).
  */
 class AttributeDelegateTest {
 
@@ -85,25 +83,65 @@ class AttributeDelegateTest {
     }
 
     /**
-     * The same write without the manual sync: the element's `MutationObserver` delivers it on a
-     * microtask, which is why this test returns a promise (the Karma runner awaits it).
+     * The write with no manual sync and no microtask: the element's `attributeChangedCallback` runs
+     * synchronously inside `setAttribute`, so the callback has already seen the change.
      */
     @Test
-    fun anExternalWriteIsReportedOnItsOwn(): Any? {
+    fun anExternalWriteIsReportedSynchronously() {
         val probe = AttributeProbe.NAME()
         probe.applyInitialAttributes()
         probe.changes.clear()
 
         probe.setAttribute("text", "from outside")
-        assertEquals(0, probe.changes.size)
 
-        return nextMicrotask().then {
+        val change = probe.changes.single()
+        assertEquals("text", change.name)
+        assertEquals("", change.oldValue)
+        assertEquals("from outside", change.newValue)
+        assertNull(change.oldRaw)
+        assertEquals("from outside", change.newRaw)
+    }
+
+    /** The same for a removal, and the property reads back the default the codec declares. */
+    @Test
+    fun anExternalRemovalIsReportedSynchronously() {
+        val probe = AttributeProbe.NAME()
+        probe.maxCount = 42
+        probe.changes.clear()
+
+        probe.removeAttribute("max-count")
+
+        val change = probe.changes.single()
+        assertEquals("max-count", change.name)
+        assertTrue(change.isRemoval)
+        assertEquals(42, change.oldValue)
+        assertEquals(10, change.newValue)
+        assertNull(change.newRaw)
+    }
+
+    /**
+     * Markup written before the class existed: the parser leaves the tag as an unknown element, and
+     * `customElements.define` reports every observed attribute it was carrying, once. The probe is
+     * built with `register = false`, so this test — not the companion's `init` — is what defines the
+     * tag; if a previous test already did, the parser upgrades the element on construction instead
+     * and makes the same single report.
+     */
+    @Test
+    fun attributesOnMarkupUpgradedLaterAreReported() {
+        document.body.innerHTML = HtmlSource("<ktjs-attr-upgrade-probe upgrade-label='late'></ktjs-attr-upgrade-probe>")
+        val element = document.body.firstElementChild
+        try {
+            defineIfMissing(UpgradeProbe.NAME, UpgradeProbe)
+
+            val probe = element.unsafeCast<UpgradeProbe>()
+            assertEquals("late", probe.label)
+
             val change = probe.changes.single()
-            assertEquals("text", change.name)
-            assertEquals("", change.oldValue)
-            assertEquals("from outside", change.newValue)
-            assertNull(change.oldRaw)
-            assertEquals("from outside", change.newRaw)
+            assertEquals("upgrade-label", change.name)
+            assertEquals("late", change.newValue)
+            assertEquals("late", change.newRaw)
+        } finally {
+            document.body.innerHTML = HtmlSource("")
         }
     }
 
