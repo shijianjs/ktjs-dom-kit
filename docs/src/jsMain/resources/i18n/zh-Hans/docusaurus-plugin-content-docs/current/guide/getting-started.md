@@ -48,7 +48,8 @@ kotlin {
 
 ## 第一个元素
 
-一个组件 = 一个继承 `CustomElementAdapter` 的类 + 一个标签名 + 一次 `defineIfMissing`：
+一个组件 = 一个继承 `CustomElementAdapter` 的类 + 一个在 companion object 里写明标签名的
+`CustomElementReferenceAdapter`；companion 自己注册，没有别的调用：
 
 ```kotlin
 class KtjsChip : CustomElementAdapter() {
@@ -71,9 +72,7 @@ class KtjsChip : CustomElementAdapter() {
         applyInitialAttributes()
     }
 
-    companion object : CustomElementReference<KtjsChip>(KtjsChip::class.js) {
-        val NAME: TagName<KtjsChip> = TagName("ktjs-chip")
-
+    companion object : CustomElementReferenceAdapter<KtjsChip>(KtjsChip::class.js, "ktjs-chip") {
         private val SHEET: CSSStyleSheet = cssSheet {
             pseudo(Pseudos.host) {
                 display = Display.block
@@ -83,8 +82,13 @@ class KtjsChip : CustomElementAdapter() {
     }
 }
 
-fun registerKtjsChip() = defineIfMissing(KtjsChip.NAME, KtjsChip.Companion)
+val chip: KtjsChip = KtjsChip.NAME { text = "0.1.0" }
 ```
+
+`CustomElementReferenceAdapter` 保留了原来那份引用的全部能力（类、`formAssociated`、observable 属性），
+再补上两件事：`NAME` 是带类型的 `TagName`，companion 的 `init` 里调 `defineIfMissing(NAME, this)` 完成注册
+（构造时传 `register = false` 就不会注册）。所以读一次 `NAME` 既会升级页面上已经写好的标签，也会新建一个
+元素。
 
 `defineIfMissing` 在注册标签之前先删掉编译器为外部 DOM 成员生成的自递归转发方法，元素体里这才可以用
 `appendChild` / `querySelectorAll` 的原生拼写。漏掉这一步，元素里第一次调 DOM 方法就会一路递归到爆栈——

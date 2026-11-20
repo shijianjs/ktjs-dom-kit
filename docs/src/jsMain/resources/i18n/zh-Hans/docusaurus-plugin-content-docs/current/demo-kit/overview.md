@@ -51,7 +51,7 @@ fun main() {
     val theme = Theme()                     // 亮 / 暗 / 跟随系统，带持久化
     theme.applyStored()
 
-    DemoLayout.define()
+    // 外壳自己注册；读一次它的标签名，页面上的 <ktjs-demo-layout> 就会被升级。
     val layout = document.getElementById(ElementId("demo")) as? DemoLayout ?: error("no <ktjs-demo-layout>")
 
     layout.mount(

@@ -2,12 +2,9 @@ package io.github.shijianjs.ktjs.dom.webcomponent.attr
 
 import io.github.shijianjs.ktjs.dom.attribute.AttributeCodec
 import io.github.shijianjs.ktjs.dom.attribute.types.enumAttributeCodec
-import io.github.shijianjs.ktjs.dom.element.createElement
 import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementAdapter
-import io.github.shijianjs.ktjs.dom.webcomponent.defineIfMissing
+import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementReferenceAdapter
 import kotlin.js.JsName
-import web.components.CustomElementReference
-import web.dom.TagName
 
 /** Enum for the custom-codec case; `kind` in the markup is the lower-cased constant name. */
 internal enum class ProbeKind { Primary, Secondary }
@@ -59,18 +56,10 @@ internal class AttributeProbe : CustomElementAdapter() {
         applyInitialAttributes()
     }
 
-    companion object : CustomElementReference<AttributeProbe>(AttributeProbe::class.js) {
-        val NAME: TagName<AttributeProbe> = TagName("ktjs-attr-probe")
+    // Registering is the companion's `init`: `AttributeProbe.NAME` defines the tag on first read, and
+    // `AttributeProbe.NAME()` creates a detached probe — no `probeTag()` / `newProbe()` helpers.
+    companion object : CustomElementReferenceAdapter<AttributeProbe>(AttributeProbe::class.js, "ktjs-attr-probe") {
 
         private val kindCodec: AttributeCodec<ProbeKind> = enumAttributeCodec(ProbeKind.entries)
     }
 }
-
-/** The probe's tag, defined once; `defineIfMissing` makes repeated calls harmless. */
-internal fun probeTag(): TagName<AttributeProbe> {
-    defineIfMissing(AttributeProbe.NAME, AttributeProbe.Companion)
-    return AttributeProbe.NAME
-}
-
-/** A detached probe: attributes can be set and read without the element being in the document. */
-internal fun newProbe(): AttributeProbe = probeTag().createElement()

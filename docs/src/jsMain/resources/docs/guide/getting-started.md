@@ -49,7 +49,8 @@ in their types (`web.html.HTMLElement`, `csstype.Properties`), so a project that
 
 ## A first element
 
-A component is a class extending `CustomElementAdapter`, a tag name, and one `defineIfMissing` call:
+A component is a class extending `CustomElementAdapter` and a companion object that names its tag; the
+companion registers itself, so there is nothing to call:
 
 ```kotlin
 class KtjsChip : CustomElementAdapter() {
@@ -72,9 +73,7 @@ class KtjsChip : CustomElementAdapter() {
         applyInitialAttributes()
     }
 
-    companion object : CustomElementReference<KtjsChip>(KtjsChip::class.js) {
-        val NAME: TagName<KtjsChip> = TagName("ktjs-chip")
-
+    companion object : CustomElementReferenceAdapter<KtjsChip>(KtjsChip::class.js, "ktjs-chip") {
         private val SHEET: CSSStyleSheet = cssSheet {
             pseudo(Pseudos.host) {
                 display = Display.block
@@ -84,8 +83,13 @@ class KtjsChip : CustomElementAdapter() {
     }
 }
 
-fun registerKtjsChip() = defineIfMissing(KtjsChip.NAME, KtjsChip.Companion)
+val chip: KtjsChip = KtjsChip.NAME { text = "0.1.0" }
 ```
+
+`CustomElementReferenceAdapter` keeps what the reference did — the class, `formAssociated`, the
+observed attributes — and adds the tag name and its registration: `NAME` is a typed `TagName`, and the
+companion's `init` calls `defineIfMissing(NAME, this)` unless it was built with `register = false`.
+Reading `NAME` therefore both upgrades markup that is already on the page and creates a fresh element.
 
 `defineIfMissing` strips the compiler-generated forwarding bridges from the class before it registers
 the tag, which is what lets the element body call `appendChild` / `querySelectorAll` under their normal

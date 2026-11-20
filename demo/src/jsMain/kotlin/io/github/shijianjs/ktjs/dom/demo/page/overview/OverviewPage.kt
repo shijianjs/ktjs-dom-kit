@@ -6,7 +6,6 @@ import io.github.shijianjs.ktjs.demo.i18n.Binder
 import io.github.shijianjs.ktjs.demo.i18n.Lang
 import io.github.shijianjs.ktjs.demo.i18n.Langs
 import io.github.shijianjs.ktjs.demo.page.DemoPage
-import io.github.shijianjs.ktjs.dom.webcomponent.defineIfMissing
 import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementReferenceAdapter
 import io.github.shijianjs.ktjs.demo.i18n.Translations
 import io.github.shijianjs.ktjs.demo.page.Blocks.anchor
@@ -83,7 +82,7 @@ internal class OverviewPage : DemoPage() {
                 "HtmlTagName.p { } / +HtmlTagName.li { } — the tag decides the type, no magic strings.",
                 "attr { } — a property backed by an HTML attribute, decoded by a codec.",
                 "cssSheet { } — a typed stylesheet adopted by a shadow root.",
-                "CustomElementAdapter + defineIfMissing — a class is a component, bridges removed.",
+                "CustomElementReferenceAdapter — a class is a component, and reading its NAME registers the tag.",
             ),
             coordinatesHeading = "Coordinates",
             coordinatesNote = "This site is built with the library itself, so the pages double as its integration tests.",
@@ -104,7 +103,7 @@ internal class OverviewPage : DemoPage() {
                 "HtmlTagName.p { } / +HtmlTagName.li { } —— 标签决定类型，不写魔法字符串。",
                 "attr { } —— 属性即属性，由 codec 解码。",
                 "cssSheet { } —— 类型化样式表，交给 shadow root adopt。",
-                "CustomElementAdapter + defineIfMissing —— 一个类就是一个组件，桥已在注册前剥掉。",
+                "CustomElementReferenceAdapter —— 一个类就是一个组件，读它的 NAME 就完成注册。",
             ),
             coordinatesHeading = "坐标",
             coordinatesNote = "这个站点本身就用这个库搭建，页面同时充当它的集成测试。",

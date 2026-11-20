@@ -5,8 +5,8 @@ sidebar_position: 3
 # Custom elements
 
 A component is a Kotlin class that extends `CustomElementAdapter`, declares its attributes with
-[`attr`](./attributes.md), and is registered as a tag with `defineIfMissing`. No JavaScript class
-literal, no component library, and no `@JsName`-aliased lifecycle hooks.
+[`attr`](./attributes.md), and names its tag in a companion object that registers itself. No JavaScript
+class literal, no component library, and no `@JsName`-aliased lifecycle hooks.
 
 ```kotlin
 class KtjsBadge : CustomElementAdapter() {
@@ -24,12 +24,10 @@ class KtjsBadge : CustomElementAdapter() {
         applyInitialAttributes()
     }
 
-    companion object : CustomElementReference<KtjsBadge>(KtjsBadge::class.js) {
-        val NAME: TagName<KtjsBadge> = TagName("ktjs-badge")
-    }
+    companion object : CustomElementReferenceAdapter<KtjsBadge>(KtjsBadge::class.js, "ktjs-badge")
 }
 
-defineIfMissing(KtjsBadge.NAME, KtjsBadge.Companion)
+val badge: KtjsBadge = KtjsBadge.NAME { href = "docs/intro" }
 ```
 
 ## What the adapter does
@@ -52,13 +50,15 @@ class's static `observedAttributes`, which is the element class's own business. 
 do not go through it — a delegate is not a static declaration, and it has to work for a detached
 element too.
 
-## Why the official `CustomElement` interface is not implemented
+## The official `CustomElement` interface
 
-`web.components.CustomElement` declares its hooks as `val`s. Kotlin compiles an `override val
-connectedCallback` into a **getter**, and the browser only looks for a method, so the element renders
-but the callback never runs — a silent failure with no error to search for. Declaring the same names
-as real functions is what makes them callable, and doing it once in the base class is why no element
-needs an alias like `onConnected`.
+The adapter is `CustomElementAdapter : HTMLElement(), CustomElement.WithCallbacks`. Declaring the hooks
+as `override fun`s is what makes the interface work: `web.components.CustomElement` declares them as
+`val`s, Kotlin compiles an `override val connectedCallback` into a **getter**, and the browser only
+looks for a method — the element would render and every callback would be silently skipped.
+`CustomElement.WithCallbacks` is the variant that spells them as functions, so overriding
+`connectedCallback` here is the method the browser calls, once, in the base class instead of in every
+element.
 
 ## The self-recursive bridges
 
@@ -100,31 +100,43 @@ no `…Super` forwarders. (A `@JsName` alias is not even allowed on an override.
 ## Defining the tag
 
 ```kotlin
-defineIfMissing(KtjsBadge.NAME, KtjsBadge.Companion)
+companion object : CustomElementReferenceAdapter<KtjsBadge>(KtjsBadge::class.js, "ktjs-badge")
 ```
 
-`defineIfMissing(tag, reference)` runs `stripBridgesFrom` and then `customElements.define`, and
-returns immediately if the tag is already registered. The order matters and is the reason to prefer
-it over calling `customElements.define` yourself: defining a tag upgrades any matching element
-already in the document, whose `connectedCallback` runs right away — before the bridges are gone, that
-is a stack overflow. Calling it twice is safe, which is what makes it usable from a module that may
-be evaluated more than once.
+`CustomElementReferenceAdapter<T>(clazz, name, formAssociated, observedAttributes, register)` extends
+the `web.components.CustomElementReference` the browser wants — the three original arguments are passed
+through unchanged — and adds the two things an element needs on top: `NAME`, a typed `TagName<T>`, and
+registration inside its `init`, which calls `defineIfMissing(NAME, this)` unless it was built with
+`register = false`.
+
+`defineIfMissing(tag, reference)` runs `stripBridgesFrom` and then `customElements.define`, and returns
+immediately if the tag is already registered. The order matters and is the reason not to call
+`customElements.define` yourself: defining a tag upgrades any matching element already in the
+document, whose `connectedCallback` runs right away — before the bridges are gone, that is a stack
+overflow. Calling it twice is safe, which is what makes it usable from a module that may be evaluated
+more than once.
+
+Because registration happens in the companion's `init`, **reading `NAME` is the whole protocol**: it
+registers the tag (upgrading any markup already parsed) and creates the element in one step, and the
+element's own methods are in scope inside `NAME { … }`.
 
 ```mermaid
 flowchart TB
-  D["defineIfMissing(tag, reference)"] --> S["stripBridgesFrom(klass)<br/>delete the forwarding bridges on every prototype,<br/>stopping before HTMLElement.prototype"]
+  D["companion object : CustomElementReferenceAdapter(X::class.js, \"tag\")"] --> I["init { if (register) defineIfMissing(NAME, this) }"]
+  I --> S["stripBridgesFrom(klass)<br/>delete the forwarding bridges on every prototype,<br/>stopping before HTMLElement.prototype"]
   S --> R["customElements.define(tag, companion)"]
   R --> U["matching markup upgrades now"]
   U --> C["connectedCallback<br/>shadow subtree already built in the constructor"]
   C --> A["applyInitialAttributes()<br/>parsed attributes reach the delegates"]
+  N["X.NAME { … }"] --> R
 ```
 
 
 | Piece | Comes from |
 | --- | --- |
-| `NAME: TagName<T>` | your element's `companion object`; the tag name lives in one place per element |
-| `CustomElementReference<T>(T::class.js)` | `web.components`; the companion object **is** the reference passed to `customElements.define` |
-| `defineIfMissing` | `ktjs-dom-kit` |
+| `CustomElementReferenceAdapter<T>(T::class.js, "tag")` | `ktjs-dom-kit`; wraps `web.components.CustomElementReference`, registers in `init` |
+| `NAME: TagName<T>` | the adapter; one tag name per element, and reading it registers and creates |
+| `defineIfMissing` | `ktjs-dom-kit`; what the adapter calls, and what to call by hand only for a `register = false` tag |
 
 ## Creating an element
 

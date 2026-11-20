@@ -1,5 +1,6 @@
 package io.github.shijianjs.ktjs.dom.webcomponent.attr
 
+import io.github.shijianjs.ktjs.dom.element.invoke
 import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementAdapter
 import js.reflect.unsafeCast
 import kotlin.js.Promise
@@ -26,7 +27,7 @@ class AttributeDelegateTest {
 
     @Test
     fun thePropertyIsTheAttribute() {
-        val probe = newProbe()
+        val probe = AttributeProbe.NAME()
 
         assertEquals("", probe.text)
         assertFalse(probe.hasAttribute("text"))
@@ -43,7 +44,7 @@ class AttributeDelegateTest {
 
     @Test
     fun theSetterReportsTheNewValue() {
-        val probe = newProbe()
+        val probe = AttributeProbe.NAME()
         probe.text = "hello"
 
         val change = probe.changes.single()
@@ -58,7 +59,7 @@ class AttributeDelegateTest {
 
     @Test
     fun writingTheSameValueTwiceReportsOnce() {
-        val probe = newProbe()
+        val probe = AttributeProbe.NAME()
 
         probe.text = "same"
         probe.text = "same"
@@ -68,7 +69,7 @@ class AttributeDelegateTest {
 
     @Test
     fun anExternalWriteIsReportedByTheNextSync() {
-        val probe = newProbe()
+        val probe = AttributeProbe.NAME()
         probe.applyInitialAttributes()
         probe.changes.clear()
 
@@ -89,7 +90,7 @@ class AttributeDelegateTest {
      */
     @Test
     fun anExternalWriteIsReportedOnItsOwn(): Any? {
-        val probe = newProbe()
+        val probe = AttributeProbe.NAME()
         probe.applyInitialAttributes()
         probe.changes.clear()
 
@@ -108,7 +109,7 @@ class AttributeDelegateTest {
 
     @Test
     fun markupAttributesAreReportedOnConnect() {
-        probeTag() // must be defined before the parser sees the tag
+        AttributeProbe.NAME // must be defined before the parser sees the tag
         document.body.innerHTML = HtmlSource("<ktjs-attr-probe text='from markup' max-count='3' flagged></ktjs-attr-probe>")
 
         val probe = document.body.firstElementChild.unsafeCast<AttributeProbe>()
@@ -130,7 +131,7 @@ class AttributeDelegateTest {
 
     @Test
     fun removingAnAttributeGoesBackToTheDefault() {
-        val probe = newProbe()
+        val probe = AttributeProbe.NAME()
         probe.setAttribute("max-count", "42")
         probe.applyInitialAttributes()
         probe.changes.clear()
@@ -147,7 +148,7 @@ class AttributeDelegateTest {
 
     @Test
     fun booleanIsPresenceNotTheValue() {
-        val probe = newProbe()
+        val probe = AttributeProbe.NAME()
 
         probe.setAttribute("flagged", "false")
         probe.applyInitialAttributes()
@@ -167,7 +168,7 @@ class AttributeDelegateTest {
 
     @Test
     fun numbersAreConvertedAndUnparsableOnesFallBack() {
-        val probe = newProbe()
+        val probe = AttributeProbe.NAME()
 
         probe.maxCount = 42
         assertEquals("42", probe.getAttribute("max-count"))
@@ -184,7 +185,7 @@ class AttributeDelegateTest {
 
     @Test
     fun doublesRoundTrip() {
-        val probe = newProbe()
+        val probe = AttributeProbe.NAME()
 
         probe.ratio = 2.25
         assertEquals("2.25", probe.getAttribute("ratio"))
@@ -197,7 +198,7 @@ class AttributeDelegateTest {
 
     @Test
     fun aCustomCodecMapsTheEnum() {
-        val probe = newProbe()
+        val probe = AttributeProbe.NAME()
         assertEquals(ProbeKind.Primary, probe.kind)
 
         probe.setAttribute("kind", "secondary")
@@ -214,7 +215,7 @@ class AttributeDelegateTest {
 
     @Test
     fun theAttributeNameComesFromThePropertyOrTheExplicitName() {
-        val probe = newProbe()
+        val probe = AttributeProbe.NAME()
         probe.setAttribute("max-count", "7")
         probe.setAttribute("data-explicit", "explicit")
         probe.setAttribute("internal-name", "kotlin name")
@@ -227,7 +228,7 @@ class AttributeDelegateTest {
 
     @Test
     fun jsNameRenamesThePropertyNotTheAttribute() {
-        val probe = newProbe()
+        val probe = AttributeProbe.NAME()
         probe.internalName = "value"
         probe.text = "plain"
         assertEquals("plain", probe.text)
@@ -247,7 +248,7 @@ class AttributeDelegateTest {
      */
     @Test
     fun aStringAssignedFromJavaScriptIsTheAttributesRawValue() {
-        val probe = newProbe()
+        val probe = AttributeProbe.NAME()
         probe.applyInitialAttributes()
         probe.changes.clear()
         val asJs = probe.unsafeCast<dynamic>()
@@ -270,7 +271,7 @@ class AttributeDelegateTest {
 
     @Test
     fun everyDelegateReportsItsOwnAttribute() {
-        val probe = newProbe()
+        val probe = AttributeProbe.NAME()
         probe.applyInitialAttributes()
 
         assertEquals(
@@ -282,7 +283,7 @@ class AttributeDelegateTest {
 
     @Test
     fun aCallbackMayWriteAnotherAttribute() {
-        val probe = newProbe()
+        val probe = AttributeProbe.NAME()
         probe.applyInitialAttributes()
         probe.changes.clear()
 
@@ -294,7 +295,7 @@ class AttributeDelegateTest {
 
     @Test
     fun aCallbackWritingItsOwnPropertyDoesNotReenter() {
-        val probe = newProbe()
+        val probe = AttributeProbe.NAME()
 
         probe.echo = "once"
 
@@ -304,7 +305,7 @@ class AttributeDelegateTest {
 
     @Test
     fun applyingInitialAttributesTwiceChangesNothing() {
-        val probe = newProbe()
+        val probe = AttributeProbe.NAME()
         probe.setAttribute("text", "value")
 
         probe.applyInitialAttributes()
@@ -315,7 +316,7 @@ class AttributeDelegateTest {
 
     @Test
     fun reconnectingDoesNotRepeatTheReports() {
-        val probe = newProbe()
+        val probe = AttributeProbe.NAME()
         document.body.appendChild(probe)
         try {
             val reported = probe.changes.size
@@ -332,7 +333,7 @@ class AttributeDelegateTest {
 
     @Test
     fun anAttributeChangeWhileDisconnectedIsStillReported() {
-        val probe = newProbe()
+        val probe = AttributeProbe.NAME()
         document.body.appendChild(probe)
         document.body.removeChild(probe)
         probe.changes.clear()
@@ -345,7 +346,7 @@ class AttributeDelegateTest {
 
     @Test
     fun defaultsStayOutOfTheMarkupUnlessAskedFor() {
-        val probe = newProbe()
+        val probe = AttributeProbe.NAME()
 
         probe.applyInitialAttributes()
         assertNull(probe.getAttribute("max-count"))
@@ -356,7 +357,7 @@ class AttributeDelegateTest {
 
     @Test
     fun theInitialValueIsNotWrittenBack() {
-        val probe = newProbe()
+        val probe = AttributeProbe.NAME()
         probe.applyInitialAttributes()
 
         assertNull(probe.getAttribute("ratio"))
@@ -366,7 +367,7 @@ class AttributeDelegateTest {
 
     @Test
     fun theIntegerSetterReportsTheDecodedValues() {
-        val probe = newProbe()
+        val probe = AttributeProbe.NAME()
         probe.applyInitialAttributes()
         probe.changes.clear()
 

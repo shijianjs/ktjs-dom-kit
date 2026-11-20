@@ -5,7 +5,8 @@ sidebar_position: 3
 # 自定义元素
 
 一个组件就是一个继承 `CustomElementAdapter` 的 Kotlin 类，用 [`attr`](./attributes.md) 声明它的属性，
-再用 `defineIfMissing` 注册标签。没有 JS 类字面量，没有组件库，也不需要给生命周期钩子起别名。
+再在 companion object 里写出标签名——companion 自己注册，不需要另外调用。没有 JS 类字面量，没有组件库，
+也不需要给生命周期钩子起别名。
 
 ```kotlin
 class KtjsBadge : CustomElementAdapter() {
@@ -23,12 +24,10 @@ class KtjsBadge : CustomElementAdapter() {
         applyInitialAttributes()
     }
 
-    companion object : CustomElementReference<KtjsBadge>(KtjsBadge::class.js) {
-        val NAME: TagName<KtjsBadge> = TagName("ktjs-badge")
-    }
+    companion object : CustomElementReferenceAdapter<KtjsBadge>(KtjsBadge::class.js, "ktjs-badge")
 }
 
-defineIfMissing(KtjsBadge.NAME, KtjsBadge.Companion)
+val badge: KtjsBadge = KtjsBadge.NAME { href = "docs/intro" }
 ```
 
 ## 基类做了什么
@@ -45,11 +44,13 @@ defineIfMissing(KtjsBadge.NAME, KtjsBadge.Companion)
 `attributeChangedCallback` 是为完整性声明的：它只为类里静态 `observedAttributes` 列出的名字触发，而那
 是元素类自己的事。`attr` 委托不走它——委托不是静态声明，而且对未挂载的元素也要能用。
 
-## 为什么不实现官方的 `CustomElement` 接口
+## 官方 `CustomElement` 接口
 
-`web.components.CustomElement` 把钩子声明成 `val`。Kotlin 会把 `override val connectedCallback` 编译成
-**getter**，而浏览器只认方法，于是元素渲染出来、回调静默不执行——一个没有报错可以搜的故障。把同样的名字
-声明成真函数才能被调用；只在基类里做一次，正是不必给每个类起 `onConnected` 之类别名的原因。
+基类声明是 `CustomElementAdapter : HTMLElement(), CustomElement.WithCallbacks`。把钩子写成 `override fun`
+才能让这个接口真正生效：`web.components.CustomElement` 把钩子声明成 `val`，Kotlin 会把
+`override val connectedCallback` 编译成 **getter**，而浏览器只认方法——元素照样渲染，回调却静默不执行。
+`CustomElement.WithCallbacks` 是把它们声明成函数的那个变体，所以在基类里 override
+`connectedCallback` 一次，就是浏览器会调用的那个方法，不必给每个元素起 `onConnected` 之类别名。
 
 ## 自递归桥
 
@@ -83,29 +84,39 @@ wrapper 侧报在 [kotlin-wrappers#2932](https://github.com/JetBrains/kotlin-wra
 ## 定义标签
 
 ```kotlin
-defineIfMissing(KtjsBadge.NAME, KtjsBadge.Companion)
+companion object : CustomElementReferenceAdapter<KtjsBadge>(KtjsBadge::class.js, "ktjs-badge")
 ```
+
+`CustomElementReferenceAdapter<T>(clazz, name, formAssociated, observedAttributes, register)` 继承浏览器要的
+`web.components.CustomElementReference`——原来的三个构造参数原样透传——再补上元素需要的两件东西：`NAME`
+（带类型的 `TagName<T>`），以及 `init` 里的注册（除非构造时传 `register = false`，否则调用
+`defineIfMissing(NAME, this)`）。
 
 `defineIfMissing(tag, reference)` 先跑 `stripBridgesFrom`，再 `customElements.define`，标签已注册时直接
 返回。顺序是有原因的，也是它比直接调 `customElements.define` 更该用的理由：定义标签会升级文档里已经存在
 的同类元素，它们的 `connectedCallback` 立即执行——如果那时桥还在，就是一次栈溢出。重复调用是安全的，这才
 让它可以放在可能被求值多次的模块里。
 
+注册发生在 companion 的 `init`，所以 **读一次 `NAME` 就是全部协议**：它完成注册（顺带升级文档里已经写好
+的标签）并创建元素；`NAME { … }` 的 lambda 接收者是元素本身，元素自己的方法直接在作用域里。
+
 ```mermaid
 flowchart TB
-  D["defineIfMissing(tag, reference)"] --> S["stripBridgesFrom(klass)<br/>沿原型链逐层删掉转发桥，<br/>删到 HTMLElement.prototype 之前为止"]
+  D["companion object : CustomElementReferenceAdapter(X::class.js, \"tag\")"] --> I["init { if (register) defineIfMissing(NAME, this) }"]
+  I --> S["stripBridgesFrom(klass)<br/>沿原型链逐层删掉转发桥，<br/>删到 HTMLElement.prototype 之前为止"]
   S --> R["customElements.define(tag, companion)"]
   R --> U["文档里已有的同类元素立即升级"]
   U --> C["connectedCallback<br/>shadow 子树在构造函数里就已建好"]
   C --> A["applyInitialAttributes()<br/>解析出来的属性这才到达各个委托"]
+  N["X.NAME { … }"] --> R
 ```
 
 
 | 部件 | 来自 |
 | --- | --- |
-| `NAME: TagName<T>` | 元素自己的 `companion object`；标签名每个元素只写一处 |
-| `CustomElementReference<T>(T::class.js)` | `web.components`；companion object **就是**传给 `customElements.define` 的那个引用 |
-| `defineIfMissing` | `ktjs-dom-kit` |
+| `CustomElementReferenceAdapter<T>(T::class.js, "tag")` | `ktjs-dom-kit`；包住 `web.components.CustomElementReference`，在 `init` 里注册 |
+| `NAME: TagName<T>` | 适配器；标签名每个元素只写一处，读它就是注册 + 创建 |
+| `defineIfMissing` | `ktjs-dom-kit`；适配器内部调用它，只有 `register = false` 的标签才需要手动调用 |
 
 ## 创建元素
 

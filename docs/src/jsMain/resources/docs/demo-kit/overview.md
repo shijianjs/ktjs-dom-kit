@@ -53,7 +53,7 @@ fun main() {
     val theme = Theme()                     // Light / Dark / System, persisted
     theme.applyStored()
 
-    DemoLayout.define()
+    // The layout registers itself; reading its tag name is what upgrades <ktjs-demo-layout>.
     val layout = document.getElementById(ElementId("demo")) as? DemoLayout ?: error("no <ktjs-demo-layout>")
 
     layout.mount(

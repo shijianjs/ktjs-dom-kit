@@ -1,6 +1,7 @@
 package io.github.shijianjs.ktjs.dom.webcomponent
 
-import io.github.shijianjs.ktjs.dom.webcomponent.attr.newProbe
+import io.github.shijianjs.ktjs.dom.element.invoke
+import io.github.shijianjs.ktjs.dom.webcomponent.attr.AttributeProbe
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -15,7 +16,7 @@ class CustomElementBridgeTest {
 
     @Test
     fun theNativeSpellingWorksOnTheElement() {
-        val probe = newProbe()
+        val probe = AttributeProbe.NAME()
         val child = document.createElement("span")
 
         probe.appendChild(child)
