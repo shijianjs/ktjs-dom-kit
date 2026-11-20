@@ -14,24 +14,6 @@ import io.github.shijianjs.ktjs.demo.page.Blocks.row
 import io.github.shijianjs.ktjs.demo.page.SectionBlock
 import io.github.shijianjs.ktjs.demo.i18n.texts
 
-private class StylingTexts(
-    val title: String,
-    val summary: String,
-    val adoptedHeading: String,
-    val adoptedHint: String,
-    val adoptedNote: String,
-    val hoverLabel: String,
-    val ladderHeading: String,
-    val inlineStep: String,
-    val sheetStep: String,
-    val sharedStep: String,
-    val selectorHeading: String,
-    val selectorHint: String,
-    val selectorNote: String,
-    val chipPlain: String,
-    val chipSelected: String,
-)
-
 private val stylingEnglish: StylingTexts = StylingTexts(
     title = "Stylesheets",
     summary = "A component carries its own sheet and adopts it once; the page and the layout each carry theirs. " +
@@ -89,7 +71,6 @@ internal class StylingPage : DemoPage() {
     private val hoverBox = HoverBox.NAME()
 
     private val selectorStrip = SelectorStrip.NAME()
-
 
     init {
         val adopted = SectionBlock.NAME { show() }

@@ -19,19 +19,6 @@ import web.dom.clickEvent
 import web.events.addHandler
 import web.html.HtmlTagName
 
-private class WebComponentTexts(
-    val title: String,
-    val summary: String,
-    val instancesHeading: String,
-    val instancesHint: String,
-    val addInstanceLabel: String,
-    val incrementLabel: String,
-    val instancesNote: String,
-    val definitionHeading: String,
-    val definitionHint: String,
-    val definitionNote: String,
-)
-
 private val webComponentEnglish: WebComponentTexts = WebComponentTexts(
     title = "Custom elements",
     summary = "A Kotlin class becomes a tag through one adapter: the shadow tree is built in the constructor, " +
@@ -78,7 +65,6 @@ internal class WebComponentPage : DemoPage() {
     private val counters: MutableList<DemoCounter> = mutableListOf()
 
     private var incrementLabel: String = webComponentEnglish.incrementLabel
-
 
     init {
         val instances = SectionBlock.NAME { show() }

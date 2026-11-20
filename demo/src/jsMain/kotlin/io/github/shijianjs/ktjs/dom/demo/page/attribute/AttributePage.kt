@@ -29,30 +29,6 @@ import web.events.addHandler
 import web.html.HTMLElement
 import js.reflect.unsafeCast
 
-private class AttributeTexts(
-    val title: String,
-    val summary: String,
-    val demoHeading: String,
-    val demoHint: String,
-    val incrementLabel: String,
-    val externalLabel: String,
-    val demoNote: String,
-    val declaredHeading: String,
-    val declaredHint: String,
-    val declaredNote: String,
-    val wrapperHeading: String,
-    val wrapperHint: String,
-    val wrapperToggleLabel: String,
-    val wrapperRawLabel: String,
-    val wrapperNote: String,
-    val typedHeading: String,
-    val typedHint: String,
-    val labelSetLabel: String,
-    val labelClearLabel: String,
-    val densityLabel: String,
-    val typedNote: String,
-)
-
 private val attributeEnglish: AttributeTexts = AttributeTexts(
     title = "Attribute-backed properties",
     summary = "attr turns an HTML attribute into a typed Kotlin property: the getter decodes, the setter " +
@@ -112,26 +88,6 @@ private val attributeTexts: Translations<AttributeTexts> = texts(
     Langs.ZH_HANS to attributeChinese,
 )
 
-/** A wrapper's vocabulary: upstream literals are `sealed external interface` values, not strings. */
-private sealed external interface Density
-
-private fun Density(token: String): Density = token.unsafeCast<Density>()
-
-private object Densities {
-    val compact: Density = Density("compact")
-    val comfortable: Density = Density("comfortable")
-    val all: List<Density> = listOf(compact, comfortable)
-}
-
-private val Density.token: String get() = unsafeCast<String>()
-
-/** `aria-label` is optional on every wrapper element: absent must stay distinguishable from `""`. */
-private val HTMLElement.ariaLabelAttr: Attribute<String> get() = attribute("aria-label")
-
-/** The typed form of a literal attribute: `literalAttribute` rejects anything outside [Densities.all]. */
-private val HTMLElement.densityAttr: Attribute<Density>
-    get() = literalAttribute("data-density", Densities.all) { it.token }
-
 /**
  * `attr { }`: a property backed by an HTML attribute. The demo drives the same attribute through two
  * paths — the property setter and a raw `setAttribute` — and shows that both land in one handler.
@@ -153,7 +109,6 @@ internal class AttributePage : DemoPage() {
      * lifetime of the element it watches, so it is held here instead of being disconnected.
      */
     private var typedWatch: AttributeWatch? = null
-
 
     init {
         val demo = SectionBlock.NAME { show() }

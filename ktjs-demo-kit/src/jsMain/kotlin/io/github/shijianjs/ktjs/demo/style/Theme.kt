@@ -12,13 +12,6 @@ import web.storage.localStorage
  * properties are inherited into every shadow tree — no component carries its own `[data-theme]`
  * selector, and no component needs a change when the user's preference flips.
  */
-enum class ThemeMode {
-    LIGHT,
-    DARK,
-
-    /** Delegates to the browser: Lumo's `light-dark` colour scheme. */
-    SYSTEM,
-}
 
 class Theme(private val storageKey: String = "ktjs-demo-theme") {
     var mode: ThemeMode = readStored() ?: ThemeMode.SYSTEM

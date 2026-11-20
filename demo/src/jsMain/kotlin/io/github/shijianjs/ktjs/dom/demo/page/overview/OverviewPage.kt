@@ -18,23 +18,6 @@ import io.github.shijianjs.ktjs.demo.i18n.texts
 import io.github.shijianjs.ktjs.dom.demo.API_URL
 import web.html.HtmlTagName
 
-/** Every string this page shows, in one language. */
-private class OverviewTexts(
-    val title: String,
-    val summary: String,
-    val elementsLink: String,
-    val customElementsLink: String,
-    val apiLink: String,
-    val purposeHeading: String,
-    val body: String,
-    val bullets: List<String>,
-    val coordinatesHeading: String,
-    val coordinatesNote: String,
-    val sourceLabel: String,
-    val nextHeading: String,
-    val nextBody: String,
-)
-
 private val overviewEnglish: OverviewTexts = OverviewTexts(
     title = "ktjs-dom-kit overview",
     summary = "A small set of Kotlin/JS helpers for writing native DOM: typed tags, attribute-backed " +
@@ -96,7 +79,6 @@ private val overviewTexts: Translations<OverviewTexts> = texts(
 internal class OverviewPage : DemoPage() {
 
     private val texts = Binder(overviewTexts)
-
 
     init {
         addLink(texts.bind(anchor("", "#/elements"), { it.elementsLink }))
