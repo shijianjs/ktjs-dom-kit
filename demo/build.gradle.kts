@@ -85,7 +85,7 @@ kotlin {
             // the working tree, never against a released version.
             implementation(project(":ktjs-dom-kit"))
             implementation(project(":ktjs-demo-kit"))
-            implementation("org.jetbrains.kotlin-wrappers:kotlin-browser:2026.11.1")
+            implementation("org.jetbrains.kotlin-wrappers:kotlin-browser:2026.11.2")
         }
 
         jvmTest.dependencies {
