@@ -311,9 +311,6 @@ fun newReadout(initial: String = ""): Readout {
     return Readout.NAME().apply { show(initial) }
 }
 
-/** `newReadout(initial)` spelled the way the pages have always spelled it. */
-fun Readout(initial: String = ""): Readout = newReadout(initial)
-
 /**
  * An append-only log of what an example did, newest line last — **as an element**.
  *
@@ -328,7 +325,7 @@ class EventLog : CustomElementAdapter() {
     private var capacity: Int = 6
 
     /** Drawn until the first line arrives, so an untouched log reads as "nothing yet". */
-    private var placeholder: HTMLElement? = null
+    private var idleLine: HTMLElement? = null
 
     private var built = false
 
@@ -340,15 +337,26 @@ class EventLog : CustomElementAdapter() {
         classList.add(EVENT_LOG)
         if (placeholder != null) {
             val line = HtmlTagName.div { classList.add(EVENT_LINE); textContent = placeholder }
-            this.placeholder = line
+            this.idleLine = line
             append(line)
         }
     }
 
+    /**
+     * Rewrites the line shown while no event has arrived.
+     *
+     * A log that is still untouched has to follow a language switch like every other node; once a line
+     * arrived the placeholder is gone, and this is a no-op.
+     */
+    fun placeholder(text: String) {
+        val line = idleLine ?: return
+        line.textContent = text
+    }
+
     /** Appends one line, dropping the oldest ones past the capacity. */
     fun add(line: String) {
-        placeholder?.remove()
-        placeholder = null
+        idleLine?.remove()
+        idleLine = null
         append(HtmlTagName.div { classList.add(EVENT_LINE); textContent = line })
         while (childElementCount > capacity) {
             firstElementChild?.remove()
@@ -358,7 +366,7 @@ class EventLog : CustomElementAdapter() {
 
     /** Drops every line. */
     fun clear() {
-        placeholder = null
+        idleLine = null
         replaceChildren()
     }
 
@@ -376,7 +384,3 @@ fun newEventLog(capacity: Int = 6, placeholder: String? = null): EventLog {
     EventLog.define()
     return EventLog.NAME().apply { show(capacity, placeholder) }
 }
-
-/** `newEventLog(capacity, placeholder)` spelled the way the pages have always spelled it. */
-fun EventLog(capacity: Int = 6, placeholder: String? = null): EventLog =
-    newEventLog(capacity, placeholder)

@@ -14,7 +14,7 @@ import io.github.shijianjs.ktjs.dom.element.invoke
 import io.github.shijianjs.ktjs.dom.webcomponent.defineIfMissing
 import web.components.CustomElementReference
 import web.dom.TagName
-import io.github.shijianjs.ktjs.demo.page.Readout
+import io.github.shijianjs.ktjs.demo.page.newReadout
 import io.github.shijianjs.ktjs.demo.page.SectionBlock
 import io.github.shijianjs.ktjs.demo.page.codeText
 import io.github.shijianjs.ktjs.demo.page.exampleBox
@@ -145,11 +145,11 @@ internal class AttributePage : DemoPage() {
 
     private val badge = newStepBadge()
 
-    private val readout = Readout()
+    private val readout = newReadout()
 
-    private val wrapperReadout = Readout()
+    private val wrapperReadout = newReadout()
 
-    private val typedReadout = Readout()
+    private val typedReadout = newReadout()
 
     /**
      * The `aria-label` subscription of the typed section. It lives as long as the page, which is the
