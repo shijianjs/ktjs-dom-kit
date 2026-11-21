@@ -12,6 +12,7 @@ import io.github.shijianjs.ktjs.demo.page.Blocks.paragraph
 import io.github.shijianjs.ktjs.demo.page.Blocks.row
 import io.github.shijianjs.ktjs.demo.page.SectionBlock
 import io.github.shijianjs.ktjs.demo.i18n.texts
+import io.github.shijianjs.ktjs.dom.demo.page.DemoCustomElements
 import io.github.shijianjs.ktjs.vaadin.button.createButton
 import web.dom.clickEvent
 import web.events.addHandler
@@ -54,7 +55,7 @@ internal class WebComponentPage : DemoPage() {
             texts.bind(paragraph(), { it.definitionNote }),
         )
 
-        body.append(instances.root, definition.root)
+        body.append(instances.root, definition.root, registrySection().root)
     }
 
     override fun applyTranslation(lang: Lang) {
@@ -74,6 +75,24 @@ internal class WebComponentPage : DemoPage() {
         instanceHost.append(counter)
     }
 
+    /**
+     * The list `ktjs-dom-kit-ksp` writes after its last round: every element of this module, in one
+     * object. Reading it initialises all of their references, and a reference defines its tag in
+     * `init` — so this page shows every tag the demo ships, not only the ones it has touched.
+     */
+    private fun registrySection(): SectionBlock {
+        val section = SectionBlock.NAME { show() }
+        texts.bind(section.heading, { it.registryHeading })
+        texts.bind(section.hint, { it.registryHint })
+
+        section.body.append(
+            row(codeText("DemoCustomElements.TAGS.size // ${DemoCustomElements.TAGS.size}")),
+            row(codeText(DemoCustomElements.TAGS.joinToString(" ") { "<$it>" })),
+            texts.bind(paragraph(), { it.registryNote }),
+        )
+        return section
+    }
+
     companion object : WebComponentPageDefaultReference() {
 
         private val webComponentEnglish: WebComponentTexts = WebComponentTexts(
@@ -89,6 +108,10 @@ internal class WebComponentPage : DemoPage() {
             definitionHint = "Two conditions decide whether the tag upgrades at all.",
             definitionNote = "Without es2015 the compiler emits a function that cannot be constructed; without bridge " +
                 "stripping the first DOM call recurses into itself.",
+            registryHeading = "What this module ships",
+            registryHint = "One generated object lists every element, so nothing has to be registered by hand.",
+            registryNote = "Reading the list initialises each element's reference, and a reference defines its tag " +
+                "in its init: one line defines everything the module ships, pages it has never visited included.",
         )
         private val webComponentChinese: WebComponentTexts = WebComponentTexts(
             title = "自定义元素",
@@ -101,6 +124,10 @@ internal class WebComponentPage : DemoPage() {
             definitionHeading = "必须满足的两件事",
             definitionHint = "这两条决定标签到底会不会升级。",
             definitionNote = "没有 es2015，编译器会发射无法 new 的函数；不剥桥，第一次调用 DOM 方法就会自递归。",
+            registryHeading = "这个模块都发什么",
+            registryHint = "生成的一个对象列全了所有元素，一个都不用手工注册。",
+            registryNote = "读这个列表会初始化每个元素的 reference，而 reference 在自己的 init 里定义标签：" +
+                "一行就定义了模块里的全部标签，包括这个站点还没访问过的页面。",
         )
         private val webComponentTexts: Translations<WebComponentTexts> = texts(
             Langs.EN to webComponentEnglish,

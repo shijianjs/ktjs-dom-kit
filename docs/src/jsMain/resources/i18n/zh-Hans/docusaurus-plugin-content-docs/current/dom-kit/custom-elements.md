@@ -61,48 +61,53 @@ val badge: KtjsBadge = KtjsBadge.NAME { href = "docs/intro" }
 
 ## 处理器生成了什么
 
-`ktjs-dom-kit-ksp` 读类声明，在元素旁边写两样东西：名字，以及 companion 要继承的那个 reference。
+`ktjs-dom-kit-ksp` 读类声明，写两样东西：companion 要继承的那个 reference（连同它 companion object 里的静态
+成员一起），以及每次编译结束时的一个对象——把这批元素全列出来。
 
 ```mermaid
 flowchart LR
-  SRC["class KtjsHero : CustomElementAdapter()<br/>var logoSrc by attr { }<br/>@AttributeName(&quot;title&quot;) var titleText by attr { }<br/>可选 @CustomElementTag"]
-  SRC --> KSP["ktjs-dom-kit-ksp<br/>属性名 → kebab 命名，@AttributeName 优先<br/>类名 → 标签，已带前缀则不再加"]
-  KSP --> ATTRS["KtjsHeroAttributes<br/>const val LOGO_SRC · TITLE<br/>ALL · BY_PROPERTY"]
-  KSP --> REF["KtjsHeroDefaultReference<br/>name · observedAttributes · attributeNames"]
-  ATTRS --> REF
+  SRC["class KtjsHero : CustomElementAdapter()<br/>var logoSrc by attr { }<br/>@AttributeName(&quot;title&quot;) var titleText by attr { }<br/>var kind: Kind by attr { }"]
+  SRC --> KSP["ktjs-dom-kit-ksp<br/>属性名 → kebab 命名，@AttributeName 优先<br/>类名 → 标签，已带前缀则不再加<br/>enum 属性 → codec"]
+  KSP --> REF["KtjsHeroDefaultReference<br/>name · observedAttributes · attributes<br/>companion：LOGO_SRC · TITLE · ALL · ATTRIBUTES"]
   REF --> COMP["companion object : KtjsHeroDefaultReference()"]
-  ATTRS --> LOOKUP["不带名字的 by attr<br/>通过 BY_PROPERTY 找到 attribute"]
+  COMP --> LOOKUP["不带参数的 by attr<br/>通过 ATTRIBUTES 找到名字和 codec"]
+  KSP --> REG["KtjsCustomElements<br/>ALL · TAGS——每次编译一个"]
 ```
 
-那个 object 装着运行时需要的常量与两张表：
-
-```kotlin
-internal object KtjsHeroAttributes {
-    const val LOGO_SRC: String = "logo-src"
-    const val TITLE: String = "title"
-    val ALL: Array<String> = arrayOf(LOGO_SRC, TITLE)
-    val BY_PROPERTY: Map<String, String> = mapOf("logoSrc" to LOGO_SRC, "titleText" to TITLE)
-}
-```
-
-`ALL` 是浏览器当作 `observedAttributes` 读进去的那份。`BY_PROPERTY` 解决另一半问题：委托属性在运行时看不见
-自己的类，只看得见名字，所以 `by attr` 需要一张表才知道 `titleText` 代表的是 `title`。reference 在
-`customElements.define` 时就把这张表注册好——早于任何实例，之后创建的每个委托都能读到它。
-
-reference 把每个参数都填好，所以 companion 只剩一行：
+reference 和常量写在同一个声明里，因为元素在第一个实例出现之前需要的东西全是静态的：
 
 ```kotlin
 internal open class KtjsHeroDefaultReference(
     name: String = "ktjs-hero",
     formAssociated: Boolean? = null,
-    observedAttributes: ReadonlyArray<JsString>? = KtjsHeroAttributes.ALL,
+    observedAttributes: ReadonlyArray<JsString>? = ALL,
     register: Boolean = true,
-    attributeNames: Map<String, String>? = KtjsHeroAttributes.BY_PROPERTY,
-) : CustomElementReferenceAdapter<KtjsHero>(…)
+    attributes: CustomElementAttributes? = ATTRIBUTES,
+) : CustomElementReferenceAdapter<KtjsHero>(…) {
+
+    companion object {
+        const val LOGO_SRC: String = "logo-src"
+        const val TITLE: String = "title"
+        val ALL: Array<String> = arrayOf(LOGO_SRC, TITLE)
+        val ATTRIBUTES: CustomElementAttributes = CustomElementAttributes(
+            names = mapOf("logoSrc" to LOGO_SRC, "titleText" to TITLE),
+        )
+    }
+}
 ```
 
-它的参数是有意留出来的：标签晚点才定义就传 `register = false`（测试里的
-`UpgradeProbeDefaultReference(register = false)`），想换标签就传 `name = …`。
+`ALL` 是浏览器当作 `observedAttributes` 读进去的那份。`ATTRIBUTES` 解决另一半问题：委托属性在运行时看不见
+自己的类，只看得见名字，所以 `by attr` 需要一张表才知道 `titleText` 代表的是 `title`——以及对 enum 属性来说，
+该用哪个 codec 转换。reference 在 `customElements.define` 时就把这张表注册好——早于任何实例，之后创建的每个
+委托都能读到它。
+
+每个参数都留着默认值，传一个就覆盖掉——两种情况都不需要注解，因为 companion 本来就是"这个类自己的选择"该待的
+地方：
+
+```kotlin
+companion object : UpgradeProbeDefaultReference(register = false)              // 标签由测试晚点定义
+companion object : AttributeProbeDefaultReference(name = "ktjs-attr-probe")    // 类名没拼出标签
+```
 
 元素这边既不写 attribute 名，也不写 reference：
 
@@ -112,6 +117,8 @@ class KtjsHero : CustomElementAdapter() {
 
     @AttributeName("title")                                     // attribute 名不是 title-text
     var titleText: String by attr { … }
+
+    var kind: Kind by attr(default = Kind.Primary) { … }        // codec 按类型生成
 
     companion object : KtjsHeroDefaultReference()
 }
@@ -128,12 +135,39 @@ class KtjsHero : CustomElementAdapter() {
 
   ```kotlin
   ksp { arg("ktjs.tagPrefix", "demo-") }        // StepBadge → demo-step-badge
-
-  @CustomElementTag("ktjs-hero")                // 只有这一个类不合默认规则
-  class KtjsHero : CustomElementAdapter() { … }
   ```
+- **enum 属性连 codec 也不用写**：companion 里会有 `KIND_CODEC = enumAttributeCodec(Kind.entries)`，并登记进
+  `ATTRIBUTES.codecs`，所以 `by attr` 连 `codec =` 参数都省了。Kotlin/JS 会擦掉泛型，只有声明处知道类型；
+  内置类型和 enum 以外的类型仍然要自己给。
+- **继承过来的表**：一个元素继承另一个元素时，父类的 `ALL` 与 `ATTRIBUTES` 会被合并进它自己的
+  （`Parent.ALL + arrayOf(…)`、`Parent.ATTRIBUTES.names + mapOf(…)`），因为 `observedAttributes` 属于被定义的
+  那个标签，浏览器并不知道 Kotlin 侧的继承。父类所在模块没跑处理器时不给任何东西——`ktjs-demo-kit` 里的
+  `DemoPage` 是手写的 reference，它的页面只列自己声明的东西。
 - **可见性跟随元素类**：`internal` 的元素得到 `internal` 的声明，因为 public 的 companion 无法继承
   `internal` 的父类。
+
+### 一次编译一个清单对象
+
+最后一轮之后，处理器再写一个文件 `<前缀>CustomElements`，放在元素共有的最深一级包里——或者由
+`ktjs.registryPackage` 指定：
+
+```kotlin
+internal object DemoCustomElements {
+    val ALL: List<CustomElementReferenceAdapter<*>> = listOf<CustomElementReferenceAdapter<*>>(
+        AttributePage,
+        DemoCounter,
+        StepBadge,
+        // ……每个元素一条，每一条都是它的 companion object，也就是它的 reference
+    )
+
+    val TAGS: List<String>
+        get() = ALL.map { it.tag }
+}
+```
+
+读 `ALL` 会初始化每个元素的 companion，而 companion 在自己的 `init` 里定义标签——所以一行就定义了这个模块
+发出去的全部标签，包括路由还没创建过的页面。`TAGS` 是同一份清单的字符串形态，给标记、路由和测试用。传了
+`register = false` 的 companion 仍然不定义标签：清单沿用这个决定，而不是覆盖它。
 
 接入只有两行，写在元素自己所在的模块里：
 
@@ -143,11 +177,12 @@ plugins { id("com.google.devtools.ksp") }
 dependencies { add("kspJs", project(":ktjs-dom-kit-ksp")) }
 ```
 
-本仓库浏览器测试里的 `AttributeProbe` 与 `UpgradeProbe` 就是参考接线：处理器跑在 `jsTest` 上，两者都带
-`@CustomElementTag`（它们的标签是 `ktjs-attr-probe` 与 `ktjs-attr-upgrade-probe`，不是类名），
-`theGeneratedListMatchesTheDeclarations` 拿 `ALL` 和属性实际注册的名字比对。`demo` 模块则是应用形态的同款
-接线：`ktjs.tagPrefix = "demo-"`、九个元素、全仓没有一个标签字面量，`GeneratedReferenceTest` 从外部往这些
-元素上写 attribute，再读它们重绘后的 shadow。
+本仓库浏览器测试里的 `AttributeProbe` 与 `UpgradeProbe` 就是参考接线：处理器跑在 `jsTest` 上，两个 companion
+一个传 `name =`、一个传 `register = false`，`theGeneratedListMatchesTheDeclarations` 拿 `ALL` 和属性实际注册的
+名字比对；`AttributeProbeChild` 是继承那一档——它只声明一个属性，却列出十二个 attribute。`demo` 模块则是应用
+形态的同款接线：`ktjs.tagPrefix = "demo-"`、九个元素、全仓没有一个标签字面量也没有一个 attribute 名字面量，
+`DemoCustomElements` 列全九个，`GeneratedReferenceTest` 从外部往这些元素上写 attribute，再读它们重绘后的
+shadow。
 
 除此之外不再生成东西：没跑处理器的模块照样能编译，因为 `CustomElementReferenceAdapter` 本身是公开的，
 同样的参数手写也能给——那是兜底，不是推荐路径。
@@ -195,10 +230,10 @@ wrapper 侧报在 [kotlin-wrappers#2932](https://github.com/JetBrains/kotlin-wra
 companion object : CustomElementReferenceAdapter<KtjsBadge>(KtjsBadge::class.js, "ktjs-badge")
 ```
 
-`CustomElementReferenceAdapter<T>(clazz, name, formAssociated, observedAttributes, register)` 继承浏览器要的
-`web.components.CustomElementReference`——原来的三个构造参数原样透传——再补上元素需要的两件东西：`NAME`
-（带类型的 `TagName<T>`），以及 `init` 里的注册（除非构造时传 `register = false`，否则调用
-`defineIfMissing(NAME, this)`）。
+`CustomElementReferenceAdapter<T>(clazz, name, formAssociated, observedAttributes, register, attributes)`
+继承浏览器要的 `web.components.CustomElementReference`——原来的三个构造参数原样透传——再补上元素需要的几件
+东西：`NAME`（带类型的 `TagName<T>`）、`tag`、`attr` 委托要读的 `CustomElementAttributes` 表，以及 `init` 里的
+注册（除非构造时传 `register = false`，否则调用 `defineIfMissing(NAME, this)`）。
 
 `defineIfMissing(tag, reference)` 先跑 `stripBridgesFrom`，再 `customElements.define`，标签已注册时直接
 返回。顺序是有原因的，也是它比直接调 `customElements.define` 更该用的理由：定义标签会升级文档里已经存在

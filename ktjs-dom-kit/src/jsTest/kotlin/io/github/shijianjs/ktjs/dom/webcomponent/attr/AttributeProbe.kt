@@ -1,21 +1,17 @@
 package io.github.shijianjs.ktjs.dom.webcomponent.attr
 
-import io.github.shijianjs.ktjs.dom.attribute.AttributeCodec
-import io.github.shijianjs.ktjs.dom.attribute.types.enumAttributeCodec
 import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementAdapter
-import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementTag
 import kotlin.js.JsName
 
-/** Enum for the custom-codec case; `kind` in the markup is the lower-cased constant name. */
+/** Enum for the generated-codec case; `kind` in the markup is the lower-cased constant name. */
 internal enum class ProbeKind { Primary, Secondary }
 
 /**
  * An element whose tag is defined *after* the markup exists, to check the upgrade path: the parser
  * leaves the tag as an unknown element, and `customElements.define` reports the attributes it was
  * carrying. `register = false` on the generated reference keeps its `init` from defining the tag, so a
- * test decides when that happens.
+ * test decides when that happens; `name` is passed because this class is not named after its tag.
  */
-@CustomElementTag("ktjs-attr-upgrade-probe")
 internal class UpgradeProbe : CustomElementAdapter() {
 
     val changes: MutableList<AttributeChange<*>> = mutableListOf()
@@ -23,7 +19,7 @@ internal class UpgradeProbe : CustomElementAdapter() {
     @AttributeName("upgrade-label")
     var label: String by attr { changes.add(it) }
 
-    companion object : UpgradeProbeDefaultReference(register = false)
+    companion object : UpgradeProbeDefaultReference(name = "ktjs-attr-upgrade-probe", register = false)
 }
 
 /**
@@ -32,13 +28,12 @@ internal class UpgradeProbe : CustomElementAdapter() {
  * Every callback appends to [changes], so a test can assert what was reported and in which order.
  * Two callbacks do more than record: `mirror` writes another attribute, `echo` writes itself back.
  *
- * Neither class names an attribute in code. `ktjs-dom-kit-ksp` generates `…Attributes` (the constants,
- * `ALL` for `observedAttributes` and `BY_PROPERTY`, which maps the Kotlin property name to the
- * attribute) and `…DefaultReference`, which the companion extends with no arguments — so `attr` with
- * no name argument still finds the right attribute, including `explicit` → `data-explicit`.
+ * Neither class names an attribute in code. `ktjs-dom-kit-ksp` generates the `…DefaultReference` the
+ * companion extends — with the tag, the `observedAttributes` array, and the `ATTRIBUTES` tables
+ * (`names` and, for the enum property, `codecs`) — so `attr` with no arguments still finds the right
+ * attribute, including `explicit` → `data-explicit` and `kind` → `enumAttributeCodec`.
  */
-@CustomElementTag("ktjs-attr-probe")
-internal class AttributeProbe : CustomElementAdapter() {
+internal open class AttributeProbe : CustomElementAdapter() {
 
     val changes: MutableList<AttributeChange<*>> = mutableListOf()
 
@@ -61,7 +56,7 @@ internal class AttributeProbe : CustomElementAdapter() {
     var internalName: String by attr { changes.add(it) }
 
     @JsName("kind")
-    var kind: ProbeKind by attr(codec = kindCodec, default = ProbeKind.Primary) { changes.add(it) }
+    var kind: ProbeKind by attr(default = ProbeKind.Primary) { changes.add(it) }
 
     var second: Int by attr(default = 5) { changes.add(it) }
 
@@ -82,8 +77,5 @@ internal class AttributeProbe : CustomElementAdapter() {
 
     // Registering is the companion's `init`: `AttributeProbe.NAME` defines the tag on first read, and
     // `AttributeProbe.NAME()` creates a detached probe — no `probeTag()` / `newProbe()` helpers.
-    companion object : AttributeProbeDefaultReference() {
-
-        private val kindCodec: AttributeCodec<ProbeKind> = enumAttributeCodec(ProbeKind.entries)
-    }
+    companion object : AttributeProbeDefaultReference(name = "ktjs-attr-probe")
 }

@@ -36,7 +36,7 @@ import web.html.HTMLElement
  *    attribute returns — no microtask, no frame in which the property and the attribute disagree.
  *    Its price is the contract the platform itself imposes: `attributeChangedCallback` only fires for
  *    attributes the class's static `observedAttributes` lists, and that list is read once, at
- *    `customElements.define` time. The generated reference passes the generated `ALL` array, so every
+ *    `customElements.define` time. The generated reference passes the element's `ALL` array, so every
  *    `by attr` property is listed; an element whose reference is written by hand must list them all.
  *    See [applyInitialAttributes] for the one-time catch-up that keeps a missing entry from silently
  *    doing nothing at startup.
@@ -124,10 +124,9 @@ open class CustomElementAdapter : HTMLElement(), CustomElement.WithCallbacks {
     /**
      * The attribute names this instance's delegates answer to, in declaration order.
      *
-     * Internal, and for one check only: the generated `…Attributes.ALL` that a companion hands to
-     * `observedAttributes` must be exactly this list, and a name the processor failed to generate
-     * would otherwise fail silently — the attribute would read fine and only later external writes
-     * would go unreported.
+     * Internal, and for one check only: the `ALL` array a companion hands to `observedAttributes` must
+     * be exactly this list, and a name the processor failed to generate would otherwise fail
+     * silently — the attribute would read fine and only later external writes would go unreported.
      */
     internal fun attributeNames(): List<String> = attributeDelegates.map { it.name }
 

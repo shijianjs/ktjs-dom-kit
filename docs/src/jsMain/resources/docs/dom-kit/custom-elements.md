@@ -72,51 +72,56 @@ by hand:
 
 ## What the processor generates
 
-`ktjs-dom-kit-ksp` reads the class declarations and writes, next to the element, both the names and the
-reference its companion extends:
+`ktjs-dom-kit-ksp` reads the class declarations and writes two things: the reference the companion
+extends — with its companion-object members inside it — and, once per compilation, an object listing
+every element it generated for.
 
 ```mermaid
 flowchart LR
-  SRC["class KtjsHero : CustomElementAdapter()<br/>var logoSrc by attr { }<br/>@AttributeName(&quot;title&quot;) var titleText by attr { }<br/>optional @CustomElementTag"]
-  SRC --> KSP["ktjs-dom-kit-ksp<br/>property name → kebab case, @AttributeName wins<br/>class name → tag, prefixed unless it already is"]
-  KSP --> ATTRS["KtjsHeroAttributes<br/>const val LOGO_SRC · TITLE<br/>ALL · BY_PROPERTY"]
-  KSP --> REF["KtjsHeroDefaultReference<br/>name · observedAttributes · attributeNames"]
-  ATTRS --> REF
+  SRC["class KtjsHero : CustomElementAdapter()<br/>var logoSrc by attr { }<br/>@AttributeName(&quot;title&quot;) var titleText by attr { }<br/>var kind: Kind by attr { }"]
+  SRC --> KSP["ktjs-dom-kit-ksp<br/>property name → kebab case, @AttributeName wins<br/>class name → tag, prefixed unless it already is<br/>enum property → codec"]
+  KSP --> REF["KtjsHeroDefaultReference<br/>name · observedAttributes · attributes<br/>companion: LOGO_SRC · TITLE · ALL · ATTRIBUTES"]
   REF --> COMP["companion object : KtjsHeroDefaultReference()"]
-  ATTRS --> LOOKUP["by attr without a name<br/>resolves through BY_PROPERTY"]
+  COMP --> LOOKUP["by attr without arguments<br/>resolves the name and the codec through ATTRIBUTES"]
+  KSP --> REG["KtjsCustomElements<br/>ALL · TAGS — one per compilation"]
 ```
 
-The object holds the constants and the two tables the runtime needs:
-
-```kotlin
-internal object KtjsHeroAttributes {
-    const val LOGO_SRC: String = "logo-src"
-    const val TITLE: String = "title"
-    val ALL: Array<String> = arrayOf(LOGO_SRC, TITLE)
-    val BY_PROPERTY: Map<String, String> = mapOf("logoSrc" to LOGO_SRC, "titleText" to TITLE)
-}
-```
-
-`ALL` is what the browser reads as `observedAttributes`. `BY_PROPERTY` exists for the other half of the
-problem: a delegated property cannot see its own class at runtime, only its name, so `by attr` needs a
-table to learn that `titleText` stands for `title`. The reference registers that table at
-`customElements.define`, before any instance exists, and every delegate created afterwards reads it.
-
-The reference fills in every argument, so the companion is one line:
+The reference and the constants live in one declaration, because everything the element needs before
+its first instance is static:
 
 ```kotlin
 internal open class KtjsHeroDefaultReference(
     name: String = "ktjs-hero",
     formAssociated: Boolean? = null,
-    observedAttributes: ReadonlyArray<JsString>? = KtjsHeroAttributes.ALL,
+    observedAttributes: ReadonlyArray<JsString>? = ALL,
     register: Boolean = true,
-    attributeNames: Map<String, String>? = KtjsHeroAttributes.BY_PROPERTY,
-) : CustomElementReferenceAdapter<KtjsHero>(…)
+    attributes: CustomElementAttributes? = ATTRIBUTES,
+) : CustomElementReferenceAdapter<KtjsHero>(…) {
+
+    companion object {
+        const val LOGO_SRC: String = "logo-src"
+        const val TITLE: String = "title"
+        val ALL: Array<String> = arrayOf(LOGO_SRC, TITLE)
+        val ATTRIBUTES: CustomElementAttributes = CustomElementAttributes(
+            names = mapOf("logoSrc" to LOGO_SRC, "titleText" to TITLE),
+        )
+    }
+}
 ```
 
-Its parameters stay open on purpose: a tag that is defined later passes `register = false`
-(`UpgradeProbeDefaultReference(register = false)` in the tests), and a site that wants a different tag
-passes `name = …`.
+`ALL` is what the browser reads as `observedAttributes`. `ATTRIBUTES` is for the other half of the
+problem: a delegated property cannot see its own class at runtime, only its name, so `by attr` needs a
+table to learn that `titleText` stands for `title` — and, for an enum property, which codec converts it.
+The reference registers that table at `customElements.define`, before any instance exists, and every
+delegate created afterwards reads it.
+
+Every parameter keeps a default, and passing one overrides it — no annotation for either case, because
+the companion is already the place a per-class choice belongs:
+
+```kotlin
+companion object : UpgradeProbeDefaultReference(register = false)      // a test defines the tag later
+companion object : AttributeProbeDefaultReference(name = "ktjs-attr-probe")  // the class is not named after its tag
+```
 
 The element then writes neither an attribute name nor a reference:
 
@@ -126,6 +131,8 @@ class KtjsHero : CustomElementAdapter() {
 
     @AttributeName("title")                                     // the attribute is not `title-text`
     var titleText: String by attr { … }
+
+    var kind: Kind by attr(default = Kind.Primary) { … }        // the codec is generated from the type
 
     companion object : KtjsHeroDefaultReference()
 }
@@ -146,9 +153,41 @@ Rules the generator follows:
   ksp { arg("ktjs.tagPrefix", "demo-") }        // StepBadge → demo-step-badge
   ```
 
-  and a single class that does not fit passes `@CustomElementTag("…")` instead of the option.
+- **A codec** for a property whose type is an enum: the companion gets `KIND_CODEC =
+  enumAttributeCodec(Kind.entries)` and files it in `ATTRIBUTES.codecs`, so `by attr` needs no
+  `codec =` argument either. Kotlin/JS erases generics, so the declaration is the only place that
+  knows the type; a type outside the built-ins and enums still needs its own codec.
+- **An inherited list.** An element that extends another element gets the parent's `ALL` and
+  `ATTRIBUTES` merged into its own (`Parent.ALL + arrayOf(…)`, `Parent.ATTRIBUTES.names + mapOf(…)`),
+  because `observedAttributes` belongs to the defined tag and the browser knows nothing of Kotlin
+  inheritance. A parent whose module does not run the processor contributes nothing — `DemoPage` in
+  `ktjs-demo-kit` is written by hand, and its pages list only what they declare.
 - **The visibility follows the element**: an `internal` element gets `internal` declarations, because a
   public companion cannot extend an `internal` supertype.
+
+### One object per compilation
+
+After its last round the processor writes one more file, `<Prefix>CustomElements`, in the deepest
+package the elements share — or wherever `ktjs.registryPackage` says:
+
+```kotlin
+internal object DemoCustomElements {
+    val ALL: List<CustomElementReferenceAdapter<*>> = listOf<CustomElementReferenceAdapter<*>>(
+        AttributePage,
+        DemoCounter,
+        StepBadge,
+        // … one entry per element, each one its companion object, that is: its reference
+    )
+
+    val TAGS: List<String>
+        get() = ALL.map { it.tag }
+}
+```
+
+Reading `ALL` initialises every element's companion, and a companion defines its tag in its `init` — so
+one reference defines everything the module ships, pages a router has not created yet included. `TAGS`
+is the same list as the strings the browser knows, for markup, routing and tests. A companion that
+passed `register = false` stays undefined; the list inherits that decision instead of overriding it.
 
 Wire it in two lines, next to the element's own module:
 
@@ -159,11 +198,14 @@ dependencies { add("kspJs", project(":ktjs-dom-kit-ksp")) }
 ```
 
 `AttributeProbe` and `UpgradeProbe` in this repository's browser tests are the reference wiring: the
-processor runs over `jsTest`, both classes carry `@CustomElementTag` (their tags are `ktjs-attr-probe`
-and `ktjs-attr-upgrade-probe`, not the class names), and `theGeneratedListMatchesTheDeclarations`
-compares `ALL` with the names the properties registered. The `demo` module is the same wiring in an
-application shape: `ktjs.tagPrefix = "demo-"`, nine elements, no literal tag anywhere, and
-`GeneratedReferenceTest` writes attributes onto them from the outside and reads the repainted shadow.
+processor runs over `jsTest`, one companion passes `name =` and the other `register = false`,
+`theGeneratedListMatchesTheDeclarations` compares `ALL` with the names the properties registered, and
+`AttributeProbeChild` is the inheritance case — it declares one property and lists twelve attributes.
+The `demo` module is the same wiring in an application shape: `ktjs.tagPrefix = "demo-"`, nine elements,
+no literal tag or attribute name anywhere, `DemoCustomElements` listing all nine, and
+`GeneratedReferenceTest` writing attributes onto them from the outside and reading the repainted
+shadow.
+
 
 Nothing else is generated: a module that does not run the processor still compiles, because
 `CustomElementReferenceAdapter` itself is public and takes the same arguments by hand — that is the
@@ -222,11 +264,11 @@ no `…Super` forwarders. (A `@JsName` alias is not even allowed on an override.
 companion object : CustomElementReferenceAdapter<KtjsBadge>(KtjsBadge::class.js, "ktjs-badge")
 ```
 
-`CustomElementReferenceAdapter<T>(clazz, name, formAssociated, observedAttributes, register)` extends
-the `web.components.CustomElementReference` the browser wants — the three original arguments are passed
-through unchanged — and adds the two things an element needs on top: `NAME`, a typed `TagName<T>`, and
-registration inside its `init`, which calls `defineIfMissing(NAME, this)` unless it was built with
-`register = false`.
+`CustomElementReferenceAdapter<T>(clazz, name, formAssociated, observedAttributes, register, attributes)`
+extends the `web.components.CustomElementReference` the browser wants — the three original arguments are
+passed through unchanged — and adds the things an element needs on top: `NAME`, a typed `TagName<T>`, `tag`,
+the `CustomElementAttributes` table the `attr` delegates read, and registration inside its `init`, which
+calls `defineIfMissing(NAME, this)` unless it was built with `register = false`.
 
 `defineIfMissing(tag, reference)` runs `stripBridgesFrom` and then `customElements.define`, and returns
 immediately if the tag is already registered. The order matters and is the reason not to call

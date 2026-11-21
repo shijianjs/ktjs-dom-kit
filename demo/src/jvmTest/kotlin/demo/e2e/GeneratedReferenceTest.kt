@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test
  *
  * Every element in this demo extends `…DefaultReference()` and names no attribute in code, so this is
  * the end-to-end proof that the generated tag, the generated `observedAttributes` and the generated
- * `BY_PROPERTY` table all land where the runtime expects them: the tag is the one the markup and the
+ * `ATTRIBUTES` tables all land where the runtime expects them: the tag is the one the markup and the
  * router use, the list is the one the browser reads, and an external `setAttribute` — the case a
  * synchronous `attributeChangedCallback` misses when a name is not registered — repaints the element.
  *
@@ -41,8 +41,8 @@ class GeneratedReferenceTest(private val browser: Browser) {
 
         page.navigate(DemoServer.baseUrl + "#/custom-elements")
         page.waitForTag("demo-counter")
-        // The list comes from `DemoCounterAttributes.ALL`, which the processor built from `value` and
-        // `incrementLabel`; nothing in the element's own file names either of them.
+        // The list comes from `DemoCounterDefaultReference.ALL`, which the processor built from `value`
+        // and `incrementLabel`; nothing in the element's own file names either of them.
         assertEquals(
             listOf("value", "increment-label"),
             page.evaluate("() => customElements.get('demo-counter').observedAttributes"),
@@ -52,7 +52,15 @@ class GeneratedReferenceTest(private val browser: Browser) {
         page.setAttribute("demo-counter", "value", "7")
         assertEquals("7", page.textOf("demo-counter", ".counter__value"))
 
-        // `labelText` stands for `label` through `@AttributeName`, and `BY_PROPERTY` is what tells
+        // This page reads `DemoCustomElements.TAGS`, which initialises every element's reference and
+        // therefore defines every tag — including the ones belonging to pages the router has not
+        // created yet. `demo-step-badge` lives on another page and is defined all the same.
+        assertEquals(
+            "function",
+            page.evaluate("() => typeof customElements.get('demo-step-badge')"),
+        )
+
+        // `labelText` stands for `label` through `@AttributeName`, and `ATTRIBUTES.names` is what tells
         // the delegate that; `step` needs no annotation, the kebab case is the same string.
         page.navigate(DemoServer.baseUrl + "#/stylesheets")
         page.waitForTag("demo-hover-box")

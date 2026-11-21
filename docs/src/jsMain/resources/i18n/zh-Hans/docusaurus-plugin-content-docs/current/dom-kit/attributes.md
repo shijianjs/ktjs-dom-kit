@@ -31,13 +31,13 @@ flowchart LR
 `observedAttributes` 列出的属性触发。那份名单由生成的 reference 传进去，所以「注册」这件事只要继承它
 就自动成立——见[注册契约](custom-elements.md#observedattributes-就是契约)。
 
-`attr` 是 inline 函数，`name`、`default`、`codec` 与变化回调都可省；模块里跑了处理器之后，名字也不必在
-调用处写：
+`attr` 是 inline 函数，`name`、`default`、`codec` 与变化回调都可省；模块里跑了处理器之后，名字不必在
+调用处写，enum 的 codec 也不必：
 
 ```kotlin
 var logoSrc: String by attr                                            // logo-src
 var ratio: Double by attr(default = 1.0) { … }
-var kind: ActionKind by attr(codec = enumAttributeCodec(ActionKind.entries), default = ActionKind.Primary)
+var kind: ActionKind by attr(default = ActionKind.Primary)             // codec 按类型生成
 ```
 
 [name] 参数是给「没有处理器」的模块留的：只有在那里、且 attribute 不是属性名的中划线形式时才需要传。
@@ -46,11 +46,11 @@ var kind: ActionKind by attr(codec = enumAttributeCodec(ActionKind.entries), def
 
 attribute 名就是属性名的中划线形式：`maxCount` → `max-count`、`XMLHttp` → `xml-http`。规则是在「一个词的
 开头的大写字母」前加连字符；数字与已有的连字符保持原样。`@AttributeName("…")` 可以覆盖它，两者一起被
-`ktjs-dom-kit-ksp` 编译成这个类的「属性名 → attribute 名」表：
+`ktjs-dom-kit-ksp` 编译进元素生成的那个 reference：
 
 ```mermaid
 flowchart LR
-  P["var titleText: String by attr"] --> T{"类的表<br/>BY_PROPERTY"}
+  P["var titleText: String by attr"] --> T{"…DefaultReference.ATTRIBUTES.names"}
   T -- "titleText → title" --> N["委托读到的那个 attribute"]
   T -. "表里没有" .-> K["属性名的中划线形式"]
   T -. "没有表（没跑处理器）" .-> K
@@ -105,8 +105,15 @@ object InstantCodec : AttributeCodec<Instant> {
 ```kotlin
 enum class ActionKind { Primary, Secondary }
 
-var kind: ActionKind by attr(codec = enumAttributeCodec(ActionKind.entries), default = ActionKind.Primary)
+// 在元素里：处理器看得见属性类型，自己生成 codec
+var kind: ActionKind by attr(default = ActionKind.Primary)
+
+// wrapper 元素上，或者没跑处理器的模块里：自己写出来
+val kind: Attribute<ActionKind> get() = attribute("kind", enumAttributeCodec(ActionKind.entries))
 ```
+
+生成的 codec 落在元素的 companion 里（`KIND_CODEC`），登记进 `ATTRIBUTES.codecs`，所以 enum 类型的
+`by attr` 连 `codec =` 参数都不必传。内置类型和 enum 以外的类型仍然要自己给：只有声明处知道类型。
 
 ## 别人的元素：一个绑定到元素的属性对象
 

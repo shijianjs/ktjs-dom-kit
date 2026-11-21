@@ -29,9 +29,9 @@ import web.html.HTMLElement
  *
  * `DemoCounterDefaultReference` is what `ktjs-dom-kit-ksp` generates: a subclass with every argument
  * filled in — the class, the tag (the class name in kebab case, behind a configured prefix unless the
- * name already carries it), the `observedAttributes` array and the property-name table the `attr`
- * delegations read. Extending this class by hand, spelling out those arguments once per element, is
- * the fallback for a module that does not run the processor.
+ * name already carries it), the `observedAttributes` array and the [CustomElementAttributes] the `attr`
+ * delegations read. Extending this class by hand, spelling out those arguments once per element, is the
+ * fallback for a module that does not run the processor.
  *
  * The three constructor parameters of [CustomElementReference] keep their meaning and default; [name]
  * is the tag, and [register] is the one addition — `false` keeps the reference (the constructor, the
@@ -49,20 +49,23 @@ open class CustomElementReferenceAdapter<T : HTMLElement>(
     observedAttributes: ReadonlyArray<JsString>? = null,
     register: Boolean = true,
     /**
-     * Property name → attribute name for this element class. Registered before the tag is defined,
-     * so every instance constructed afterwards — the ones `define` upgrades included — resolves
-     * `by attr` without a name argument. The generated `…DefaultReference` passes
-     * `…Attributes.BY_PROPERTY`; a hand-written reference leaves it `null` and keeps the kebab-case
-     * rule.
+     * The tables this element class's `by attr` properties resolve against, registered before the tag
+     * is defined — so every instance constructed afterwards, the ones `define` upgrades included,
+     * needs no argument in `attr`. The generated `…DefaultReference` passes the companion's
+     * `ATTRIBUTES`; a hand-written reference leaves it `null` and keeps the kebab-case rule and the
+     * built-in codecs.
      */
-    attributeNames: Map<String, String>? = null,
+    attributes: CustomElementAttributes? = null,
 ) : CustomElementReference<T>(clazz, formAssociated, observedAttributes) {
 
     /** The tag this reference defines; applied to a block it creates the element and configures it. */
     val NAME: TagName<T> = TagName(name)
 
+    /** The tag as the string the browser knows it by — `NAME` is the same tag, typed. */
+    val tag: String = name
+
     init {
-        if (attributeNames != null) AttributeNameRegistry.register(clazz, attributeNames)
+        if (attributes != null) ElementAttributesRegistry.register(clazz, attributes)
         if (register) defineIfMissing(NAME, this)
     }
 }

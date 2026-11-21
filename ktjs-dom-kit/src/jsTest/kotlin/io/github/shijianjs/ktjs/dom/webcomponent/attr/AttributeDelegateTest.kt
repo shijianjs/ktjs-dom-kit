@@ -32,7 +32,7 @@ class AttributeDelegateTest {
     fun theGeneratedListMatchesTheDeclarations() {
         val probe = AttributeProbe.NAME()
 
-        assertEquals(AttributeProbeAttributes.ALL.toList(), probe.attributeNames())
+        assertEquals(AttributeProbeDefaultReference.ALL.toList(), probe.attributeNames())
     }
 
     @Test

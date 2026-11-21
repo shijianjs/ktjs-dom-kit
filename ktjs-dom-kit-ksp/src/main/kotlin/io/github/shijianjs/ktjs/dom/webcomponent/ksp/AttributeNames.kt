@@ -33,6 +33,9 @@ internal fun attributeNameOf(propertyName: String): String {
 internal fun constantNameOf(propertyName: String): String =
     attributeNameOf(propertyName).replace('-', '_').uppercase()
 
+/** `kind` → `KIND_CODEC`: the generated codec of an enum-typed property, next to its attribute constant. */
+internal fun codecNameOf(propertyName: String): String = constantNameOf(propertyName) + "_CODEC"
+
 /**
  * The tag of an element class whose name already carries the prefix, or the prefix followed by its
  * kebab case.
@@ -45,4 +48,31 @@ internal fun constantNameOf(propertyName: String): String =
 internal fun tagOf(prefix: String, className: String): String {
     val kebab = attributeNameOf(className)
     return if (prefix.isEmpty() || kebab.startsWith(prefix)) kebab else prefix + kebab
+}
+
+/**
+ * Where the element registry goes when the `ktjs.registryPackage` option is absent: the deepest
+ * package the elements share, so the object sits above them all and `null` when they share nothing
+ * (two unrelated top-level packages mean nobody agreed on a place).
+ */
+internal fun commonPackageOf(packages: List<String>): String? {
+    if (packages.isEmpty()) return null
+    val common = packages.map { it.split('.') }.reduce { left, right ->
+        left.zip(right).takeWhile { (one, other) -> one == other }.map { it.first }
+    }
+    return if (common.isEmpty()) null else common.joinToString(".")
+}
+
+/**
+ * The registry object's name, derived from the tag prefix: `demo-` → `DemoCustomElements`, `ktjs-` →
+ * `KtjsCustomElements`, no prefix at all → `CustomElements`.
+ *
+ * One object per compilation, named after the family of tags it lists, so two modules of one site can
+ * both be imported without colliding.
+ */
+internal fun registryNameOf(tagPrefix: String): String {
+    val prefix = tagPrefix.split('-')
+        .filter { it.isNotEmpty() }
+        .joinToString("") { it.replaceFirstChar(Char::uppercaseChar) }
+    return prefix + "CustomElements"
 }

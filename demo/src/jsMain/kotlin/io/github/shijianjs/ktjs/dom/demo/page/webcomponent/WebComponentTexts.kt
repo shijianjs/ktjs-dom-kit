@@ -13,4 +13,7 @@ internal class WebComponentTexts(
     val definitionHeading: String,
     val definitionHint: String,
     val definitionNote: String,
+    val registryHeading: String,
+    val registryHint: String,
+    val registryNote: String,
 )

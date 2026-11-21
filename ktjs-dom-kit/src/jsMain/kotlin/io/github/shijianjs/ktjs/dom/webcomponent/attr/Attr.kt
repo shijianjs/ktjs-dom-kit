@@ -24,8 +24,8 @@ import js.reflect.unsafeCast
  *   writes it, so the DOM is the only place the value lives. An attribute set from outside (markup,
  *   `setAttribute`, devtools) is visible to the getter immediately.
  * - **The name is the property name in kebab-case** (`logoSrc` → `logo-src`), unless the property
- *   carries `@AttributeName("…")` — `ktjs-dom-kit-ksp` writes both into the class's generated
- *   `…Attributes.BY_PROPERTY` table, which its reference hands to the element, so the name is authored
+ *   carries `@AttributeName("…")` — `ktjs-dom-kit-ksp` writes both into the element's generated
+ *   `…DefaultReference.ATTRIBUTES`, which the reference hands to the element, so the name is authored
  *   once and `attr` needs no argument. Native spellings are not special-cased: `tabIndex` needs
  *   `@AttributeName("tabindex")`, and a property named like an `HTMLElement` member (`title`, `id`,
  *   `hidden`) has to be named differently and mapped the same way (`titleText` → `title`). The [name]
@@ -36,8 +36,10 @@ import js.reflect.unsafeCast
  *   `@JsName("titleText")` makes it emit real `get` / `set` accessors, so that
  *   `element.titleText = "x"` works from the page. Kotlin callers do not need it.
  * - **Values are converted by [codec]**, which defaults to the built-in one for [T]
- *   (`StringAttributeCodec`, `BooleanAttributeCodec`, `IntAttributeCodec`, `DoubleAttributeCodec`).
- *   Pass a codec for any other type; see `enumAttributeCodec`.
+ *   (`StringAttributeCodec`, `BooleanAttributeCodec`, `IntAttributeCodec`, `DoubleAttributeCodec`)
+ *   and, when the property's type is an enum, to the one the processor generates for it
+ *   (`enumAttributeCodec(Kind.entries)`, filed in the same `ATTRIBUTES`). Any other type needs a codec
+ *   of its own: Kotlin/JS erases generics, so the declaration is the only place that knows it.
  * - **A string assigned from JavaScript is the attribute's raw value.** The property is also the
  *   element's JS-facing API, and a JS caller only has the value it was given: React 19 assigns every
  *   matching JSX prop to the property, so `<ktjs-action kind="secondary">` becomes
@@ -51,7 +53,7 @@ import js.reflect.unsafeCast
  *   again is not a change, and removing the attribute is one.
  * - **The name has to be registered.** `attributeChangedCallback` only fires for attributes the element
  *   class lists in its static `observedAttributes`, and that list is read once, at
- *   `customElements.define`. The generated `…DefaultReference` passes the generated `ALL` array, so
+ *   `customElements.define`. The generated `…DefaultReference` passes the companion's `ALL` array, so
  *   every `by attr` property is registered by extending it; an element whose reference is written by
  *   hand must list the names itself, or a later external write to an unlisted attribute goes
  *   unreported.
@@ -65,34 +67,33 @@ inline fun <reified T> attr(
     default: T? = null,
     codec: AttributeCodec<T>? = null,
     noinline onChange: (AttributeChange<T>) -> Unit = {},
-): AttributeProvider<T> = attributeProvider(name, default, codec ?: defaultAttributeCodec<T>(), onChange)
+): AttributeProvider<T> = attributeProvider(name, default, codec ?: builtInAttributeCodec<T>(), onChange)
 
 /** Constructs the provider outside the inline function; see [attr]. */
 @PublishedApi
 internal fun <T> attributeProvider(
     name: String?,
     default: T?,
-    codec: AttributeCodec<T>,
+    codec: AttributeCodec<T>?,
     onChange: (AttributeChange<T>) -> Unit,
 ): AttributeProvider<T> = AttributeProvider(name, default, codec, onChange)
 
 /**
- * The codec [attr] picks when the caller passes none.
+ * The codec Kotlin/JS can pick from the reified [T] alone, or `null` when there is none.
  *
- * Kotlin/JS has no runtime generics, so the type is matched on the reified [T] instead of by
- * reflection on a value.
+ * No reflection is possible on this target — generics are erased — so a type is matched on the reified
+ * class. `null` is what lets the element's generated table answer first: an enum property has a codec
+ * there, and a type nobody covers reaches
+ * [io.github.shijianjs.ktjs.dom.webcomponent.attr.AttributeProvider] with nothing to convert it.
  */
 @PublishedApi
-internal inline fun <reified T> defaultAttributeCodec(): AttributeCodec<T> {
+internal inline fun <reified T> builtInAttributeCodec(): AttributeCodec<T>? {
     val codec: AttributeCodec<*> = when (T::class) {
         String::class -> StringAttributeCodec
         Boolean::class -> BooleanAttributeCodec
         Int::class -> IntAttributeCodec
         Double::class -> DoubleAttributeCodec
-        else -> error(
-            "No built-in AttributeCodec for ${T::class.simpleName}; " +
-                "pass one with attr(codec = …), or use enumAttributeCodec(values).",
-        )
+        else -> return null
     }
     return unsafeCast(codec)
 }

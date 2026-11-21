@@ -34,12 +34,12 @@ reference passes that list, so a `by attr` property is registered by inheriting 
 [the registration contract](custom-elements.md#observedattributes-is-the-contract).
 
 `attr` is an inline function taking `name`, `default`, `codec` and the change callback, all optional —
-and in a module that runs the processor the name is never passed:
+and in a module that runs the processor neither the name nor the codec of an enum is ever passed:
 
 ```kotlin
 var logoSrc: String by attr                                            // logo-src
 var ratio: Double by attr(default = 1.0) { … }
-var kind: ActionKind by attr(codec = enumAttributeCodec(ActionKind.entries), default = ActionKind.Primary)
+var kind: ActionKind by attr(default = ActionKind.Primary)             // codec generated from the type
 ```
 
 The [name] parameter is for a module without the processor: pass it only when the attribute is not the
@@ -50,11 +50,11 @@ property name in kebab case there.
 The attribute name is the property name in kebab case: `maxCount` → `max-count`, `XMLHttp` →
 `xml-http`. A dash goes before an upper-case letter that starts a word; digits and existing dashes are
 left alone. `@AttributeName("…")` overrides it, and the two together are what
-`ktjs-dom-kit-ksp` compiles into the class's property-name table:
+`ktjs-dom-kit-ksp` compiles into the element's generated reference:
 
 ```mermaid
 flowchart LR
-  P["var titleText: String by attr"] --> T{"class table<br/>BY_PROPERTY"}
+  P["var titleText: String by attr"] --> T{"…DefaultReference.ATTRIBUTES.names"}
   T -- "titleText → title" --> N["the attribute the delegate reads"]
   T -. "no entry" .-> K["property name in kebab case"]
   T -. "no table (no processor)" .-> K
@@ -112,8 +112,16 @@ name by default), also accepting the constant name itself when decoding:
 ```kotlin
 enum class ActionKind { Primary, Secondary }
 
-var kind: ActionKind by attr(codec = enumAttributeCodec(ActionKind.entries), default = ActionKind.Primary)
+// in an element: the processor sees the property type and generates the codec
+var kind: ActionKind by attr(default = ActionKind.Primary)
+
+// on a wrapper element, or in a module without the processor: write it out
+val kind: Attribute<ActionKind> get() = attribute("kind", enumAttributeCodec(ActionKind.entries))
 ```
+
+The generated codec sits in the element's companion (`KIND_CODEC`), filed in `ATTRIBUTES.codecs`, so a
+`by attr` property of an enum type needs no `codec =` argument either. Any other type still needs one:
+the declaration is the only place that knows it.
 
 ## Attributes on someone else's element
 
