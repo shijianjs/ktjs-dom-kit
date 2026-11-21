@@ -3,6 +3,7 @@ package io.github.shijianjs.ktjs.dom.webcomponent.attr
 import io.github.shijianjs.ktjs.dom.element.invoke
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 /**
  * The registry the processor writes after its last round: one object listing every element of the
@@ -18,10 +19,22 @@ class CustomElementsRegistryTest {
     @Test
     fun everyElementTheProcessorGeneratedIsListed() {
         assertEquals(
-            listOf("ktjs-attr-probe", "ktjs-attribute-probe-child", "ktjs-attr-upgrade-probe"),
+            listOf(
+                "ktjs-attr-probe",
+                "ktjs-attribute-probe-child",
+                "ktjs-subclassed-probe-child",
+                "ktjs-attr-upgrade-probe",
+            ),
             KtjsCustomElements.TAGS,
         )
-        assertEquals(3, KtjsCustomElements.ALL.size)
+        assertEquals(4, KtjsCustomElements.ALL.size)
+    }
+
+    @Test
+    fun aBaseThatIsOnlyEverSubclassedIsNotAnEntry() {
+        // An entry is an element's companion object, and the generated list would not compile for a
+        // class without one: `SubclassedProbeBase` declares attributes and defines no tag itself.
+        assertTrue("ktjs-subclassed-probe-base" !in KtjsCustomElements.TAGS)
     }
 
     @Test

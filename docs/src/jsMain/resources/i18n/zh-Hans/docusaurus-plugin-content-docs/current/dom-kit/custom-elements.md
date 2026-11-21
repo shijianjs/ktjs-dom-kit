@@ -141,8 +141,10 @@ class KtjsHero : CustomElementAdapter() {
   内置类型和 enum 以外的类型仍然要自己给。
 - **继承过来的表**：一个元素继承另一个元素时，父类的 `ALL` 与 `ATTRIBUTES` 会被合并进它自己的
   （`Parent.ALL + arrayOf(…)`、`Parent.ATTRIBUTES.names + mapOf(…)`），因为 `observedAttributes` 属于被定义的
-  那个标签，浏览器并不知道 Kotlin 侧的继承。父类所在模块没跑处理器时不给任何东西——`ktjs-demo-kit` 里的
-  `DemoPage` 是手写的 reference，它的页面只列自己声明的东西。
+  那个标签，浏览器并不知道 Kotlin 侧的继承。属性属于声明它的那个类：子类只做加法，什么都不用重抄一遍。
+  `override` 一个委托属性是编译错误——`override` 并不会替换父类的委托，父类的初始化器照样执行，那个 attribute
+  会落得两个委托。父类所在模块没跑处理器时不给任何东西——`ktjs-demo-kit` 里的 `DemoPage` 是手写的 reference，
+  它的页面只列自己声明的东西。
 - **可见性跟随元素类**：`internal` 的元素得到 `internal` 的声明，因为 public 的 companion 无法继承
   `internal` 的父类。
 
@@ -169,6 +171,9 @@ internal object DemoCustomElements {
 发出去的全部标签，包括路由还没创建过的页面。`TAGS` 是同一份清单的字符串形态，给标记、路由和测试用。传了
 `register = false` 的 companion 仍然不定义标签：清单沿用这个决定，而不是覆盖它。
 
+清单里的一条**就是**元素的 companion object，所以没有 companion 的类不进清单：只被子类化的基类会保留它的
+`…DefaultReference`（子类的表从那里合并），但它自己没有标签。`abstract` 的类同理。
+
 接入只有两行，写在元素自己所在的模块里：
 
 ```kotlin
@@ -179,8 +184,9 @@ dependencies { add("kspJs", project(":ktjs-dom-kit-ksp")) }
 
 本仓库浏览器测试里的 `AttributeProbe` 与 `UpgradeProbe` 就是参考接线：处理器跑在 `jsTest` 上，两个 companion
 一个传 `name =`、一个传 `register = false`，`theGeneratedListMatchesTheDeclarations` 拿 `ALL` 和属性实际注册的
-名字比对；`AttributeProbeChild` 是继承那一档——它只声明一个属性，却列出十二个 attribute。`demo` 模块则是应用
-形态的同款接线：`ktjs.tagPrefix = "demo-"`、九个元素、全仓没有一个标签字面量也没有一个 attribute 名字面量，
+名字比对；`AttributeProbeChild` 是继承那一档——它只声明一个属性，却列出十二个 attribute。`SubclassedProbeBase`
+是没有自己标签的那一档：没有 companion、两条声明，`SubclassedProbeChild` 照样把两条都列出来。`demo` 模块则是
+应用形态的同款接线：`ktjs.tagPrefix = "demo-"`、九个元素、全仓没有一个标签字面量也没有一个 attribute 名字面量，
 `DemoCustomElements` 列全九个，`GeneratedReferenceTest` 从外部往这些元素上写 attribute，再读它们重绘后的
 shadow。
 

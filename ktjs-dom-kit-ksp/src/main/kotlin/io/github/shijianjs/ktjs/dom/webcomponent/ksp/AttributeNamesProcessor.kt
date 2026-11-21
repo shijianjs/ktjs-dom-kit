@@ -10,9 +10,12 @@ import com.google.devtools.ksp.processing.SymbolProcessorEnvironment
 import com.google.devtools.ksp.symbol.ClassKind
 import com.google.devtools.ksp.symbol.KSAnnotated
 import com.google.devtools.ksp.symbol.KSClassDeclaration
+import com.google.devtools.ksp.symbol.KSClassifierReference
 import com.google.devtools.ksp.symbol.KSDeclaration
 import com.google.devtools.ksp.symbol.KSFile
 import com.google.devtools.ksp.symbol.KSPropertyDeclaration
+import com.google.devtools.ksp.symbol.KSTypeReference
+import com.google.devtools.ksp.symbol.Modifier
 import com.google.devtools.ksp.symbol.Visibility
 import com.squareup.kotlinpoet.BOOLEAN
 import com.squareup.kotlinpoet.ClassName
@@ -197,6 +200,18 @@ internal class AttributeNamesProcessor(
             )
             return
         }
+        val overridden = properties.filter { it.findOverridee()?.isDelegated() == true }
+        if (overridden.isNotEmpty()) {
+            logger.error(
+                overridden.joinToString { "'$qualifiedName.${it.simpleName.asString()}'" } +
+                    " overrides a delegated property. An `override` does not replace the delegate of the base " +
+                    "class: its initializer still runs, so the attribute would have two delegates — the base's " +
+                    "`onChange` fires for a property it no longer reads, and `writeDefaults` writes the " +
+                    "attribute twice. Declare the attribute in one of the two classes.",
+                declaration,
+            )
+            return
+        }
 
         val tag = tagOf(tagPrefix, attributeNameOf(simpleName))
         val referenceName = "${simpleName}DefaultReference"
@@ -213,7 +228,53 @@ internal class AttributeNamesProcessor(
             internal = internal,
         )
         spec.writeTo(codeGenerator, Dependencies(aggregating = false, source.file))
-        elements.add(Generated(qualifiedName, packageName, elementClass, internal, source.file))
+        if (declaration.isRegistryEntry()) {
+            elements.add(Generated(qualifiedName, packageName, elementClass, internal, source.file))
+        }
+    }
+
+    /**
+     * Whether the registry may name this class.
+     *
+     * An entry is the element's *companion object*, because a class name in expression position means
+     * its companion and that is the reference the list holds. So a class without a companion is out —
+     * a base that is only ever subclassed has no tag of its own — and so is an `abstract` one, which
+     * nothing could instantiate. Both still get their `…DefaultReference` file: a subclass merges
+     * their tables into its own, and the generated code of that subclass names them.
+     */
+    private fun KSClassDeclaration.isRegistryEntry(): Boolean {
+        if (classKind != ClassKind.CLASS || Modifier.ABSTRACT in modifiers) return false
+        val companion = declarations
+            .filterIsInstance<KSClassDeclaration>()
+            .firstOrNull { it.isCompanionObject } ?: return false
+        return companion.hasReferenceSupertype("${simpleName.asString()}DefaultReference")
+    }
+
+    /**
+     * Whether a companion object's supertype is a reference.
+     *
+     * The `…DefaultReference` this round generates for the class cannot be resolved yet — it is written
+     * after the symbol pass — so the name the companion `extends` spells is the first answer, and only
+     * a reference written by hand, or one from another module, is resolved and walked.
+     */
+    private fun KSClassDeclaration.hasReferenceSupertype(expectedSimpleName: String): Boolean =
+        superTypes.any { reference ->
+            (reference.element as? KSClassifierReference)?.referencedName() == expectedSimpleName ||
+                reference.extendsReferenceAdapter()
+        }
+
+    private fun KSTypeReference.extendsReferenceAdapter(): Boolean {
+        val declaration = resolve().declaration as? KSClassDeclaration ?: return false
+        return declaration.extendsReferenceAdapter(depth = 0)
+    }
+
+    private fun KSClassDeclaration.extendsReferenceAdapter(depth: Int): Boolean {
+        if (depth > 8) return false
+        return superTypes.any { reference ->
+            val declaration = reference.resolve().declaration
+            declaration.qualifiedName?.asString() == REFERENCE_ADAPTER_NAME ||
+                (declaration is KSClassDeclaration && declaration.extendsReferenceAdapter(depth + 1))
+        }
     }
 
     /**
@@ -424,6 +485,10 @@ internal class AttributeNamesProcessor(
      * Reading it initialises every `…DefaultReference`, and their `init` is what calls
      * `customElements.define`: `KtjsCustomElements.ALL` is a "define everything this module ships" in
      * one reference, and `TAGS` is the same list as strings, for markup, routing and tests.
+     *
+     * Only classes a list entry can name are in it: an element whose companion object is its reference,
+     * and not an `abstract` one. A base that is only ever subclassed keeps its generated reference for
+     * its subclasses to merge from, but has no tag and no entry.
      */
     private fun writeRegistry() {
         if (elements.isEmpty()) return
@@ -501,6 +566,10 @@ internal class AttributeNamesProcessor(
         const val INDENT = "    "
 
         val ARRAY_OF_STRING: TypeName = ClassName("kotlin", "Array").parameterizedBy(STRING)
+
+        /** For a name-only comparison: a reference from another module is resolved, type arguments are not. */
+        val REFERENCE_ADAPTER_NAME: String = REFERENCE_ADAPTER.canonicalName
+
         val READONLY_JS_STRINGS: TypeName =
             ClassName("js.array", "ReadonlyArray").parameterizedBy(ClassName("kotlin.js", "JsString"))
     }

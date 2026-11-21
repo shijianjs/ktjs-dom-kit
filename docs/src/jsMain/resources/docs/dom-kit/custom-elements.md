@@ -160,8 +160,11 @@ Rules the generator follows:
 - **An inherited list.** An element that extends another element gets the parent's `ALL` and
   `ATTRIBUTES` merged into its own (`Parent.ALL + arrayOf(…)`, `Parent.ATTRIBUTES.names + mapOf(…)`),
   because `observedAttributes` belongs to the defined tag and the browser knows nothing of Kotlin
-  inheritance. A parent whose module does not run the processor contributes nothing — `DemoPage` in
-  `ktjs-demo-kit` is written by hand, and its pages list only what they declare.
+  inheritance. An attribute belongs to the class that declares it: a subclass adds, and nothing has to
+  be repeated. Overriding a delegated property is a compile error — an `override` does not replace the
+  base delegate, whose initializer still runs, so the attribute would end up with two delegates. A
+  parent whose module does not run the processor contributes nothing — `DemoPage` in `ktjs-demo-kit` is
+  written by hand, and its pages list only what they declare.
 - **The visibility follows the element**: an `internal` element gets `internal` declarations, because a
   public companion cannot extend an `internal` supertype.
 
@@ -189,6 +192,10 @@ one reference defines everything the module ships, pages a router has not create
 is the same list as the strings the browser knows, for markup, routing and tests. A companion that
 passed `register = false` stays undefined; the list inherits that decision instead of overriding it.
 
+An entry *is* an element's companion object, so a class without one is not in the list: a base that is
+only ever subclassed keeps its generated `…DefaultReference` — its subclasses merge their tables from it —
+but has no tag of its own. `abstract` classes are left out for the same reason.
+
 Wire it in two lines, next to the element's own module:
 
 ```kotlin
@@ -201,6 +208,8 @@ dependencies { add("kspJs", project(":ktjs-dom-kit-ksp")) }
 processor runs over `jsTest`, one companion passes `name =` and the other `register = false`,
 `theGeneratedListMatchesTheDeclarations` compares `ALL` with the names the properties registered, and
 `AttributeProbeChild` is the inheritance case — it declares one property and lists twelve attributes.
+`SubclassedProbeBase` is the case without a tag of its own: no companion, two declarations, and
+`SubclassedProbeChild` lists both of them anyway.
 The `demo` module is the same wiring in an application shape: `ktjs.tagPrefix = "demo-"`, nine elements,
 no literal tag or attribute name anywhere, `DemoCustomElements` listing all nine, and
 `GeneratedReferenceTest` writing attributes onto them from the outside and reading the repainted
