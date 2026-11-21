@@ -8,7 +8,6 @@ import io.github.shijianjs.ktjs.dom.element.invoke
 import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementAdapter
 import io.github.shijianjs.ktjs.dom.webcomponent.attachStyledShadow
 import io.github.shijianjs.ktjs.vaadin.button.createButton
-import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementReferenceAdapter
 import web.cssom.AlignItems
 import web.cssom.ClassName
 import web.cssom.CSSStyleSheet
@@ -49,16 +48,17 @@ class DemoCounter : CustomElementAdapter() {
     }
 
     /** The current count, stored in the `value` attribute so it survives a reconnect. */
-    var value: Int by attr("value", default = 0) { change ->
+    var value: Int by attr(default = 0) { change ->
         valueElement.textContent = change.newValue.toString()
     }
 
     /** Text on the increment button; kept as an attribute so the page can translate it. */
-    var incrementLabel: String by attr("increment-label", default = "+") { change ->
+    var incrementLabel: String by attr(default = "+") { change ->
         incrementElement.textContent = change.newValue
     }
 
-    companion object : CustomElementReferenceAdapter<DemoCounter>(DemoCounter::class.js, "demo-counter") {
+    /** `demo-counter`, observed attributes `["value", "increment-label"]`: both generated. */
+    companion object : DemoCounterDefaultReference() {
 
         /** Class names this file's markup and sheet agree on; both live here, next to their rule. */
         private val COUNTER: ClassName = ClassName("counter")

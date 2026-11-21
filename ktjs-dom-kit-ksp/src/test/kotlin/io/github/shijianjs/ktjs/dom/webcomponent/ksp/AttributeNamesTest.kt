@@ -39,4 +39,13 @@ class AttributeNamesTest {
         assertEquals("XML_HTTP", constantNameOf("XMLHttp"))
         assertEquals("ID", constantNameOf("ID"))
     }
+
+    @Test
+    fun thePrefixIsAddedUnlessTheClassNameAlreadyCarriesIt() {
+        assertEquals("demo-step-badge", tagOf("demo-", "StepBadge"))
+        assertEquals("demo-counter", tagOf("demo-", "DemoCounter"), "the mark is not doubled")
+        assertEquals("demo-attribute-page", tagOf("demo-", "AttributePage"))
+        assertEquals("ktjs-hero", tagOf("ktjs-", "KtjsHero"))
+        assertEquals("step-badge", tagOf("", "StepBadge"), "an empty prefix adds nothing")
+    }
 }

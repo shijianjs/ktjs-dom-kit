@@ -5,8 +5,8 @@ sidebar_position: 3
 # Custom elements
 
 A component is a Kotlin class that extends `CustomElementAdapter`, declares its attributes with
-[`attr`](./attributes.md), and names its tag in a companion object that registers itself. No JavaScript
-class literal, no component library, and no `@JsName`-aliased lifecycle hooks.
+[`attr`](./attributes.md), and extends the reference `ktjs-dom-kit-ksp` generates for it. No
+JavaScript class literal, no component library, and no `@JsName`-aliased lifecycle hooks.
 
 ```kotlin
 class KtjsBadge : CustomElementAdapter() {
@@ -24,14 +24,15 @@ class KtjsBadge : CustomElementAdapter() {
         applyInitialAttributes()
     }
 
-    companion object : CustomElementReferenceAdapter<KtjsBadge>(
-      KtjsBadge::class.js, "ktjs-badge",
-      observedAttributes = arrayOf("href"),
-  )
+    companion object : KtjsBadgeDefaultReference()
 }
 
 val badge: KtjsBadge = KtjsBadge.NAME { href = "docs/intro" }
 ```
+
+Not one literal in that file says what the tag is or which attributes it observes: `KtjsBadgeDefaultReference`
+is the class name in kebab case behind the configured prefix, observing every `by attr` property.
+[What the processor generates](#what-the-processor-generates) is the whole of it.
 
 ## What the adapter does
 
@@ -45,8 +46,8 @@ in every class:
 2. **The `attr` delegates** of its subclasses. Each property registers its delegate with the element
    when it is initialised, and the browser's synchronous `attributeChangedCallback` feeds every later
    change of a *registered* attribute back into the delegate of that name, so a property and its
-   attribute cannot disagree — and they never do, not even for one microtask. See
-   [Attributes](./attributes.md).
+   attribute cannot disagree — and they never do, not even for one microtask. What "registered" means
+   is the next section; the names come from the generated reference. See [Attributes](./attributes.md).
 3. **The bridge removal** described below, through `stripBridgesFrom`.
 
 ## `observedAttributes` is the contract
@@ -54,77 +55,100 @@ in every class:
 `attributeChangedCallback` is the platform's own hook, and it only fires for attributes the class's
 static `observedAttributes` lists. That list is read once, by `customElements.define`, so it has to
 exist **before** the companion's `init` defines the tag — before any instance, and long before a
-delegate exists. The names therefore come from the class declaration:
+delegate exists. Nothing on the Kotlin side can answer the question at that moment: the delegates are
+created per instance, in the constructor, and a Kotlin/JS class has no static initializer that could
+see its own properties. The compiler can, so the list is generated rather than written.
 
-```kotlin
-class KtjsAction : CustomElementAdapter() {
-    var kind: ActionKind by attr(codec = enumAttributeCodec(ActionKind.entries))
-    var href: String by attr
-
-    companion object : CustomElementReferenceAdapter<KtjsAction>(
-        KtjsAction::class.js, "ktjs-action",
-        observedAttributes = arrayOf("kind", "href"),
-    )
-}
-```
-
-The price of a synchronous callback is that this list repeats what the `by attr` declarations already
-say, and a forgotten name is not a loud failure: the property still reads the attribute, the initial
-value still arrives (through `applyInitialAttributes()` or the upgrade callback), but a **later**
-external write to that attribute goes unreported. Two guards against that:
+The alternative — a hand-kept array beside the declarations — repeats what the `by attr` properties
+already say, and a forgotten name is not a loud failure: the property still reads the attribute, the
+initial value still arrives (through `applyInitialAttributes()` or the upgrade callback), but a
+**later** external write to that attribute goes unreported. Two guards survive for a reference written
+by hand:
 
 - `applyInitialAttributes()` is the catch-up that runs once the element is connected, so a missed name
   still reports the markup it was created with.
-- The generated list in the next section, which removes the repetition entirely — plus a test that
-  compares it with what the properties actually registered.
+- `AttributeProbe` in this repository's browser tests compares the generated array with what the
+  properties actually registered, so a name the processor misses fails the build instead of going quiet.
 
-## Generated attribute names
+## What the processor generates
 
-No Kotlin/JS class can see its own property declarations before it runs: the delegates are created in
-the constructor, per instance, and `observedAttributes` is read earlier than that — at
-`customElements.define`. The compiler is the one place that knows the declarations first, so
-`ktjs-dom-kit-ksp` generates the names:
+`ktjs-dom-kit-ksp` reads the class declarations and writes, next to the element, both the names and the
+reference its companion extends:
 
 ```mermaid
 flowchart LR
-  SRC["class KtjsHero : CustomElementAdapter()<br/>var logoSrc by attr(…)<br/>@AttributeName(&quot;title&quot;) var titleText"]
-  SRC --> KSP["ktjs-dom-kit-ksp<br/>delegated property → kebab case<br/>@AttributeName wins"]
-  KSP --> GEN["KtjsHeroAttributes<br/>const val LOGO_SRC · TITLE<br/>val ALL"]
-  GEN --> ATTR["attr(KtjsHeroAttributes.LOGO_SRC)"]
-  GEN --> OBS["observedAttributes = KtjsHeroAttributes.ALL"]
+  SRC["class KtjsHero : CustomElementAdapter()<br/>var logoSrc by attr { }<br/>@AttributeName(&quot;title&quot;) var titleText by attr { }<br/>optional @CustomElementTag"]
+  SRC --> KSP["ktjs-dom-kit-ksp<br/>property name → kebab case, @AttributeName wins<br/>class name → tag, prefixed unless it already is"]
+  KSP --> ATTRS["KtjsHeroAttributes<br/>const val LOGO_SRC · TITLE<br/>ALL · BY_PROPERTY"]
+  KSP --> REF["KtjsHeroDefaultReference<br/>name · observedAttributes · attributeNames"]
+  ATTRS --> REF
+  REF --> COMP["companion object : KtjsHeroDefaultReference()"]
+  ATTRS --> LOOKUP["by attr without a name<br/>resolves through BY_PROPERTY"]
 ```
 
-For every class extending `CustomElementAdapter`, the processor writes one `internal object` next to
-it — the constants, and `ALL`, the array the browser reads:
+The object holds the constants and the two tables the runtime needs:
 
 ```kotlin
 internal object KtjsHeroAttributes {
     const val LOGO_SRC: String = "logo-src"
     const val TITLE: String = "title"
     val ALL: Array<String> = arrayOf(LOGO_SRC, TITLE)
+    val BY_PROPERTY: Map<String, String> = mapOf("logoSrc" to LOGO_SRC, "titleText" to TITLE)
 }
 ```
 
-The element then uses those constants for both halves, so the literal exists once:
+`ALL` is what the browser reads as `observedAttributes`. `BY_PROPERTY` exists for the other half of the
+problem: a delegated property cannot see its own class at runtime, only its name, so `by attr` needs a
+table to learn that `titleText` stands for `title`. The reference registers that table at
+`customElements.define`, before any instance exists, and every delegate created afterwards reads it.
+
+The reference fills in every argument, so the companion is one line:
+
+```kotlin
+internal open class KtjsHeroDefaultReference(
+    name: String = "ktjs-hero",
+    formAssociated: Boolean? = null,
+    observedAttributes: ReadonlyArray<JsString>? = KtjsHeroAttributes.ALL,
+    register: Boolean = true,
+    attributeNames: Map<String, String>? = KtjsHeroAttributes.BY_PROPERTY,
+) : CustomElementReferenceAdapter<KtjsHero>(…)
+```
+
+Its parameters stay open on purpose: a tag that is defined later passes `register = false`
+(`UpgradeProbeDefaultReference(register = false)` in the tests), and a site that wants a different tag
+passes `name = …`.
+
+The element then writes neither an attribute name nor a reference:
 
 ```kotlin
 class KtjsHero : CustomElementAdapter() {
-    var logoSrc: String by attr(KtjsHeroAttributes.LOGO_SRC)
+    var logoSrc: String by attr { … }
 
-    @AttributeName("title")                                    // the attribute is not `title-text`
-    var titleText: String by attr(KtjsHeroAttributes.TITLE)
+    @AttributeName("title")                                     // the attribute is not `title-text`
+    var titleText: String by attr { … }
 
-    companion object : CustomElementReferenceAdapter<KtjsHero>(
-        KtjsHero::class.js, "ktjs-hero",
-        observedAttributes = KtjsHeroAttributes.ALL,
-    )
+    companion object : KtjsHeroDefaultReference()
 }
 ```
 
-A name is derived from the property name in kebab case — the same rule `attr` applies when it is not
-given one — unless `@AttributeName` says otherwise. Which properties are attributes at all is
-`isDelegated()`: inside an adapter, the only delegated properties are `attr` ones. Two properties
-mapping to the same attribute is reported as a compile error.
+Rules the generator follows:
+
+- **An attribute name** is the property name in kebab case (`logoSrc` → `logo-src`, `maxCount` →
+  `max-count`) unless `@AttributeName` says otherwise. Which properties are attributes at all is
+  `isDelegated()`: inside an adapter, the only delegated properties are `attr` ones. Two properties
+  mapping to the same attribute is a compile error.
+- **The tag** is the class name in kebab case, prefixed with `ktjs.tagPrefix` (default `ktjs-`) only
+  when the name does not already start that way. Both families name their classes after their mark,
+  so `KtjsHero` is `ktjs-hero` — not `ktjs-ktjs-hero` — while `StepBadge` in a `demo-` module is
+  `demo-step-badge`. A module declares the prefix once:
+
+  ```kotlin
+  ksp { arg("ktjs.tagPrefix", "demo-") }        // StepBadge → demo-step-badge
+  ```
+
+  and a single class that does not fit passes `@CustomElementTag("…")` instead of the option.
+- **The visibility follows the element**: an `internal` element gets `internal` declarations, because a
+  public companion cannot extend an `internal` supertype.
 
 Wire it in two lines, next to the element's own module:
 
@@ -134,9 +158,16 @@ plugins { id("com.google.devtools.ksp") }
 dependencies { add("kspJs", project(":ktjs-dom-kit-ksp")) }
 ```
 
-`AttributeProbe` in this repository's browser tests is the reference wiring: the processor runs over
-`jsTest`, and `theGeneratedListMatchesTheDeclarations` compares `ALL` with the names the properties
-registered, so a name the processor misses fails the build instead of going quiet.
+`AttributeProbe` and `UpgradeProbe` in this repository's browser tests are the reference wiring: the
+processor runs over `jsTest`, both classes carry `@CustomElementTag` (their tags are `ktjs-attr-probe`
+and `ktjs-attr-upgrade-probe`, not the class names), and `theGeneratedListMatchesTheDeclarations`
+compares `ALL` with the names the properties registered. The `demo` module is the same wiring in an
+application shape: `ktjs.tagPrefix = "demo-"`, nine elements, no literal tag anywhere, and
+`GeneratedReferenceTest` writes attributes onto them from the outside and reads the repainted shadow.
+
+Nothing else is generated: a module that does not run the processor still compiles, because
+`CustomElementReferenceAdapter` itself is public and takes the same arguments by hand — that is the
+fallback, not the intended path.
 
 ## The official `CustomElement` interface
 

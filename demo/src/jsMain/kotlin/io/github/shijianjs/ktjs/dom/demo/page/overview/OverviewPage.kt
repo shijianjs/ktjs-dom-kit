@@ -6,7 +6,6 @@ import io.github.shijianjs.ktjs.demo.i18n.Binder
 import io.github.shijianjs.ktjs.demo.i18n.Lang
 import io.github.shijianjs.ktjs.demo.i18n.Langs
 import io.github.shijianjs.ktjs.demo.page.DemoPage
-import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementReferenceAdapter
 import io.github.shijianjs.ktjs.demo.i18n.Translations
 import io.github.shijianjs.ktjs.demo.page.Blocks.anchor
 import io.github.shijianjs.ktjs.demo.page.Blocks.codeText
@@ -64,7 +63,7 @@ internal class OverviewPage : DemoPage() {
         texts.apply(lang)
     }
 
-    companion object : CustomElementReferenceAdapter<OverviewPage>(OverviewPage::class.js, "demo-overview-page") {
+    companion object : OverviewPageDefaultReference() {
 
         private val overviewEnglish: OverviewTexts = OverviewTexts(
             title = "ktjs-dom-kit overview",

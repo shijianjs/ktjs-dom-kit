@@ -2,6 +2,7 @@ package io.github.shijianjs.ktjs.dom.demo.page.styling
 
 import io.github.shijianjs.ktjs.demo.style.Palette
 import io.github.shijianjs.ktjs.demo.style.RESET
+import io.github.shijianjs.ktjs.dom.webcomponent.attr.AttributeName
 import io.github.shijianjs.ktjs.dom.webcomponent.attr.attr
 import io.github.shijianjs.ktjs.dom.css.cssSheet
 import io.github.shijianjs.ktjs.dom.css.dsl.Pseudos
@@ -9,7 +10,6 @@ import io.github.shijianjs.ktjs.dom.css.dsl.invoke
 import io.github.shijianjs.ktjs.dom.element.invoke
 import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementAdapter
 import io.github.shijianjs.ktjs.dom.webcomponent.attachStyledShadow
-import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementReferenceAdapter
 import web.cssom.Border
 import web.cssom.ClassName
 import web.cssom.CSSStyleSheet
@@ -41,12 +41,16 @@ class HoverBox : CustomElementAdapter() {
         applyInitialAttributes()
     }
 
-    /** The text inside the box; called `labelText` because `HTMLElement.title` is the tooltip. */
-    var labelText: String by attr("label", default = "Hover me") { change ->
+    /**
+     * The text inside the box; called `labelText` because `HTMLElement.title` is the tooltip, which is
+     * what `@AttributeName` is for: the property and the attribute do not have to be spelled alike.
+     */
+    @AttributeName("label")
+    var labelText: String by attr(default = "Hover me") { change ->
         label.textContent = change.newValue
     }
 
-    companion object : CustomElementReferenceAdapter<HoverBox>(HoverBox::class.js, "demo-hover-box") {
+    companion object : HoverBoxDefaultReference() {
         private val BOX: ClassName = ClassName("hover-box")
 
         /**

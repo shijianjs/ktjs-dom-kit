@@ -9,7 +9,9 @@ sidebar_position: 4
 ```kotlin
 class KtjsBadge : CustomElementAdapter() {
     var href: String by attr { change -> anchor.href = change.newValue }
-    var height: Int by attr("height", default = 20) { change -> image.height = change.newValue }
+    var height: Int by attr(default = 20) { change -> image.height = change.newValue }
+
+    companion object : KtjsBadgeDefaultReference()
 }
 ```
 
@@ -27,38 +29,48 @@ flowchart LR
 ```
 
 External writes arrive through the browser's own `attributeChangedCallback`, which is synchronous and
-only fires for attributes the element's class lists in its static `observedAttributes`. A `by attr`
-property therefore needs its name in that list — see
+only fires for attributes the element's class lists in its static `observedAttributes`. The generated
+reference passes that list, so a `by attr` property is registered by inheriting the reference — see
 [the registration contract](custom-elements.md#observedattributes-is-the-contract).
 
-
-`attr` is an inline function taking `name`, `default`, `codec` and the change callback, all optional:
+`attr` is an inline function taking `name`, `default`, `codec` and the change callback, all optional —
+and in a module that runs the processor the name is never passed:
 
 ```kotlin
-var logoSrc: String by attr                                              // logo-src
-var ratio: Double by attr("data-ratio", default = 1.0) { … }             // explicit name
+var logoSrc: String by attr                                            // logo-src
+var ratio: Double by attr(default = 1.0) { … }
 var kind: ActionKind by attr(codec = enumAttributeCodec(ActionKind.entries), default = ActionKind.Primary)
 ```
 
+The [name] parameter is for a module without the processor: pass it only when the attribute is not the
+property name in kebab case there.
+
 ## Naming
 
-The attribute name defaults to the property name in kebab case: `maxCount` → `max-count`,
-`XMLHttp` → `xml-http`. A dash goes before an upper-case letter that starts a word; digits and
-existing dashes are left alone.
+The attribute name is the property name in kebab case: `maxCount` → `max-count`, `XMLHttp` →
+`xml-http`. A dash goes before an upper-case letter that starts a word; digits and existing dashes are
+left alone. `@AttributeName("…")` overrides it, and the two together are what
+`ktjs-dom-kit-ksp` compiles into the class's property-name table:
 
-With the attribute processor wired into the module
-([generated attribute names](custom-elements.md#generated-attribute-names)), the name is not written
-at the `attr` call either: `attr(KtjsHeroAttributes.LOGO_SRC)` takes the generated constant, and
-`@AttributeName("title")` is the only literal when the attribute is spelled differently from the
-property.
+```mermaid
+flowchart LR
+  P["var titleText: String by attr"] --> T{"class table<br/>BY_PROPERTY"}
+  T -- "titleText → title" --> N["the attribute the delegate reads"]
+  T -. "no entry" .-> K["property name in kebab case"]
+  T -. "no table (no processor)" .-> K
+```
 
-Native spellings are not special-cased. `tabIndex` needs `attr("tabindex")`, and a property whose
-name is already an `HTMLElement` member (`title`, `id`, `hidden`) has to be named differently and
+The table is registered by the generated `<Class>DefaultReference` at `customElements.define`, so it
+exists before the first instance — which is what lets `attr` take no argument at all.
+
+Native spellings are not special-cased. `tabIndex` needs `@AttributeName("tabindex")`, and a property
+whose name is already an `HTMLElement` member (`title`, `id`, `hidden`) has to be named differently and
 mapped explicitly:
 
 ```kotlin
 @JsName("titleText")
-var titleText: String by attr("title") { change -> heading.textContent = change.newValue }
+@AttributeName("title")
+var titleText: String by attr { change -> heading.textContent = change.newValue }
 ```
 
 **Add `@JsName` when JavaScript should see the property.** Kotlin/JS compiles a delegated property to
@@ -66,7 +78,7 @@ module-mangled accessor methods and *no* JS property, so `element.titleText = "x
 silently writes a new expando field instead. `@JsName("titleText")` is what makes it emit real
 `get`/`set` accessors. Kotlin callers do not need it. That is also the reason the property name and
 the attribute name are two different things in this API — `titleText` is what TypeScript sees,
-`title` is what the browser stores, and `@JsName` + `attr("title")` is the bridge between them.
+`title` is what the browser stores, and `@JsName` + `@AttributeName` is the bridge between them.
 
 ## Values and codecs
 

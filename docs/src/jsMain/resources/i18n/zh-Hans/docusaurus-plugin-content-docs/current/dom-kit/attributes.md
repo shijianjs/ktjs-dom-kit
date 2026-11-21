@@ -9,7 +9,9 @@ sidebar_position: 4
 ```kotlin
 class KtjsBadge : CustomElementAdapter() {
     var href: String by attr { change -> anchor.href = change.newValue }
-    var height: Int by attr("height", default = 20) { change -> image.height = change.newValue }
+    var height: Int by attr(default = 20) { change -> image.height = change.newValue }
+
+    companion object : KtjsBadgeDefaultReference()
 }
 ```
 
@@ -26,39 +28,50 @@ flowchart LR
 ```
 
 来自外部的写入走浏览器自己的 `attributeChangedCallback`：同步触发，且**只**为类里静态
-`observedAttributes` 列出的属性触发。所以每个 `by attr` 属性都要把名字列进那份名单——见
-[注册契约](custom-elements.md#observedattributes-就是契约)。
+`observedAttributes` 列出的属性触发。那份名单由生成的 reference 传进去，所以「注册」这件事只要继承它
+就自动成立——见[注册契约](custom-elements.md#observedattributes-就是契约)。
 
-
-`attr` 是 inline 函数，`name`、`default`、`codec` 与变化回调都可省：
+`attr` 是 inline 函数，`name`、`default`、`codec` 与变化回调都可省；模块里跑了处理器之后，名字也不必在
+调用处写：
 
 ```kotlin
-var logoSrc: String by attr                                              // logo-src
-var ratio: Double by attr("data-ratio", default = 1.0) { … }             // 显式给名
+var logoSrc: String by attr                                            // logo-src
+var ratio: Double by attr(default = 1.0) { … }
 var kind: ActionKind by attr(codec = enumAttributeCodec(ActionKind.entries), default = ActionKind.Primary)
 ```
 
+[name] 参数是给「没有处理器」的模块留的：只有在那里、且 attribute 不是属性名的中划线形式时才需要传。
+
 ## 命名
 
-属性名默认是属性名的中划线形式：`maxCount` → `max-count`、`XMLHttp` → `xml-http`。规则是在「一个词的
-开头的大写字母」前加连字符；数字与已有的连字符保持原样。
+attribute 名就是属性名的中划线形式：`maxCount` → `max-count`、`XMLHttp` → `xml-http`。规则是在「一个词的
+开头的大写字母」前加连字符；数字与已有的连字符保持原样。`@AttributeName("…")` 可以覆盖它，两者一起被
+`ktjs-dom-kit-ksp` 编译成这个类的「属性名 → attribute 名」表：
 
-模块里接上了 attribute 处理器（[生成的 attribute 名](custom-elements.md#生成-attribute-名)）之后，名字在
-`attr` 调用处也不必写了：`attr(KtjsHeroAttributes.LOGO_SRC)` 拿的是生成出来的常量；只有和属性名拼写不同
-的 attribute 才需要一个字面量，写在 `@AttributeName("title")` 里。
+```mermaid
+flowchart LR
+  P["var titleText: String by attr"] --> T{"类的表<br/>BY_PROPERTY"}
+  T -- "titleText → title" --> N["委托读到的那个 attribute"]
+  T -. "表里没有" .-> K["属性名的中划线形式"]
+  T -. "没有表（没跑处理器）" .-> K
+```
 
-原生拼写不做特殊照顾。`tabIndex` 要写 `attr("tabindex")`；属性名本来属于 `HTMLElement` 的成员
+表由生成的 `<Class>DefaultReference` 在 `customElements.define` 时注册，早于任何实例——这正是 `attr`
+可以一个参数都不给的原因。
+
+原生拼写不做特殊照顾。`tabIndex` 要写 `@AttributeName("tabindex")`；属性名本来属于 `HTMLElement` 的成员
 （`title`、`id`、`hidden`）时必须换个名字并显式映射：
 
 ```kotlin
 @JsName("titleText")
-var titleText: String by attr("title") { change -> heading.textContent = change.newValue }
+@AttributeName("title")
+var titleText: String by attr { change -> heading.textContent = change.newValue }
 ```
 
 **要让 JavaScript 看到属性就加 `@JsName`。** Kotlin/JS 会把委托属性编译成模块内混淆名的访问器方法，而
 **不**生成 JS 属性，于是页面上写 `element.titleText = "x"` 只会静默写一个 expando 字段。`@JsName("titleText")`
 才会生成真正的 `get`/`set` 访问器；Kotlin 调用方不需要它。这也是这套 API 里「属性名」与「attribute 名」
-是两件事的原因——`titleText` 是 TypeScript 看到的，`title` 是浏览器存的，`@JsName` + `attr("title")` 是
+是两件事的原因——`titleText` 是 TypeScript 看到的，`title` 是浏览器存的，`@JsName` + `@AttributeName` 是
 两者的桥。
 
 ## 取值与编解码器

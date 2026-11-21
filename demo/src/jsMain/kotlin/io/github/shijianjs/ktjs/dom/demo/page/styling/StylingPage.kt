@@ -5,7 +5,6 @@ import io.github.shijianjs.ktjs.demo.i18n.Lang
 import io.github.shijianjs.ktjs.demo.i18n.Langs
 import io.github.shijianjs.ktjs.demo.page.DemoPage
 import io.github.shijianjs.ktjs.dom.element.invoke
-import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementReferenceAdapter
 import io.github.shijianjs.ktjs.demo.i18n.Translations
 import io.github.shijianjs.ktjs.demo.page.Blocks.codeText
 import io.github.shijianjs.ktjs.demo.page.Blocks.exampleBox
@@ -66,7 +65,7 @@ internal class StylingPage : DemoPage() {
         selectorStrip.setLabels(current.chipPlain, current.chipSelected)
     }
 
-    companion object : CustomElementReferenceAdapter<StylingPage>(StylingPage::class.js, "demo-styling-page") {
+    companion object : StylingPageDefaultReference() {
 
         private val stylingEnglish: StylingTexts = StylingTexts(
             title = "Stylesheets",

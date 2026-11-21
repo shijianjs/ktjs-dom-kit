@@ -1,17 +1,19 @@
 package io.github.shijianjs.ktjs.dom.webcomponent.attr
 
 /**
- * The attribute name a `by attr` property stands for, when it is not the property name in kebab case.
+ * The attribute name a `by attr` property stands for, when the property name in kebab case is not the
+ * name the element wants.
  *
  * ```kotlin
  * @AttributeName("title")
- * var titleText: String by attr(KtjsHeroAttributes.TITLE_TEXT)
+ * var titleText: String by attr()
  * ```
  *
- * The annotation is read by `ktjs-dom-kit-ksp`, which generates the class's attribute constants and
- * the `observedAttributes` array from it — so this literal, the generated constant and the browser's
- * attribute are the same string, written once. It is `SOURCE`-retained: nothing reads it at runtime,
- * and the name the delegate uses comes from the generated constant passed to [attr].
+ * Read by `ktjs-dom-kit-ksp`, which writes the name into the element's generated
+ * `…Attributes.BY_PROPERTY` table — the table its reference registers, so a `by attr` without an
+ * argument finds the attribute it stands for. Without this annotation the name is the property name
+ * in kebab case (`maxCount` → `max-count`). `SOURCE`-retained: everything the runtime needs is already
+ * in the generated table.
  */
 @Retention(AnnotationRetention.SOURCE)
 @Target(AnnotationTarget.PROPERTY)

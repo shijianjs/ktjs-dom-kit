@@ -11,7 +11,6 @@ import io.github.shijianjs.ktjs.demo.i18n.Translations
 import io.github.shijianjs.ktjs.demo.i18n.texts
 import io.github.shijianjs.ktjs.demo.page.DemoPage
 import io.github.shijianjs.ktjs.dom.element.invoke
-import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementReferenceAdapter
 import io.github.shijianjs.ktjs.demo.page.Readout
 import io.github.shijianjs.ktjs.demo.page.SectionBlock
 import io.github.shijianjs.ktjs.demo.page.Blocks.codeText
@@ -199,7 +198,7 @@ internal class AttributePage : DemoPage() {
         )
     }
 
-    companion object : CustomElementReferenceAdapter<AttributePage>(AttributePage::class.js, "demo-attribute-page") {
+    companion object : AttributePageDefaultReference() {
 
         private val attributeEnglish: AttributeTexts = AttributeTexts(
             title = "Attribute-backed properties",

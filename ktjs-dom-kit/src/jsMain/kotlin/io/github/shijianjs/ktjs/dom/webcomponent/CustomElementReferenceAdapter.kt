@@ -2,6 +2,7 @@ package io.github.shijianjs.ktjs.dom.webcomponent
 
 import js.array.ReadonlyArray
 import js.reflect.JsClass
+import kotlin.js.JsString
 import web.components.CustomElementReference
 import web.dom.TagName
 import web.html.HTMLElement
@@ -14,7 +15,7 @@ import web.html.HTMLElement
  *
  * ```kotlin
  * class DemoCounter : CustomElementAdapter() {
- *     companion object : CustomElementReferenceAdapter<DemoCounter>(DemoCounter::class.js, "demo-counter")
+ *     companion object : DemoCounterDefaultReference()
  * }
  * ```
  *
@@ -25,6 +26,12 @@ import web.html.HTMLElement
  * ```kotlin
  * val counter = DemoCounter.NAME { value = 3 }
  * ```
+ *
+ * `DemoCounterDefaultReference` is what `ktjs-dom-kit-ksp` generates: a subclass with every argument
+ * filled in — the class, the tag (the class name in kebab case, behind a configured prefix unless the
+ * name already carries it), the `observedAttributes` array and the property-name table the `attr`
+ * delegations read. Extending this class by hand, spelling out those arguments once per element, is
+ * the fallback for a module that does not run the processor.
  *
  * The three constructor parameters of [CustomElementReference] keep their meaning and default; [name]
  * is the tag, and [register] is the one addition — `false` keeps the reference (the constructor, the
@@ -41,12 +48,21 @@ open class CustomElementReferenceAdapter<T : HTMLElement>(
     formAssociated: Boolean? = null,
     observedAttributes: ReadonlyArray<JsString>? = null,
     register: Boolean = true,
+    /**
+     * Property name → attribute name for this element class. Registered before the tag is defined,
+     * so every instance constructed afterwards — the ones `define` upgrades included — resolves
+     * `by attr` without a name argument. The generated `…DefaultReference` passes
+     * `…Attributes.BY_PROPERTY`; a hand-written reference leaves it `null` and keeps the kebab-case
+     * rule.
+     */
+    attributeNames: Map<String, String>? = null,
 ) : CustomElementReference<T>(clazz, formAssociated, observedAttributes) {
 
     /** The tag this reference defines; applied to a block it creates the element and configures it. */
     val NAME: TagName<T> = TagName(name)
 
     init {
+        if (attributeNames != null) AttributeNameRegistry.register(clazz, attributeNames)
         if (register) defineIfMissing(NAME, this)
     }
 }

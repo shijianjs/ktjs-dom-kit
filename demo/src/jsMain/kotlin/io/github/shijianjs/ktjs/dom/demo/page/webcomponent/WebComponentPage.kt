@@ -5,7 +5,6 @@ import io.github.shijianjs.ktjs.demo.i18n.Binder
 import io.github.shijianjs.ktjs.demo.i18n.Lang
 import io.github.shijianjs.ktjs.demo.i18n.Langs
 import io.github.shijianjs.ktjs.demo.page.DemoPage
-import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementReferenceAdapter
 import io.github.shijianjs.ktjs.demo.i18n.Translations
 import io.github.shijianjs.ktjs.demo.page.Blocks.codeText
 import io.github.shijianjs.ktjs.demo.page.Blocks.exampleBox
@@ -50,7 +49,7 @@ internal class WebComponentPage : DemoPage() {
         texts.bind(definition.hint, { it.definitionHint })
         definition.body.append(
             row(codeText("js { compilerOptions { target = \"es2015\" } }")),
-            row(codeText("companion object : CustomElementReferenceAdapter<DemoCounter>(DemoCounter::class.js, \"demo-counter\")")),
+            row(codeText("companion object : DemoCounterDefaultReference() // generated: demo-counter")),
             row(codeText("val counter: DemoCounter = DemoCounter.NAME() // registers, then creates")),
             texts.bind(paragraph(), { it.definitionNote }),
         )
@@ -75,7 +74,7 @@ internal class WebComponentPage : DemoPage() {
         instanceHost.append(counter)
     }
 
-    companion object : CustomElementReferenceAdapter<WebComponentPage>(WebComponentPage::class.js, "demo-web-component-page") {
+    companion object : WebComponentPageDefaultReference() {
 
         private val webComponentEnglish: WebComponentTexts = WebComponentTexts(
             title = "Custom elements",

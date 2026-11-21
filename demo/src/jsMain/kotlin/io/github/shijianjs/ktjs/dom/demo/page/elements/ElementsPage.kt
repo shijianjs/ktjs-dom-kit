@@ -6,7 +6,6 @@ import io.github.shijianjs.ktjs.demo.i18n.Binder
 import io.github.shijianjs.ktjs.demo.i18n.Lang
 import io.github.shijianjs.ktjs.demo.i18n.Langs
 import io.github.shijianjs.ktjs.demo.page.DemoPage
-import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementReferenceAdapter
 import web.dom.TagName
 import io.github.shijianjs.ktjs.demo.i18n.Translations
 import io.github.shijianjs.ktjs.demo.page.Blocks.codeText
@@ -96,7 +95,7 @@ internal class ElementsPage : DemoPage() {
         list.append(HtmlTagName.li { textContent = "entry $entries" })
     }
 
-    companion object : CustomElementReferenceAdapter<ElementsPage>(ElementsPage::class.js, "demo-elements-page") {
+    companion object : ElementsPageDefaultReference() {
 
         private val elementsEnglish: ElementsTexts = ElementsTexts(
             title = "Element creation",

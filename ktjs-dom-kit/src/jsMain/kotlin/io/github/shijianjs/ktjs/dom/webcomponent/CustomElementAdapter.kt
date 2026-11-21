@@ -26,20 +26,20 @@ import web.html.HTMLElement
  *        val badge: HTMLElement = …
  *        var label: String by attr { change -> badge.textContent = change.newValue }
  *
- *        companion object : CustomElementReferenceAdapter<MyElement>(
- *            MyElement::class.js, "my-element",
- *            observedAttributes = arrayOf("label"),
- *        )
+ *        companion object : MyElementDefaultReference()
  *    }
  *    ```
  *
+ *    The companion is what `ktjs-dom-kit-ksp` generates — see [CustomElementReferenceAdapter] for
+ *    the tag, the observed list and the attribute-name table it fills in from these declarations.
  *    The callback is synchronous, so the report happens before the statement that changed the
  *    attribute returns — no microtask, no frame in which the property and the attribute disagree.
  *    Its price is the contract the platform itself imposes: `attributeChangedCallback` only fires for
- *    attributes the constructor's static `observedAttributes` lists, and that list is read once, at
- *    `customElements.define` time. **Every attribute a `by attr` property stands for must therefore
- *    be listed there**, or an external write to it goes unreported. See [applyInitialAttributes] for
- *    the one-time catch-up that keeps a missing entry from silently doing nothing at startup.
+ *    attributes the class's static `observedAttributes` lists, and that list is read once, at
+ *    `customElements.define` time. The generated reference passes the generated `ALL` array, so every
+ *    `by attr` property is listed; an element whose reference is written by hand must list them all.
+ *    See [applyInitialAttributes] for the one-time catch-up that keeps a missing entry from silently
+ *    doing nothing at startup.
  *
  * 3. Removes the self-recursive bridges Kotlin/JS emits for every external DOM member (`ParentNode`,
  *    `ChildNode`, `Animatable`, `HTMLOrSVGOrMathMLElement`, `EventTargetLike`, …):

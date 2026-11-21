@@ -14,17 +14,23 @@ import js.reflect.unsafeCast
  * ```kotlin
  * class KtjsBadge : CustomElementAdapter() {
  *     var href: String by attr { change -> anchor.href = change.newValue }
- *     var height: Int by attr("height", default = 20) { change -> image.height = change.newValue }
+ *     var height: Int by attr(default = 20) { change -> image.height = change.newValue }
+ *
+ *     companion object : KtjsBadgeDefaultReference()
  * }
  * ```
  *
  * - **No duplicated state.** The getter reads the attribute and decodes it, the setter encodes and
  *   writes it, so the DOM is the only place the value lives. An attribute set from outside (markup,
  *   `setAttribute`, devtools) is visible to the getter immediately.
- * - **The name defaults to the property name** in kebab-case (`logoSrc` → `logo-src`); pass [name]
- *   for anything else. Native spellings are not special-cased: `tabIndex` needs
- *   `attr("tabindex")`, and a property named like an `HTMLElement` member (`title`, `id`, `hidden`)
- *   has to be named differently and mapped explicitly (`val titleText: String by attr("title")`).
+ * - **The name is the property name in kebab-case** (`logoSrc` → `logo-src`), unless the property
+ *   carries `@AttributeName("…")` — `ktjs-dom-kit-ksp` writes both into the class's generated
+ *   `…Attributes.BY_PROPERTY` table, which its reference hands to the element, so the name is authored
+ *   once and `attr` needs no argument. Native spellings are not special-cased: `tabIndex` needs
+ *   `@AttributeName("tabindex")`, and a property named like an `HTMLElement` member (`title`, `id`,
+ *   `hidden`) has to be named differently and mapped the same way (`titleText` → `title`). The [name]
+ *   parameter stays for a module that does not run the processor.
+
  * - **Add `@JsName` when JavaScript should see the property.** Kotlin/JS compiles a delegated
  *   property to module-mangled accessor methods (`get_text_8f3k2_k$`) and *no* JS property; only
  *   `@JsName("titleText")` makes it emit real `get` / `set` accessors, so that
@@ -45,8 +51,10 @@ import js.reflect.unsafeCast
  *   again is not a change, and removing the attribute is one.
  * - **The name has to be registered.** `attributeChangedCallback` only fires for attributes the element
  *   class lists in its static `observedAttributes`, and that list is read once, at
- *   `customElements.define`. List every name a `by attr` property stands for there, or a later external
- *   write to it goes unreported; the list belongs next to the tag in the companion object.
+ *   `customElements.define`. The generated `…DefaultReference` passes the generated `ALL` array, so
+ *   every `by attr` property is registered by extending it; an element whose reference is written by
+ *   hand must list the names itself, or a later external write to an unlisted attribute goes
+ *   unreported.
  *
  * Only *reflecting* properties belong here: `attr` writes the attribute, and an element that reads
  * its own attribute back (as these components do) is a reflecting property. `input.value` is not one

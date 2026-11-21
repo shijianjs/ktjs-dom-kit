@@ -12,7 +12,6 @@ import io.github.shijianjs.ktjs.dom.css.dsl.invoke
 import io.github.shijianjs.ktjs.dom.element.invoke
 import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementAdapter
 import io.github.shijianjs.ktjs.dom.webcomponent.attachStyledShadow
-import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementReferenceAdapter
 import web.cssom.Border
 import web.cssom.ClassName
 import web.cssom.CSSStyleSheet
@@ -56,7 +55,7 @@ class SelectorStrip : CustomElementAdapter() {
         chips[1].textContent = selected
     }
 
-    companion object : CustomElementReferenceAdapter<SelectorStrip>(SelectorStrip::class.js, "demo-selector-strip") {
+    companion object : SelectorStripDefaultReference() {
         private val CHIP: ClassName = ClassName("selector-chip")
         private val SELECTED: ClassName = ClassName("is-selected")
         private val ROW: ClassName = ClassName("selector-strip__row")

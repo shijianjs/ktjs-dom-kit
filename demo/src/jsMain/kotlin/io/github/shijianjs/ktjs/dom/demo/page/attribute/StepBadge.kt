@@ -7,7 +7,6 @@ import io.github.shijianjs.ktjs.dom.css.cssSheet
 import io.github.shijianjs.ktjs.dom.element.invoke
 import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementAdapter
 import io.github.shijianjs.ktjs.dom.webcomponent.attachStyledShadow
-import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementReferenceAdapter
 import web.cssom.CSSStyleSheet
 import web.cssom.ClassName
 import web.cssom.Padding
@@ -20,6 +19,9 @@ import web.html.HtmlTagName
  * The value lives in the attribute, not in a field: the getter decodes it, the setter encodes it, so
  * `setAttribute("step", "10")` from outside is visible immediately — that is what makes an attribute
  * a public API rather than a copy of one.
+ *
+ * Neither the tag nor the attribute name appears in this file: `StepBadgeDefaultReference` (generated
+ * by `ktjs-dom-kit-ksp`) is `<demo-…>` plus the class name, with `ALL` as its observed attributes.
  */
 class StepBadge : CustomElementAdapter() {
     private val label = HtmlTagName.span {
@@ -40,7 +42,7 @@ class StepBadge : CustomElementAdapter() {
         label.textContent = "step = ${change.newValue}"
     }
 
-    companion object : CustomElementReferenceAdapter<StepBadge>(StepBadge::class.js, "demo-step-badge") {
+    companion object : StepBadgeDefaultReference() {
 
         private val BADGE_CLASS: ClassName = ClassName("step-badge")
         private val BADGE_SHEET: CSSStyleSheet = cssSheet {

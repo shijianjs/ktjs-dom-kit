@@ -5,6 +5,7 @@ import java.awt.image.BufferedImage
 
 plugins {
     kotlin("multiplatform")
+    id("com.google.devtools.ksp")
 }
 
 // -----------------------------------------------------------------------------------------------
@@ -134,3 +135,22 @@ tasks.register<Test>("e2eTest") {
 }
 
 tasks.named<Test>("jvmTest") { enabled = false }
+
+// -----------------------------------------------------------------------------------------------
+// Custom-element declarations
+//
+// Every element in this demo writes its tag, its attribute names and its reference by hand without
+// this processor. With it, `ktjs-dom-kit-ksp` reads the class declarations and generates
+// `…Attributes` (the names, `ALL`, and the property-to-attribute table) and `…DefaultReference`
+// (the tag, the observed list, the table), so a companion object is one line with no arguments.
+//
+// The prefix is the whole reason the option exists: this site's tags are `demo-…`, while a library
+// element is a `ktjs-…` tag (`DemoCounter` → `demo-counter`).
+// -----------------------------------------------------------------------------------------------
+dependencies {
+    add("kspJs", project(":ktjs-dom-kit-ksp"))
+}
+
+ksp {
+    arg("ktjs.tagPrefix", "demo-")
+}

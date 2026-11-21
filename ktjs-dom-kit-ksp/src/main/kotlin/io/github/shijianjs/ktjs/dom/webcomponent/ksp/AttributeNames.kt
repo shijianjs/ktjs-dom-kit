@@ -32,3 +32,17 @@ internal fun attributeNameOf(propertyName: String): String {
 /** `maxCount` → `MAX_COUNT`, `XMLHttp` → `XML_HTTP`: the generated constant that holds an attribute name. */
 internal fun constantNameOf(propertyName: String): String =
     attributeNameOf(propertyName).replace('-', '_').uppercase()
+
+/**
+ * The tag of an element class whose name already carries the prefix, or the prefix followed by its
+ * kebab case.
+ *
+ * Prefixing unconditionally doubles the mark both families actually use: `DemoCounter` and `KtjsHero`
+ * are named after the prefix to begin with, so `demo-` + `demo-counter` would be the tag of neither.
+ * A class whose name does not start that way — `StepBadge` in a `demo-` module — gets the prefix, which
+ * is the case the option exists for.
+ */
+internal fun tagOf(prefix: String, className: String): String {
+    val kebab = attributeNameOf(className)
+    return if (prefix.isEmpty() || kebab.startsWith(prefix)) kebab else prefix + kebab
+}
