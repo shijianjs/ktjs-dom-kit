@@ -167,17 +167,22 @@ class ScreenshotTest(private val browser: Browser) {
         // The title lives in the navbar, the way the app-layout examples put it there, not in the drawer.
         assertEquals("ktjs-dom-kit", page.locator("ktjs-demo-layout [slot='navbar'] .layout__title").textContent())
         assertEquals(0, page.locator("ktjs-demo-layout [slot='drawer'] .layout__title").count())
-        // Every page row carries its Iconify icon in the prefix slot; groups carry one too.
+        // Every top-level row carries its Iconify icon in the prefix slot, and so does a group row; a
+        // group's children deliberately carry none — the row above them already names the section.
+        val drawer = "ktjs-demo-layout [slot='drawer']"
+        val topLevelRows = "$drawer vaadin-side-nav-item[data-route]:not([slot])"
+        val childRows = "$drawer vaadin-side-nav-item[data-route][slot='children']"
+        assertTrue(page.locator(topLevelRows).count() > 0, "the drawer has top-level page rows")
+        assertTrue(page.locator(childRows).count() > 0, "the drawer has page rows under a group")
         assertEquals(
-            page.locator("ktjs-demo-layout [slot='drawer'] vaadin-side-nav-item[data-route]").count(),
-            page.locator(
-                "ktjs-demo-layout [slot='drawer'] vaadin-side-nav-item[data-route] iconify-icon[slot='prefix']",
-            ).count(),
-            "every page row has an icon",
+            page.locator(topLevelRows).count(),
+            page.locator("$topLevelRows iconify-icon[slot='prefix']").count(),
+            "every top-level row has an icon",
         )
-        assertTrue(
-            page.locator("ktjs-demo-layout [slot='drawer'] iconify-icon[slot='prefix']").count() >=
-                page.locator("ktjs-demo-layout [slot='drawer'] vaadin-side-nav-item").count(),
+        assertEquals(
+            0,
+            page.locator("$childRows iconify-icon").count(),
+            "a group's children carry no icon of their own",
         )
         // The wrapper is only decoration if the icon never renders: `iconify-icon.status` tells.
         val icon = page.locator("ktjs-demo-layout [slot='drawer'] iconify-icon").first().evaluate(
@@ -218,15 +223,24 @@ class ScreenshotTest(private val browser: Browser) {
     fun `chinese switch repaints every string in place`() {
         val page = open("")
         pick(page, "lang:zh-Hans")
-        page.waitForSelector("ktjs-demo-page .page__title:text-is('ktjs-dom-kit 概览')")
+        page.waitForSelector("demo-overview-page .page__title:text-is('ktjs-dom-kit 概览')")
         // The menu closes with an animation; a screenshot taken mid-close shows a ghost overlay.
         page.keyboard().press("Escape")
         page.waitForTimeout(500.0)
+        // The drawer is rewritten in place, not rebuilt: the row a one-page group lifted to the top
+        // level and a row under a group both read Chinese now. The only remaining group row is "DOM",
+        // whose label is the same word in both languages, so the rows are what the switch shows.
         assertEquals(
-            "开始",
-            page.locator("ktjs-demo-layout vaadin-side-nav vaadin-side-nav-item").first()
-                .evaluate("node => node.querySelector('span').textContent") as String,
-            "group headings switch language too",
+            "概览",
+            page.locator("ktjs-demo-layout vaadin-side-nav vaadin-side-nav-item[data-route='overview'] span")
+                .first().textContent(),
+            "a lifted page row switches language",
+        )
+        assertEquals(
+            "元素创建",
+            page.locator("ktjs-demo-layout vaadin-side-nav vaadin-side-nav-item[data-route='elements'] span")
+                .first().textContent(),
+            "a group's child row switches language too",
         )
         assertNoHorizontalOverflow(page)
         shoot(page, "zh-overview")
@@ -240,12 +254,12 @@ class ScreenshotTest(private val browser: Browser) {
         // fourth is the typed one (optional, literal vocabulary, subscription).
         assertEquals(
             4,
-            page.locator("ktjs-demo-page .section").count(),
+            page.locator("demo-attribute-page .section").count(),
             "the page carries four sections",
         )
         assertEquals(
             "vaadin-button",
-            page.locator("ktjs-demo-page .section").last().locator("vaadin-button").first()
+            page.locator("demo-attribute-page .section").last().locator("vaadin-button").first()
                 .evaluate("node => node.tagName.toLowerCase()") as String,
             "the target is a wrapper element, not a bespoke one",
         )
@@ -266,7 +280,7 @@ class ScreenshotTest(private val browser: Browser) {
     @Test
     fun `the typed section distinguishes null, vocabulary and subscriptions`() {
         val page = open("#/attributes")
-        val section = page.locator("ktjs-demo-page .section").last()
+        val section = page.locator("demo-attribute-page .section").last()
         val initial = section.textContent()
         assertTrue(initial.contains("aria-label = null"), "an absent attribute must read as null: $initial")
         assertTrue(initial.contains("data-density = compact"), "the first vocabulary entry is the absent value: $initial")
@@ -292,7 +306,7 @@ class ScreenshotTest(private val browser: Browser) {
         val page = open("#/stylesheets")
         assertEquals(
             3,
-            page.locator("ktjs-demo-page .section").count(),
+            page.locator("demo-styling-page .section").count(),
             "adopted sheets, the three-step ladder, and the built selector",
         )
         assertNoHorizontalOverflow(page)

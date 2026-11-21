@@ -183,11 +183,11 @@ class DemoPageTest(private val browser: Browser) {
     @Test
     fun `the wordmark links back to the home page`() {
         val home = open("")
-        val homeTitle = home.locator("ktjs-demo-page .page__title").textContent()
+        val homeTitle = home.locator("demo-overview-page .page__title").textContent()
         home.close()
 
         val page = open("#/stylesheets")
-        page.waitForSelector("ktjs-demo-page .page__title:text-is('Stylesheets')")
+        page.waitForSelector("demo-styling-page .page__title:text-is('Stylesheets')")
 
         val link = page.locator("ktjs-demo-layout [slot='navbar'] a.layout__title-link")
         assertEquals(1, link.count(), "the title is wrapped in one link")
@@ -195,7 +195,7 @@ class DemoPageTest(private val browser: Browser) {
         assertEquals("ktjs-dom-kit", link.locator(".layout__title").textContent())
 
         link.click()
-        page.waitForSelector("ktjs-demo-page .page__title:text-is('$homeTitle')")
+        page.waitForSelector("demo-overview-page .page__title:text-is('$homeTitle')")
         assertEquals("#/", page.evaluate("location.hash") as String, "the link went home through the router")
         assertNoErrors()
     }
@@ -441,10 +441,10 @@ class DemoPageTest(private val browser: Browser) {
 
         assertEquals(0, (page.evaluate("document.adoptedStyleSheets.length") as Number).toInt())
         assertTrue(page.evaluate("customElements.get('ktjs-demo-layout') !== undefined") as Boolean)
-        assertTrue(page.evaluate("customElements.get('ktjs-demo-page') !== undefined") as Boolean)
+        assertTrue(page.evaluate("customElements.get('demo-overview-page') !== undefined") as Boolean)
         assertEquals(
             0,
-            (page.evaluate("document.querySelectorAll('ktjs-demo-page [style]').length") as Number).toInt(),
+            (page.evaluate("document.querySelectorAll('demo-overview-page [style]').length") as Number).toInt(),
             "page content is styled by sheets, not by inline declarations",
         )
         assertNoErrors()
@@ -478,7 +478,7 @@ class DemoPageTest(private val browser: Browser) {
         assertTrue(page.title().contains("Custom elements"), "title was: ${page.title()}")
         val breadcrumb = page.locator("ktjs-demo-layout vaadin-breadcrumbs").textContent().orEmpty()
         assertTrue(breadcrumb.contains("Custom elements"), "breadcrumb was: $breadcrumb")
-        assertTrue(page.locator("ktjs-demo-page .page__title").textContent().orEmpty().isNotEmpty())
+        assertTrue(page.locator("demo-web-component-page .page__title").textContent().orEmpty().isNotEmpty())
         assertEquals("#/custom-elements", page.evaluate("location.hash") as String)
         assertNoErrors()
     }
@@ -489,8 +489,8 @@ class DemoPageTest(private val browser: Browser) {
 
         assertTrue(page.locator("ktjs-demo-layout [slot='drawer'] vaadin-side-nav-item").count() >= 4)
         page.locator("[data-route='stylesheets']").first().click()
-        page.waitForSelector("ktjs-demo-page .page__title:text-is('Stylesheets')")
-        assertEquals(1, page.locator("ktjs-demo-page").count(), "the content area hosts one page")
+        page.waitForSelector("demo-styling-page .page__title:text-is('Stylesheets')")
+        assertEquals(1, page.locator("demo-styling-page").count(), "the content area hosts one page")
         assertNoErrors()
     }
 
@@ -504,7 +504,7 @@ class DemoPageTest(private val browser: Browser) {
         assertEquals("2", counter.locator(".counter__value").textContent())
 
         pick(page, "lang:zh-Hans")
-        page.waitForSelector("ktjs-demo-page .page__title:text-is('自定义元素')")
+        page.waitForSelector("demo-web-component-page .page__title:text-is('自定义元素')")
         assertEquals(
             "2",
             page.locator("demo-counter").first().locator(".counter__value").textContent(),
@@ -518,7 +518,7 @@ class DemoPageTest(private val browser: Browser) {
         val page = open("#/attributes")
         // Third section: the wrapper element and its `theme` token list. (The fourth section is the
         // typed one, so the readout is located inside the section rather than taken as `.last()`.)
-        val readout = page.locator("ktjs-demo-page .section").nth(2).locator(".readout").last()
+        val readout = page.locator("demo-attribute-page .section").nth(2).locator(".readout").last()
 
         page.locator("vaadin-button:text-is('toggle primary')").click()
         val added = readout.textContent().orEmpty()
@@ -545,7 +545,7 @@ class DemoPageTest(private val browser: Browser) {
     @Test
     fun `a selector built from parts paints the chip it names`() {
         val page = open("#/stylesheets")
-        val chips = page.locator("ktjs-demo-page demo-selector-strip span")
+        val chips = page.locator("demo-styling-page demo-selector-strip span")
         assertEquals(3, chips.count(), "the strip carries three chips")
 
         fun computed(locator: Locator, property: String): String =
