@@ -2,7 +2,6 @@ package io.github.shijianjs.ktjs.demo.page
 
 import io.github.shijianjs.ktjs.dom.element.invoke
 import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementAdapter
-import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementReferenceAdapter
 import web.html.HTMLElement
 import web.html.HtmlTagName
 
@@ -67,5 +66,5 @@ class EventLog : CustomElementAdapter() {
         replaceChildren()
     }
 
-    companion object : CustomElementReferenceAdapter<EventLog>(EventLog::class.js, "ktjs-demo-event-log")
+    companion object : EventLogDefaultReference()
 }

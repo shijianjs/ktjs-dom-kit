@@ -5,7 +5,6 @@ import io.github.shijianjs.ktjs.demo.nav.Page
 import io.github.shijianjs.ktjs.demo.style.RESET
 import io.github.shijianjs.ktjs.dom.element.invoke
 import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementAdapter
-import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementReferenceAdapter
 import io.github.shijianjs.ktjs.dom.webcomponent.attachStyledShadow
 import io.github.shijianjs.ktjs.vaadin.themablemixin.addTheme
 import io.github.shijianjs.ktjs.vaadin.verticallayout.VerticalLayoutVariants
@@ -129,7 +128,7 @@ open class DemoPage : CustomElementAdapter(), Page {
         return false
     }
 
-    companion object : CustomElementReferenceAdapter<DemoPage>(DemoPage::class.js, "ktjs-demo-page") {
+    companion object : DemoPageDefaultReference() {
         /** `new URL(value, base).href`: the browser's own resolver, so a relative path stays correct. */
         private val resolveUrl: (String, String) -> String = js("(value, base) => new URL(value, base).href")
 

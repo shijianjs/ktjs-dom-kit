@@ -174,6 +174,9 @@ internal object DemoCustomElements {
 清单里的一条**就是**元素的 companion object，所以没有 companion 的类不进清单：只被子类化的基类会保留它的
 `…DefaultReference`（子类的表从那里合并），但它自己没有标签。`abstract` 的类同理。
 
+对象名跟随标签前缀（`ktjs-` → `KtjsCustomElements`）；当这个前缀代表的是库族而不是模块时，用
+`ktjs.registryName` 改名——`ktjs-demo-kit` 生成的就是 `DemoCustomElements`。
+
 接入只有两行，写在元素自己所在的模块里：
 
 ```kotlin

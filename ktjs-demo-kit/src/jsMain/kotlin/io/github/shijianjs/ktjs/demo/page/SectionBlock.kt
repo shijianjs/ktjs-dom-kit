@@ -2,7 +2,6 @@ package io.github.shijianjs.ktjs.demo.page
 
 import io.github.shijianjs.ktjs.dom.element.invoke
 import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementAdapter
-import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementReferenceAdapter
 import io.github.shijianjs.ktjs.vaadin.themablemixin.addTheme
 import io.github.shijianjs.ktjs.vaadin.verticallayout.VerticalLayoutElement
 import io.github.shijianjs.ktjs.vaadin.verticallayout.VerticalLayoutVariants
@@ -58,5 +57,5 @@ class SectionBlock : CustomElementAdapter() {
         this.hint.toggleAttribute("hidden", hintText.isEmpty())
     }
 
-    companion object : CustomElementReferenceAdapter<SectionBlock>(SectionBlock::class.js, "ktjs-demo-section")
+    companion object : SectionBlockDefaultReference(name = "ktjs-demo-section")
 }

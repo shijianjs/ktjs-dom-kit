@@ -1,5 +1,6 @@
 plugins {
     kotlin("multiplatform")
+    id("com.google.devtools.ksp")
 }
 
 /**
@@ -52,4 +53,18 @@ kotlin {
             implementation(kotlin("test"))
         }
     }
+}
+
+// Every element in this module names its tag by hand in its reference — `ktjs-demo-layout`, `ktjs-demo-page`,
+// … With the processor, `ktjs-dom-kit-ksp` writes the `…DefaultReference` the companion extends, so the tag
+// is the class name in kebab case behind the default `ktjs-` prefix and a companion is one line. The one
+// class whose tag is not its own name (`SectionBlock` → `ktjs-demo-section`) passes `name =` instead.
+dependencies {
+    add("kspJs", project(":ktjs-dom-kit-ksp"))
+}
+
+ksp {
+    // The default name is derived from the tag prefix (`ktjs-` → `KtjsCustomElements`), which reads as the
+    // library family rather than this kit; this module is the demo kit, so it says so.
+    arg("ktjs.registryName", "DemoCustomElements")
 }

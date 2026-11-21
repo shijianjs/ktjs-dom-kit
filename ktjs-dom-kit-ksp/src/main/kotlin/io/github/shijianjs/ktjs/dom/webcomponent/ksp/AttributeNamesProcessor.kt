@@ -114,6 +114,8 @@ internal class AttributeNamesProcessor(
     private val logger: KSPLogger = environment.logger,
     private val tagPrefix: String = environment.options[TAG_PREFIX_OPTION] ?: DEFAULT_TAG_PREFIX,
     private val registryPackage: String? = environment.options[REGISTRY_PACKAGE_OPTION],
+    /** The name of the one object listing the elements; `ktjs.registryName` names it after the module. */
+    private val registryName: String? = environment.options[REGISTRY_NAME_OPTION],
 ) : SymbolProcessor {
 
     /** Qualified names already written in this compilation; a class must produce one file, not one per round. */
@@ -501,7 +503,7 @@ internal class AttributeNamesProcessor(
         }
         if (packageName.isBlank()) return
 
-        val name = registryNameOf(tagPrefix)
+        val name = registryName ?: registryNameOf(tagPrefix)
         val internal = elements.any { it.internal }
         val ordered = elements.sortedBy { it.qualifiedName }
         val registry = TypeSpec.objectBuilder(name)
@@ -561,6 +563,7 @@ internal class AttributeNamesProcessor(
     private companion object {
         const val TAG_PREFIX_OPTION = "ktjs.tagPrefix"
         const val REGISTRY_PACKAGE_OPTION = "ktjs.registryPackage"
+        const val REGISTRY_NAME_OPTION = "ktjs.registryName"
 
         /** The repositories' Kotlin style: four spaces, like the sources next to the generated files. */
         const val INDENT = "    "

@@ -23,7 +23,6 @@ import io.github.shijianjs.ktjs.dom.element.unaryPlus
 import io.github.shijianjs.ktjs.dom.element.inlineStyle
 import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementAdapter
 import io.github.shijianjs.ktjs.dom.webcomponent.attachStyledShadow
-import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementReferenceAdapter
 import io.github.shijianjs.ktjs.iconify.IconifyIconElement
 import io.github.shijianjs.ktjs.iconify.createIconifyIcon
 import io.github.shijianjs.ktjs.vaadin.applayout.AppLayoutPrimarySections
@@ -587,5 +586,5 @@ class DemoLayout : CustomElementAdapter() {
         }
     }
 
-    companion object : CustomElementReferenceAdapter<DemoLayout>(DemoLayout::class.js, "ktjs-demo-layout")
+    companion object : DemoLayoutDefaultReference()
 }

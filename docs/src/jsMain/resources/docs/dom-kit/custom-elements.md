@@ -192,6 +192,10 @@ one reference defines everything the module ships, pages a router has not create
 is the same list as the strings the browser knows, for markup, routing and tests. A companion that
 passed `register = false` stays undefined; the list inherits that decision instead of overriding it.
 
+The object's name follows the tag prefix (`ktjs-` → `KtjsCustomElements`); `ktjs.registryName` renames it
+when the prefix speaks for a library family rather than for the module — `ktjs-demo-kit` generates
+`DemoCustomElements`.
+
 An entry *is* an element's companion object, so a class without one is not in the list: a base that is
 only ever subclassed keeps its generated `…DefaultReference` — its subclasses merge their tables from it —
 but has no tag of its own. `abstract` classes are left out for the same reason.

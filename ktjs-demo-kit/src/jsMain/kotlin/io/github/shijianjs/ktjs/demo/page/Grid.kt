@@ -1,7 +1,6 @@
 package io.github.shijianjs.ktjs.demo.page
 
 import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementAdapter
-import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementReferenceAdapter
 import web.dom.Node
 
 /**
@@ -36,5 +35,5 @@ class Grid : CustomElementAdapter() {
         if (children.isNotEmpty()) append(*children)
     }
 
-    companion object : CustomElementReferenceAdapter<Grid>(Grid::class.js, "ktjs-demo-grid")
+    companion object : GridDefaultReference()
 }

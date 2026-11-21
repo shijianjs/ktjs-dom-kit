@@ -1,7 +1,6 @@
 package io.github.shijianjs.ktjs.demo.page
 
 import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementAdapter
-import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementReferenceAdapter
 import web.html.HTMLElement
 
 /**
@@ -33,5 +32,5 @@ class Readout : CustomElementAdapter() {
         textContent = text
     }
 
-    companion object : CustomElementReferenceAdapter<Readout>(Readout::class.js, "ktjs-demo-readout")
+    companion object : ReadoutDefaultReference()
 }
