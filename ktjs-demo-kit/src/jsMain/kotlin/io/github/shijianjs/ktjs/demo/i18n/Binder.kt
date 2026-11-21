@@ -1,12 +1,15 @@
 package io.github.shijianjs.ktjs.demo.i18n
 
+import web.dom.ChildNode
+import web.dom.Node
+import web.dom.document
 import web.html.HTMLElement
 
 /**
  * Binds the nodes of one page to the fields of its text class.
  *
  * A page keeps a [Translations] of its text class, hands it here, and registers each node once with
- * the field it reads. [apply] walks the registrations and rewrites `textContent` in place — no
+ * the field it reads. [apply] walks the registrations and rewrites the node's own text in place — no
  * rebuild, no `data-i18n` attributes, and a field that disappears from the text class fails to
  * compile at the binding that used it.
  *
@@ -24,11 +27,15 @@ class Binder<T : Any>(private val translations: Translations<T>) {
         private set
 
     /**
-     * Registers [node] to show [field] of the text class as its `textContent`; returns the node
+     * Registers [node] to show [field] of the text class as its own text; returns the node
      * unchanged, still typed as the concrete element, so a binding can be chained into its API.
+     *
+     * Only the node's text children are rewritten — element children (a slotted tooltip, a prefix
+     * icon) stay where they are. `textContent` would drop them, and a language switch happens after
+     * the page has already been built, so dropping them is silent until the next hover.
      */
     fun <E : HTMLElement> bind(node: E, field: (T) -> String): E {
-        bindings += Triple(node, field) { text -> node.textContent = text }
+        bindings += Triple(node, field) { text -> node.replaceOwnText(text) }
         return node
     }
 
@@ -56,4 +63,15 @@ class Binder<T : Any>(private val translations: Translations<T>) {
             node.toggleAttribute("hidden", text.isEmpty())
         }
     }
+}
+
+/** Replaces the text children of this node with [text], leaving its element children untouched. */
+private fun HTMLElement.replaceOwnText(text: String) {
+    var child: ChildNode? = firstChild
+    while (child != null) {
+        val next = child.nextSibling
+        if (child.nodeType == Node.TEXT_NODE) removeChild(child)
+        child = next
+    }
+    insertBefore(document.createTextNode(text), firstChild)
 }
