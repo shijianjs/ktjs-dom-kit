@@ -98,12 +98,13 @@ private const val DEFAULT_TAG_PREFIX = "ktjs-"
  * the tag is the `ktjs.tagPrefix` option (default `ktjs-`) followed by the class name in kebab case,
  * unless the name already starts that way — and a companion that passes `name = "…"` overrides it.
  * Which properties are attributes at all is decided by `isDelegated()`: inside a `CustomElementAdapter`
- * the only delegated properties are `attr` ones.
+ * the only delegated properties are `attr` ones. They have to be `public`, like the attributes they are.
  *
  * An enum-typed property also gets a codec (`KIND_CODEC`), so `by attr` needs no argument for it either.
  *
  * A class that extends another element gets that element's names and codecs merged into its own: the
- * browser reads `observedAttributes` per defined tag and knows nothing of Kotlin inheritance.
+ * browser reads `observedAttributes` per defined tag and knows nothing of Kotlin inheritance. A base
+ * whose module never ran this processor has nothing to merge, and the subclass gets a warning.
  *
  * After the last round, one more file lists every element of the compilation ([writeRegistry]), so a
  * site or a test can define all tags by touching one object.
@@ -214,6 +215,17 @@ internal class AttributeNamesProcessor(
             )
             return
         }
+        val hidden = properties.filter { it.getVisibility() != Visibility.PUBLIC }
+        if (hidden.isNotEmpty()) {
+            logger.error(
+                hidden.joinToString { "'$qualifiedName.${it.simpleName.asString()}' (${it.getVisibility()})" } +
+                    " is not public. An attribute is public by nature: markup, `getAttribute` and any code " +
+                    "holding the element reach it, and hiding only the Kotlin half splits one value in two. " +
+                    "Declare it `public`, or stop making it an attribute.",
+                declaration,
+            )
+            return
+        }
 
         val tag = tagOf(tagPrefix, attributeNameOf(simpleName))
         val referenceName = "${simpleName}DefaultReference"
@@ -287,6 +299,11 @@ internal class AttributeNamesProcessor(
      * module only if its `…DefaultReference` is on the classpath, which is exactly the condition for
      * extending it. `DemoPage` is neither: it is an element written by hand, and a page gets nothing
      * merged from it.
+     *
+     * An ancestor that declares attributes but has no generated reference is the case this cannot fix:
+     * the processor never ran in its module, so its names exist nowhere to merge. The walk continues,
+     * and [warnUncovered] leaves a warning — the alternative is a subclass that silently accepts no
+     * markup for the attributes its base declares.
      */
     private fun generatedParentOf(
         declaration: KSClassDeclaration,
@@ -309,10 +326,24 @@ internal class AttributeNamesProcessor(
                 val generatedElsewhere = superName != ADAPTER &&
                     resolver.getClassDeclarationByName(resolver.getKSNameFromString(candidate.canonicalName)) != null
                 if (generatedHere || generatedElsewhere) return candidate
+                warnUncovered(declaration, superDeclaration)
                 queue.add(superDeclaration)
             }
         }
         return null
+    }
+
+    /** Says it out loud when a base class has attributes but no module ever generated its tables. */
+    private fun warnUncovered(child: KSClassDeclaration, base: KSClassDeclaration) {
+        if (!base.extendsAdapter()) return
+        if (base.declarations.filterIsInstance<KSPropertyDeclaration>().none { it.isDelegated() }) return
+        logger.warn(
+            "'${base.qualifiedName?.asString()}' declares attributes but has no generated reference: its " +
+                "module does not run ktjs-dom-kit-ksp. '${child.qualifiedName?.asString()}' therefore cannot " +
+                "observe them, and markup that writes one is dropped without a word. Add the processor to that " +
+                "module, or declare the attributes on the element itself.",
+            child,
+        )
     }
 
     private fun KSPropertyDeclaration.enumType(): ClassName? {

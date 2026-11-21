@@ -19,10 +19,6 @@ class KtjsBadge : CustomElementAdapter() {
         attachShadowRoot().append(anchor)
     }
 
-    override fun connectedCallback() {
-        applyInitialAttributes()
-    }
-
     companion object : KtjsBadgeDefaultReference()
 }
 
@@ -38,7 +34,8 @@ val badge: KtjsBadge = KtjsBadge.NAME { href = "docs/intro" }
 
 1. **生命周期钩子**，按原生名字声明成可 override 的方法：`connectedCallback`、
    `connectedMoveCallback`、`disconnectedCallback`、`adoptedCallback`、`attributeChangedCallback`。
-   元素类写一句 `override fun connectedCallback()`，浏览器就会调用它。
+   没什么可加的那几个已经实现好了——`connectedCallback` 就负责属性的兜底（见下）——所以元素类只在自己真
+   有活儿时才 override 某个钩子，并调 `super`。
 2. **子类的 `attr` 委托**。每个属性初始化时把自己的委托注册到元素上，之后浏览器同步的
    `attributeChangedCallback` 把**已注册**属性的每次变化转给同名委托，所以属性与 attribute 不可能对不上
    ——连一个微任务的时间差都没有。详见[属性](./attributes.md)。
@@ -55,7 +52,7 @@ val badge: KtjsBadge = KtjsBadge.NAME { href = "docs/intro" }
 失败：property 照样读得到 attribute，初始值照样会到（升级回调或 `applyInitialAttributes()`），但**之后**对
 这个 attribute 的外部写入没人上报。手写 reference 时仍有两道防护：
 
-- `applyInitialAttributes()` 是元素连上后的兜底，漏写的名字至少还能报出它创建时带的那份标记。
+- `applyInitialAttributes()` 是基类 `connectedCallback` 已经跑过的兜底，漏写的名字至少还能报出它创建时带的那份标记。
 - 本仓库浏览器测试里的 `AttributeProbe` 拿生成出来的数组和属性实际注册的名字对齐，处理器漏掉一个名字会
   挂构建，而不是悄悄失效。
 
@@ -128,7 +125,8 @@ class KtjsHero : CustomElementAdapter() {
 
 - **attribute 名**是属性名的 kebab 形式（`logoSrc` → `logo-src`，`maxCount` → `max-count`），除非
   `@AttributeName` 另说。哪些属性算 attribute 由 `isDelegated()` 判定：适配器里的委托属性只有 `attr` 一种。
-  两个属性映射到同一个 attribute 会报编译错误。
+  两个属性映射到同一个 attribute 会报编译错误；委托属性不是 `public` 同样报错——attribute 本来就是公开的，
+  只把 Kotlin 那一半藏起来等于把一个值劈成两半。
 - **标签**是类名的 kebab 形式；只有当它本身不是以 `ktjs.tagPrefix`（默认 `ktjs-`）开头时，才把前缀加在前面。
   两族的类名本来就带自己的标记，所以 `KtjsHero` 是 `ktjs-hero`——不是 `ktjs-ktjs-hero`——而 `demo-` 模块里的
   `StepBadge` 是 `demo-step-badge`。全局配置写在模块里一次：
@@ -143,8 +141,9 @@ class KtjsHero : CustomElementAdapter() {
   （`Parent.ALL + arrayOf(…)`、`Parent.ATTRIBUTES.names + mapOf(…)`），因为 `observedAttributes` 属于被定义的
   那个标签，浏览器并不知道 Kotlin 侧的继承。属性属于声明它的那个类：子类只做加法，什么都不用重抄一遍。
   `override` 一个委托属性是编译错误——`override` 并不会替换父类的委托，父类的初始化器照样执行，那个 attribute
-  会落得两个委托。父类所在模块没跑处理器时不给任何东西——`ktjs-demo-kit` 里的 `DemoPage` 是手写的 reference，
-  它的页面只列自己声明的东西。
+  会落得两个委托。父类本身不是元素时什么也不贡献，检索直接往上走。父类**声明了** attribute、却从没生成过它的表
+  ——所在模块没跑处理器——才是这里补不了的静默失败：子类观察不到那些 attribute，写它们的标记会被无声丢掉，所以
+  处理器改发一条 warning。
 - **可见性跟随元素类**：`internal` 的元素得到 `internal` 的声明，因为 public 的 companion 无法继承
   `internal` 的父类。
 

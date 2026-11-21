@@ -37,10 +37,6 @@ class HoverBox : CustomElementAdapter() {
         attachStyledShadow(RESET, BOX_SHEET).append(label)
     }
 
-    override fun connectedCallback() {
-        applyInitialAttributes()
-    }
-
     /**
      * The text inside the box; called `labelText` because `HTMLElement.title` is the tooltip, which is
      * what `@AttributeName` is for: the property and the attribute do not have to be spelled alike.

@@ -68,11 +68,8 @@ class KtjsChip : CustomElementAdapter() {
         shadow.appendChild(label)
     }
 
-    override fun connectedCallback() {
-        // Markup that was already parsed reached the delegates on upgrade; this is the catch-up
-        // that also copies defaults in when asked to.
-        applyInitialAttributes()
-    }
+    // Nothing for connect: the base `connectedCallback` reports the markup the element was created
+    // with, so a delegate whose name the array below forgets still hears its initial value.
 
     // `observedAttributes` lists the attributes `attributeChangedCallback` reports — one entry per
     // `by attr` property. The browser reads it once, when the tag is defined.

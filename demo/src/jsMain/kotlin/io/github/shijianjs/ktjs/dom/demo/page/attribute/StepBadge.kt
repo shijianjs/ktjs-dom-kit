@@ -33,10 +33,6 @@ class StepBadge : CustomElementAdapter() {
         attachStyledShadow(RESET, BADGE_SHEET).append(label)
     }
 
-    override fun connectedCallback() {
-        applyInitialAttributes()
-    }
-
     /** The value the badge shows; defaults to 1 and is read from the `step` attribute. */
     var step: Int by attr(default = 1) { change ->
         label.textContent = "step = ${change.newValue}"

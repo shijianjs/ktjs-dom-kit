@@ -217,9 +217,13 @@ declaration. Removing the attribute goes back to it. Writing it into the markup 
 in one place:
 
 ```kotlin
+// Nothing to override: the base `connectedCallback` already runs the catch-up, and the defaults
+// stay in Kotlin.
+
+// To have them written into the markup as well, add the second pass:
 override fun connectedCallback() {
-    applyInitialAttributes()                          // defaults stay in Kotlin
-    applyInitialAttributes(writeDefaults = true)      // …and are copied into the markup first
+    super.connectedCallback()                          // the catch-up
+    applyInitialAttributes(writeDefaults = true)       // …and the defaults copied into the markup
 }
 ```
 
@@ -233,10 +237,10 @@ override fun connectedCallback() {
 - **On upgrade:** once per attribute the element already carried when
   `customElements.define` upgraded it, so markup parsed before the class was defined is reported
   without any help.
-- **On connect:** from `applyInitialAttributes()`, which is now the catch-up rather than the main
-  path: it reports whatever the current attributes say, and with `writeDefaults = true` it first
-  copies the defaults in. It is idempotent — a delegate that has already reported a value is skipped
-  — so calling it again on a reconnect does not repaint anything.
+- **On connect:** the base `connectedCallback` calls `applyInitialAttributes()`, the catch-up rather
+  than the main path: it reports whatever the current attributes say, and with `writeDefaults = true`
+  it first copies the defaults in. It is idempotent — a delegate that has already reported a value is
+  skipped — so calling it again on a reconnect does not repaint anything.
 
 Only real changes are reported. Writing the same decoded value again is not a change; removing the
 attribute is. A callback that writes its own property does not re-enter itself, so an element can

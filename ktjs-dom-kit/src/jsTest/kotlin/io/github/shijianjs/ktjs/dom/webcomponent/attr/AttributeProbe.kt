@@ -71,10 +71,6 @@ internal open class AttributeProbe : CustomElementAdapter() {
         echo = change.newValue
     }
 
-    override fun connectedCallback() {
-        applyInitialAttributes()
-    }
-
     // Registering is the companion's `init`: `AttributeProbe.NAME` defines the tag on first read, and
     // `AttributeProbe.NAME()` creates a detached probe — no `probeTag()` / `newProbe()` helpers.
     companion object : AttributeProbeDefaultReference(name = "ktjs-attr-probe")

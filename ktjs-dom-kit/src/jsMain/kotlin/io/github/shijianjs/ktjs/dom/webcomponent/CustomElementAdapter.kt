@@ -15,7 +15,8 @@ import web.html.HTMLElement
  * 1. Implements `web.components.CustomElement.WithCallbacks` on top of `HTMLElement`, so every
  *    lifecycle hook is the interface method the browser calls, spelled the native way:
  *    `connectedCallback`, `connectedMoveCallback`, `disconnectedCallback`, `adoptedCallback`,
- *    `attributeChangedCallback`. Element classes just `override fun connectedCallback()` and friends;
+ *    `attributeChangedCallback`. Element classes `override` a hook only when they have work of their
+ *    own there — connecting already does the attribute catch-up (see [applyInitialAttributes]) — and
  *    no `@JsName` is needed (and Kotlin forbids it on overrides anyway).
  *
  * 2. Hosts the [attr] delegates of its subclasses and feeds the browser's
@@ -76,7 +77,22 @@ open class CustomElementAdapter : HTMLElement(), CustomElement.WithCallbacks {
      */
     private val delegatesByAttribute: MutableMap<String, MutableList<AttributeDelegate<*>>> = mutableMapOf()
 
-    override fun connectedCallback() {}
+    /**
+     * The platform hook, called when the element enters the document: [applyInitialAttributes] and
+     * nothing else.
+     *
+     * Markup attributes never reach a property setter, so this is where the delegates first hear the
+     * values the element was spawned with, and where a delegate whose name was missing from
+     * `observedAttributes` still gets the value its attribute has right now. Later changes arrive on
+     * their own.
+     *
+     * An element with work of its own on connect overrides this and calls `super.connectedCallback()`;
+     * where in the method it goes matters when the two disagree — an attribute writes a property, a
+     * stored preference writes the same property, and the one that should win goes last.
+     */
+    override fun connectedCallback() {
+        applyInitialAttributes()
+    }
 
     override fun connectedMoveCallback() {}
 
@@ -87,8 +103,8 @@ open class CustomElementAdapter : HTMLElement(), CustomElement.WithCallbacks {
     /**
      * Notifies every [attr] delegate of the value its attribute has right now.
      *
-     * The browser already reports an observed attribute once the element is upgraded, so this is not
-     * the primary path any more; what it is for:
+     * [connectedCallback] calls it, so an element needs no line for the ordinary case; what the method
+     * itself is for:
      *
      * - **Defaults.** With `writeDefaults = true` it copies each `default` into a missing attribute
      *   first, so the markup a page is handed matches the values the properties report.

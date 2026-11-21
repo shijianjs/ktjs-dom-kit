@@ -199,9 +199,12 @@ button.themeAttr.clear()                   // 属性被删掉
 标记得显式要求，而且只有一处：
 
 ```kotlin
+// 什么都不用 override：基类的 `connectedCallback` 已经跑过兜底，默认值留在 Kotlin 侧。
+
+// 要把它也写进标记，再加一趟：
 override fun connectedCallback() {
-    applyInitialAttributes()                          // 默认值留在 Kotlin 侧
-    applyInitialAttributes(writeDefaults = true)      // ……先把它拷进标记
+    super.connectedCallback()                          // 兜底
+    applyInitialAttributes(writeDefaults = true)       // ……并把默认值拷进标记
 }
 ```
 
@@ -213,8 +216,9 @@ override fun connectedCallback() {
   报的已经是新值。删除走同一条路，`newValue == null`。
 - **升级时：** `customElements.define` 升级页面上已有的元素时，会给它原本就带的每个已观察属性各触发一次，
   所以定义类之前解析出来的标记不用额外帮忙就能到委托。
-- **连接时：** 来自 `applyInitialAttributes()`，如今它是兜底而非常规路径：按当前 attribute 上报一遍；传
-  `writeDefaults = true` 时先把默认值写进去。它是幂等的——已上报过的委托会被跳过——所以重连时再调不会重绘。
+- **连接时：** 基类 `connectedCallback` 会调 `applyInitialAttributes()`，它是兜底而非常规路径：按当前
+  attribute 上报一遍；传 `writeDefaults = true` 时先把默认值写进去。它是幂等的——已上报过的委托会被跳过
+  ——所以重连时再调不会重绘。
 
 只有真实变化才上报。写回同样的解码值不算变化，删除 attribute 算。回调里写自己的属性不会自我重入，因此
 元素可以规范化它拿到的值。

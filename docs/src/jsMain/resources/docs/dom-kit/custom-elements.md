@@ -20,10 +20,6 @@ class KtjsBadge : CustomElementAdapter() {
         attachShadowRoot().append(anchor)
     }
 
-    override fun connectedCallback() {
-        applyInitialAttributes()
-    }
-
     companion object : KtjsBadgeDefaultReference()
 }
 
@@ -41,8 +37,9 @@ in every class:
 
 1. **The lifecycle hooks**, declared as overridable methods under their native names:
    `connectedCallback`, `connectedMoveCallback`, `disconnectedCallback`, `adoptedCallback`,
-   `attributeChangedCallback`. An element class writes `override fun connectedCallback()` and the
-   browser calls it.
+   `attributeChangedCallback`. They are already implemented where there is nothing to add —
+   `connectedCallback` does the attribute catch-up (see below) — so an element class `override`s a hook
+   only when it has work of its own there, and calls `super`.
 2. **The `attr` delegates** of its subclasses. Each property registers its delegate with the element
    when it is initialised, and the browser's synchronous `attributeChangedCallback` feeds every later
    change of a *registered* attribute back into the delegate of that name, so a property and its
@@ -65,8 +62,8 @@ initial value still arrives (through `applyInitialAttributes()` or the upgrade c
 **later** external write to that attribute goes unreported. Two guards survive for a reference written
 by hand:
 
-- `applyInitialAttributes()` is the catch-up that runs once the element is connected, so a missed name
-  still reports the markup it was created with.
+- `applyInitialAttributes()` is the catch-up that the base `connectedCallback` already runs, so a missed
+  name still reports the markup it was created with.
 - `AttributeProbe` in this repository's browser tests compares the generated array with what the
   properties actually registered, so a name the processor misses fails the build instead of going quiet.
 
@@ -143,7 +140,8 @@ Rules the generator follows:
 - **An attribute name** is the property name in kebab case (`logoSrc` → `logo-src`, `maxCount` →
   `max-count`) unless `@AttributeName` says otherwise. Which properties are attributes at all is
   `isDelegated()`: inside an adapter, the only delegated properties are `attr` ones. Two properties
-  mapping to the same attribute is a compile error.
+  mapping to the same attribute is a compile error, and so is a delegated property that is not
+  `public` — the attribute is public by nature, and a hidden Kotlin half only splits one value in two.
 - **The tag** is the class name in kebab case, prefixed with `ktjs.tagPrefix` (default `ktjs-`) only
   when the name does not already start that way. Both families name their classes after their mark,
   so `KtjsHero` is `ktjs-hero` — not `ktjs-ktjs-hero` — while `StepBadge` in a `demo-` module is
@@ -163,8 +161,10 @@ Rules the generator follows:
   inheritance. An attribute belongs to the class that declares it: a subclass adds, and nothing has to
   be repeated. Overriding a delegated property is a compile error — an `override` does not replace the
   base delegate, whose initializer still runs, so the attribute would end up with two delegates. A
-  parent whose module does not run the processor contributes nothing — `DemoPage` in `ktjs-demo-kit` is
-  written by hand, and its pages list only what they declare.
+  parent that is not itself an element contributes nothing and is simply walked past. A parent that
+  *does* declare attributes but never had tables generated — its module does not run the processor —
+  is the silent case this cannot fix: the subclass cannot observe those attributes, and markup that
+  writes one is dropped without a word, so the processor emits a warning instead.
 - **The visibility follows the element**: an `internal` element gets `internal` declarations, because a
   public companion cannot extend an `internal` supertype.
 

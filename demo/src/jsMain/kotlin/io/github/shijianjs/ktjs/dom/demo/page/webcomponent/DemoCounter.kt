@@ -43,10 +43,6 @@ class DemoCounter : CustomElementAdapter() {
         incrementElement.clickEvent.addHandler { value += 1 }
     }
 
-    override fun connectedCallback() {
-        applyInitialAttributes()
-    }
-
     /** The current count, stored in the `value` attribute so it survives a reconnect. */
     var value: Int by attr(default = 0) { change ->
         valueElement.textContent = change.newValue.toString()

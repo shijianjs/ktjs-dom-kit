@@ -67,10 +67,8 @@ class KtjsChip : CustomElementAdapter() {
         shadow.appendChild(label)
     }
 
-    override fun connectedCallback() {
-        // 已经解析出来的标记在升级时就走到了委托；这里是一次幂等的兜底，顺带按需写入默认值。
-        applyInitialAttributes()
-    }
+    // 连接时什么都不用写：基类的 `connectedCallback` 会把元素创建时带的标记报一遍，所以下面这份名单
+    // 漏掉的名字照样能收到初始值。
 
     // `observedAttributes` 列出 `attributeChangedCallback` 会上报的属性，每个 `by attr` 属性一条。
     // 浏览器只在定义标签时读一次。
