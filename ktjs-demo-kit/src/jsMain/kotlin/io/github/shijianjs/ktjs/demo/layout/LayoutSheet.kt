@@ -176,8 +176,9 @@ val LAYOUT_SHEET: CSSStyleSheet = cssSheet {
 
     // The content column sizes its children to their content instead of stretching them, and a page is
     // the column's only child: without this a page — and every card, grid and table inside it — would be
-    // as wide as its longest line rather than as wide as the column.
-    "ktjs-demo-page" {
+    // as wide as its longest line rather than as wide as the column. The page's tag is the site's own
+    // (`aggrid-overview-page`, …), so the rule keys off the column, not off a tag name.
+    "vaadin-vertical-layout > *" {
         width = 100.pct
     }
 }
