@@ -534,6 +534,20 @@ registry 是全局的，将来真要 `npm publish` 某个包时得显式 `--regi
 取证办法：`--debug` 里翻 `Kotlin compiler args` 的 `-libraries`，若只有 wrapper 的 klib、没有
 `kotlin-stdlib-js-<版本>.klib`，先查这一条，别去怀疑 daemon 或缓存（清 build、`--stop`、换 JDK 都治不好）。
 
+**改了本仓导出的构造器签名，就得把发出去的消费模块一起重发**（2026-11 实测）。Kotlin/JS 的默认参数
+是调用方展开的：klib 里的调用点会显式把前几个默认值传一遍，所以给
+`CustomElementReferenceAdapter` 的构造器加一个参数（哪怕加在末尾、带默认值），旧 klib 的调用符号就
+在新 dom-kit 上找不到，链接出来的 JS 只剩一个抛出
+`Constructor 'CustomElementReferenceAdapter.<init>' can not be called: No constructor found for symbol '…'`
+的 stub——页面在 `customElements.define` 之前死掉，控制台只有这一行，e2e 全线超时。症状出现在消费方，
+本仓自己的 demo 因为吃 `project(":ktjs-dom-kit")` 反而是好的，容易误判成「本仓没问题」。
+
+```powershell
+./gradlew :ktjs-dom-kit:publishToMavenLocal :ktjs-dom-kit-ksp:publishToMavenLocal :ktjs-demo-kit:publishToMavenLocal
+```
+
+`ktjs-demo-kit` 的元素也在别的仓的 demo 里跑，漏发它等于所有 demo 都起不来。
+
 ## CI 与依赖更新
 
 - `.github/workflows/ci.yml` 只在**所有 PR** 和手动触发时运行 `./gradlew build`（JDK 21，Ubuntu），
