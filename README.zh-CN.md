@@ -5,7 +5,8 @@
 用 Kotlin/JS 手写 DOM 组件时用的辅助库：自定义元素基类、把 DOM 当作唯一状态来源的属性委托、shadow root
 样式辅助、类型化样式表（含选择器表达式引擎：`className(ROW) child attributeSelector("aria-current")`、
 `compound(…)`）、`createElement { … }` / `HtmlTagName.div { … }` / `+tag { … }` 这套元素构建
-写法，以及 `loadjs` 加载器的封装。没有 UI 框架、没有模板语言、没有「状态驱动重渲染」。
+写法，以及从 `loadjs` 翻译成 Kotlin 的脚本加载器（不依赖任何 npm 包）。没有 UI 框架、没有模板语言、没有
+「状态驱动重渲染」。
 
 这个仓库也是那些不值得单独开仓库的小库的落脚点。
 
@@ -18,10 +19,10 @@
 
 | 模块 | 坐标 | 版本 |
 | --- | --- | --- |
-| [ktjs-dom-kit](ktjs-dom-kit) | `io.github.shijianjs:ktjs-dom-kit` | `0.1.0` |
+| [ktjs-dom-kit](ktjs-dom-kit) | `io.github.shijianjs:ktjs-dom-kit` | `0.2.0` |
 
 ```kotlin
-implementation("io.github.shijianjs:ktjs-dom-kit:0.1.0")
+implementation("io.github.shijianjs:ktjs-dom-kit:0.2.0")
 ```
 
 ## 版本约定

@@ -5,8 +5,8 @@
 DOM helpers for Kotlin/JS: a custom-element base class, an attribute delegate that keeps the DOM as the
 single source of truth, shadow-root style helpers, typed stylesheets with a selector expression engine
 (`className(ROW) child attributeSelector("aria-current")`, `compound(…)`), element construction as
-`createElement { … }` / `HtmlTagName.div { … }` / `+tag { … }`, and a wrapper for the `loadjs`
-loader. No UI framework, no template language, no state-driven re-render.
+`createElement { … }` / `HtmlTagName.div { … }` / `+tag { … }`, and a Kotlin port of the `loadjs`
+script loader (no npm dependency). No UI framework, no template language, no state-driven re-render.
 
 The repository is also the home of the small libraries that do not need a repository of their own.
 
@@ -19,10 +19,10 @@ The repository is also the home of the small libraries that do not need a reposi
 
 | Module | Coordinate | Version |
 | --- | --- | --- |
-| [ktjs-dom-kit](ktjs-dom-kit) | `io.github.shijianjs:ktjs-dom-kit` | `0.1.0` |
+| [ktjs-dom-kit](ktjs-dom-kit) | `io.github.shijianjs:ktjs-dom-kit` | `0.2.0` |
 
 ```kotlin
-implementation("io.github.shijianjs:ktjs-dom-kit:0.1.0")
+implementation("io.github.shijianjs:ktjs-dom-kit:0.2.0")
 ```
 
 ## Versioning

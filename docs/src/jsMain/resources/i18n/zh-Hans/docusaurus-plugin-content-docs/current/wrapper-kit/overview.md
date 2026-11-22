@@ -14,7 +14,7 @@ sidebar_position: 1
 ## 什么放这里，什么不放
 
 切分依据是**npm 依赖**，不是「哪些函数恰好被共用」。`ktjs-dom-kit` 的 `jsMain` 会带上
-`@emotion/serialize`、`stylis`、`loadjs`；一个只想读 `card.ariaLabel = "…"` 的库不该被拖进这一串。所以
+`@emotion/serialize`、`stylis`；一个只想读 `card.ariaLabel = "…"` 的库不该被拖进这一串。所以
 本模块只依赖 `kotlin-browser`，两边都用它：
 
 ```mermaid
@@ -24,7 +24,7 @@ flowchart LR
   end
   subgraph authoring["编写侧 —— npm 包留在这边"]
     D["ktjs-dom-kit"]
-    NPM["@emotion/serialize · stylis · loadjs"]
+    NPM["@emotion/serialize · stylis"]
   end
   D -->|"api 依赖"| W
   NPM --> D

@@ -13,14 +13,14 @@ adopted by a shadow root.
 The library is published:
 
 ```kotlin
-implementation("io.github.shijianjs:ktjs-dom-kit:0.1.0")
+implementation("io.github.shijianjs:ktjs-dom-kit:0.2.0")
 ```
 
 ## What is in it
 
 | Part | Role |
 | --- | --- |
-| `ktjs-dom-kit` | the library: `CustomElementAdapter`, the `attr` delegate, shadow-root helpers, `cssSheet { … }`, the `loadjs` wrapper |
+| `ktjs-dom-kit` | the library: `CustomElementAdapter`, the `attr` delegate, shadow-root helpers, `cssSheet { … }`, the Kotlin port of the `loadjs` loader |
 | `docs` | this site: Kotlin configuration, Markdown pages, built by the [ktjs-docusaurus](https://github.com/shijianjs/ktjs-docusaurus) Gradle plugin |
 | the rest | Detekt, Playwright browser tests, the Maven Central release through the hub, the Pages workflow |
 
@@ -52,5 +52,5 @@ flowchart TB
   L --> T["attr delegate"]
   L --> S["shadow-root helpers"]
   L --> C["cssSheet { … }"]
-  L --> J["loadjs wrapper"]
+  L --> J["script loader"]
 ```

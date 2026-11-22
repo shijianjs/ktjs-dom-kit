@@ -62,8 +62,8 @@ include(":ktjs-dom-kit-ksp")
 
 // The wrapper-facing half of the DOM layer: the attribute objects, element helpers and the
 // custom-element base, with no npm dependency. Wrapper libraries (`ktjs-vaadin`, `ktjs-iconify`, …)
-// depend on this one and stay free of emotion/stylis/loadjs; `ktjs-dom-kit` depends on it with `api`
-// and adds the npm-backed halves (typed stylesheets, loadjs).
+// depend on this one and stay free of emotion's serializer and stylis; `ktjs-dom-kit` depends on it
+// with `api` and adds the typed-stylesheet half and the script loader.
 include(":ktjs-wrapper-kit")
 
 // The demo layer shared by every demo site in this account: shell, catalog, router, pages.

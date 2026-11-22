@@ -15,12 +15,12 @@ sidebar_position: 1
 | `ktjs-demo-kit` | 搭一个库的可运行演示站 | [Demo kit](../demo-kit/overview.md) |
 
 依赖是单向的：`ktjs-dom-kit` 再导出 `ktjs-wrapper-kit`，`ktjs-demo-kit` 再导出这两者。只描述 npm 组件的
-项目可以只依赖 `ktjs-wrapper-kit`，完全避开 DOM kit 那一边的 emotion / stylis / loadjs。
+项目可以只依赖 `ktjs-wrapper-kit`，完全避开 DOM kit 那一边的 emotion / stylis。
 
 ```mermaid
 flowchart LR
   W["ktjs-wrapper-kit<br/>给 npm 元素配类型化属性"]
-  D["ktjs-dom-kit<br/>element · webcomponent · attribute · css<br/>（还带着 emotion · stylis · loadjs）"]
+  D["ktjs-dom-kit<br/>element · webcomponent · attribute · css<br/>（还带着 emotion · stylis）"]
   M["ktjs-demo-kit<br/>站点布局 · 路由 · i18n · 区块"]
   W -->|"被再导出"| D
   D -->|"被再导出"| M
@@ -36,7 +36,7 @@ kotlin {
     }
     sourceSets {
         jsMain.dependencies {
-            implementation("io.github.shijianjs:ktjs-dom-kit:0.1.0")
+            implementation("io.github.shijianjs:ktjs-dom-kit:0.2.0")
         }
     }
 }

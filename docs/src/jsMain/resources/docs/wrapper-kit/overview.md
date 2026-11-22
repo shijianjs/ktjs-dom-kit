@@ -15,7 +15,7 @@ It has to be an object the extension property hands out — see [Typed attribute
 ## What belongs here, and what does not
 
 The split is by **npm dependency**, not by "which functions happen to be shared". `ktjs-dom-kit`'s
-`jsMain` brings `@emotion/serialize`, `stylis` and `loadjs`; a library that only wants to read
+`jsMain` brings `@emotion/serialize` and `stylis`; a library that only wants to read
 `card.ariaLabel = "…"` should not be pulled into that. So this module depends on `kotlin-browser` and
 nothing else, and both sides use it:
 
@@ -26,7 +26,7 @@ flowchart LR
   end
   subgraph authoring["authoring side — the npm packages stay here"]
     D["ktjs-dom-kit"]
-    NPM["@emotion/serialize · stylis · loadjs"]
+    NPM["@emotion/serialize · stylis"]
   end
   D -->|"api dependency"| W
   NPM --> D

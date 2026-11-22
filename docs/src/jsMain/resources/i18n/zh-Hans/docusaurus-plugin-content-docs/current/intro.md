@@ -12,14 +12,14 @@ title: 简介
 它是发布出去的：
 
 ```kotlin
-implementation("io.github.shijianjs:ktjs-dom-kit:0.1.0")
+implementation("io.github.shijianjs:ktjs-dom-kit:0.2.0")
 ```
 
 ## 里面有什么
 
 | 部分 | 作用 |
 | --- | --- |
-| `ktjs-dom-kit` | 库本体：`CustomElementAdapter`、`attr` 委托、shadow root 辅助、`cssSheet { … }`、`loadjs` 封装 |
+| `ktjs-dom-kit` | 库本体：`CustomElementAdapter`、`attr` 委托、shadow root 辅助、`cssSheet { … }`、`loadjs` 加载器的 Kotlin 实现 |
 | `docs` | 本站：Kotlin 配置 + Markdown 页面，由 [ktjs-docusaurus](https://github.com/shijianjs/ktjs-docusaurus) 的 Gradle 插件构建 |
 | 其余 | Detekt、Playwright 浏览器测试、经 hub 发布到 Maven Central、Pages 工作流 |
 
@@ -47,5 +47,5 @@ flowchart TB
   L --> T["attr 委托"]
   L --> S["shadow root 辅助"]
   L --> C["cssSheet { … }"]
-  L --> J["loadjs 封装"]
+  L --> J["脚本加载器"]
 ```

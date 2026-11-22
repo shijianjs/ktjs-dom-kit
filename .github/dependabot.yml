@@ -35,7 +35,6 @@ updates:
       upstream:
         patterns:
           - "@emotion/serialize"
-          - "loadjs"
           - "stylis"
 
   - package-ecosystem: github-actions

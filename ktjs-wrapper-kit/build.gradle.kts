@@ -15,8 +15,9 @@ plugins {
  * - `dom.webcomponent` (bridge stripping, shadow roots), `dom.element` (`createElement`,
  *   `inlineStyle`) and the `attr` delegate stay in `ktjs-dom-kit`. They are the parts most likely to
  *   change as the kit's own components evolve, and a wrapper has no use for them.
- * - `dom.css` (emotion + stylis) and `dom.loadjs` are npm-backed, and a wrapper should not inherit
- *   that dependency graph for a `Card.headerAttr`.
+ * - `dom.css` (emotion + stylis) is npm-backed, and a wrapper should not inherit that dependency
+ *   graph for a `Card.headerAttr`. `dom.loadjs` is Kotlin now, but it stays there too: a wrapper has
+ *   no use for a loader.
  *
  * Package names are unchanged on purpose (`io.github.shijianjs.ktjs.dom.attribute`): this is an
  * artifact split, not an API rename, so existing imports keep working whichever artifact they come

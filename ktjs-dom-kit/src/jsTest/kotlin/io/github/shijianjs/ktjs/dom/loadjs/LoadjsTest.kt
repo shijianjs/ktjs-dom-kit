@@ -1,12 +1,18 @@
 package io.github.shijianjs.ktjs.dom.loadjs
 
-import js.objects.unsafeJso
 import js.reflect.unsafeCast
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.runTest
 import kotlin.js.Promise
+import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertIs
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
 import web.dom.document
@@ -16,263 +22,355 @@ import web.html.HTMLScriptElement
 import web.html.HTMLElement
 
 /**
- * The `loadjs` wrapper, exercised against the real library in Chromium.
+ * The loader against a real browser: element kinds, insertion, retries and the bundle registry.
  *
- * Upstream's own suite (`test/tests.js`, mocha + chai) fetches the files under `assets/` from a
- * server. A browser test here has no files to fetch, so the same behaviours are driven through a
- * `data:` URL — a real resource the browser loads — and through a URL that can only fail; what
- * upstream asserts about the files it fetched is asserted here on the created elements, the callbacks
- * and the bundle registry.
+ * Upstream's suite (`test/tests.js`, mocha + chai) fetches files under `assets/` from a server. A
+ * browser test here has no server, so the same behaviours run through `data:` URLs — real resources
+ * the browser loads and runs — and through a URL that can only fail. The cases map onto upstream's
+ * groups: JavaScript loading, the `before` / `numRetries` options, the `css!` / `img!` / `module!` /
+ * `nomodule!` paths, and the API tests (`ready` / `done` / `reset` / `isDefined`).
+ *
+ * `Loadjs` suspends, so each case is a `running { … }` body — a `runTest` coroutine handed to the test
+ * DSL as the promise it expects. A load whose element `before` keeps out of the document never returns
+ * and runs in `backgroundScope`, which the end of the test cancels. The registry is the page's, as
+ * upstream's caches were, so every test starts from `Loadjs.reset()`.
  */
 class LoadjsTest {
 
-    @Test
-    fun theModuleFunctionLoadsAScriptAndRunsItsCallback(): Promise<Unit> {
-        val url = scriptUrl("document.title='ktjs-loadjs'")
+    @BeforeTest
+    fun startFromAnEmptyRegistry() {
+        Loadjs.reset()
+    }
 
-        return loadAndReport(url).then { outcome ->
-            assertTrue(outcome.succeeded, "the load reported a failure: ${outcome.failedPaths}")
-            assertEquals("ktjs-loadjs", document.title, "the script that loaded did not run")
-        }
+    /* ---- loading a file ---- */
+
+    @Test
+    fun aSinglePathLoadsItsScript(): Promise<Unit> = running {
+        Loadjs(scriptUrl("document.title='ktjs-single'"))
+
+        assertEquals("ktjs-single", document.title, "the call returned before the script ran")
     }
 
     @Test
-    fun theListBranchLoadsEveryPathAndTheBundleFormRunsTheCallback(): Promise<Unit> {
-        val first = scriptUrl("document.body.append(document.createElement('mark'))")
-        val second = scriptUrl("document.body.append(document.createElement('mark'))")
-
-        return loadAndReport(arrayOf(first, second), bundleId = BUNDLE_LIST).then { outcome ->
-            assertTrue(outcome.succeeded, "the load reported a failure: ${outcome.failedPaths}")
-            assertEquals(2, body.querySelectorAll("mark").length, "not every path ran")
-            body.querySelectorAll("mark").forEach { it.remove() }
-
-            // The bundle is registered by then, so `ready` answers without a second load.
-            var ready = false
-            loadjs.ready(BUNDLE_LIST) { ready = true }
-            assertTrue(ready, "the bundle was not satisfied when the callback ran")
-        }
-    }
-
-    @Test
-    fun aPathThatCannotLoadIsReportedWithItsPath(): Promise<Unit> {
+    fun aPathThatCannotLoadThrowsItsPath(): Promise<Unit> = running {
         val missing = unloadablePath()
 
-        return loadAndReport(arrayOf(missing, unloadablePath("second"))).then { outcome ->
-            assertFalse(outcome.succeeded, "a path that cannot load must not report success")
-            assertEquals(2, outcome.failedPaths.size, "both paths failed, so both are reported: ${outcome.failedPaths}")
-            assertTrue(missing in outcome.failedPaths, "the failing path is reported as written: ${outcome.failedPaths}")
-        }
+        val failure = assertIs<LoadFailedException>(failureOf { Loadjs(missing) })
+
+        assertEquals(missing, failure.path)
     }
 
     @Test
-    fun numRetriesRepeatsTheAttemptBeforeReportingTheFailure(): Promise<Unit> {
-        var attempts = 0
+    fun aFailedPathIsReportedWithItsPrefix(): Promise<Unit> = running {
+        val failing = "css!" + unloadablePath("styles.css")
 
-        return loadAndReport(
-            unloadablePath(),
-            bundleId = BUNDLE_RETRIES,
-            configure = {
-                numRetries = 1.0
-                // `before` runs once per attempt, so it counts them.
-                before = { _, _ -> attempts++; null }
-            },
-        ).then { outcome ->
-            assertFalse(outcome.succeeded, "a path that cannot load must not report success")
-            assertEquals(2, attempts, "numRetries = 1 means one retry, so two attempts")
-        }
+        val failure = assertIs<LoadFailedException>(failureOf { Loadjs(failing) })
+
+        assertEquals(failing, failure.path, "the path is reported as written, prefix included")
     }
 
     @Test
-    fun beforeSeesTheElementAndTheAsyncOptionReachesIt() {
-        val url = scriptUrl("document.title='ktjs-async'")
+    fun beforeSeesTheElementTheLoaderInserts(): Promise<Unit> = running {
+        val url = scriptUrl("document.title='ktjs-before'")
         var seen: HTMLElement? = null
 
-        loadjs(
+        Loadjs(
             url,
-            unsafeJso<LoadOptions> {
-                async = false
-                before = { _, element ->
-                    seen = element
-                    element.setAttribute("data-ktjs-probe", "")
-                    true
-                }
+            before = { _, element ->
+                seen = element
+                element.setAttribute("data-ktjs-probe", "")
+                true
             },
         )
 
         val script = assertNotNull(seen, "before was not called").unsafeCast<HTMLScriptElement>()
         assertEquals(url, script.getAttribute("src"), "the element points at the path as written")
-        assertEquals(false, script.async, "async = false did not reach the <script>")
-        assertSame(head, script.parentElement, "returning true inserts the element into <head>")
+        assertTrue(head.contains(script), "returning true leaves the insertion to the loader")
         assertEquals("", script.getAttribute("data-ktjs-probe"), "what before set on the element survived")
         script.remove()
     }
 
     @Test
-    fun beforeReturningFalseKeepsTheElementOutOfTheDocument() {
+    fun beforeReturningFalseKeepsTheElementOutOfTheDocument(): Promise<Unit> = running {
         val url = "/ktjs/never-fetched.js"
 
-        loadjs(
-            url,
-            unsafeJso<LoadOptions> {
-                before = { _, _ -> false }
-                // Nothing is inserted, so no load event can arrive; the callbacks exist to prove it.
-                success = { error("a load that was never inserted cannot succeed") }
-            },
-        )
+        // Nothing is inserted, so no event can arrive and this call never returns.
+        startAndLeaveRunning { Loadjs(url, before = { _, _ -> false }) }
 
-        assertEquals(null, head.querySelector("script[src='$url']"), "the element was inserted anyway")
+        assertNull(head.querySelector("script[src='$url']"), "the element was inserted anyway")
     }
 
     @Test
-    fun thePathPrefixesDecideWhichElementIsCreated() {
+    fun beforeReturningNullStillInsertsTheElement(): Promise<Unit> = running {
+        var created: HTMLElement? = null
+
+        startAndLeaveRunning {
+            Loadjs(
+                scriptUrl("void 0"),
+                // `null`, not `false`: only an explicit `false` opts out of the insertion.
+                before = { _, element -> created = element; null },
+            )
+        }
+
+        assertTrue(head.contains(assertNotNull(created)), "returning null inserts the element")
+        created?.remove()
+    }
+
+    /* ---- several files at once ---- */
+
+    @Test
+    fun aListOfPathsLoadsAllOfThem(): Promise<Unit> = running {
+        val first = scriptUrl("document.head.setAttribute('data-ktjs-first','1')")
+        val second = scriptUrl("document.head.setAttribute('data-ktjs-second','1')")
+
+        Loadjs(listOf(first, second))
+
+        assertEquals("1", head.getAttribute("data-ktjs-first"), "the first script did not run")
+        assertEquals("1", head.getAttribute("data-ktjs-second"), "the second script did not run")
+        head.removeAttribute("data-ktjs-first")
+        head.removeAttribute("data-ktjs-second")
+    }
+
+    @Test
+    fun aListOfPathsReportsTheOnesThatDidNotArrive(): Promise<Unit> = running {
+        val arrived = scriptUrl("document.head.setAttribute('data-ktjs-arrived','1')")
+        val missing = unloadablePath("missing.js")
+        val alsoMissing = "css!" + unloadablePath("missing.css")
+
+        val failure = assertIs<LoadsFailedException>(
+            failureOf { Loadjs(listOf(arrived, missing, alsoMissing)) },
+        )
+
+        assertEquals(listOf(missing, alsoMissing), failure.paths, "the failures keep the order they were asked in")
+        assertEquals("1", head.getAttribute("data-ktjs-arrived"), "a file that arrived stays loaded")
+        head.removeAttribute("data-ktjs-arrived")
+    }
+
+    @Test
+    fun anEmptyListReturnsAtOnce(): Promise<Unit> = running {
+        Loadjs(emptyList<String>())
+    }
+
+    /* ---- which element a path asks for ---- */
+
+    @Test
+    fun theExtensionDecidesTheKindEvenWithAQueryOrFragment(): Promise<Unit> = running {
         val created = mutableListOf<HTMLElement>()
 
-        loadjs(
-            arrayOf("css!/styles.custom", "img!/picture.custom", "module!/module.js"),
-            unsafeJso<LoadOptions> { before = { _, element -> created.add(element); false } },
-        )
+        listOf("/ktjs/styles.css?x=1", "/ktjs/picture.png#frag", "/ktjs/app.js?v=2").forEach { path ->
+            startAndLeaveRunning { Loadjs(path, before = { _, element -> created.add(element); false }) }
+        }
 
         assertEquals(3, created.size, "one element per path")
         created[0].unsafeCast<HTMLLinkElement>().let {
             assertEquals("stylesheet", it.getAttribute("rel"))
-            assertEquals("/styles.custom", it.getAttribute("href"), "the css! prefix is stripped from the URL")
+            assertEquals("/ktjs/styles.css?x=1", it.getAttribute("href"), "the query stays on the URL")
         }
         created[1].unsafeCast<HTMLImageElement>().let {
-            assertEquals("/picture.custom", it.getAttribute("src"), "the img! prefix is stripped from the URL")
+            assertEquals("/ktjs/picture.png#frag", it.getAttribute("src"), "the fragment stays on the URL")
         }
-        created[2].unsafeCast<HTMLScriptElement>().let {
-            assertEquals("module", it.getAttribute("type"), "module! loads the script as a module")
-            assertEquals("/module.js", it.getAttribute("src"))
+        created[2].unsafeCast<HTMLScriptElement>().let { script ->
+            assertEquals("/ktjs/app.js?v=2", script.getAttribute("src"))
+            // The loader adds neither `async` nor `defer`: a script it creates is a dynamic script,
+            // and the browser schedules it on its own terms whatever those attributes say.
+            assertFalse(script.hasAttribute("async"), "the loader does not set an attribute it cannot honour")
         }
-        assertEquals(0, head.querySelectorAll("link[href='/styles.custom'], img, script[src='/module.js']").length)
     }
 
     @Test
-    fun aNomodulePathIsSkippedInABrowserThatSupportsModules() {
+    fun thePrefixesOverrideTheExtensionAndAreStrippedFromTheUrl(): Promise<Unit> = running {
+        val created = mutableListOf<HTMLElement>()
+
+        listOf("css!/ktjs/styles.custom", "img!/ktjs/picture.custom", "module!/ktjs/module.js").forEach { path ->
+            startAndLeaveRunning { Loadjs(path, before = { _, element -> created.add(element); false }) }
+        }
+
+        assertEquals(3, created.size, "one element per path")
+        created[0].unsafeCast<HTMLLinkElement>().let {
+            assertEquals("stylesheet", it.getAttribute("rel"))
+            assertEquals("/ktjs/styles.custom", it.getAttribute("href"), "the css! prefix is stripped")
+        }
+        created[1].unsafeCast<HTMLImageElement>().let {
+            assertEquals("/ktjs/picture.custom", it.getAttribute("src"), "the img! prefix is stripped")
+        }
+        created[2].unsafeCast<HTMLScriptElement>().let {
+            assertEquals("module", it.getAttribute("type"), "module! loads the script as a module")
+            assertEquals("/ktjs/module.js", it.getAttribute("src"))
+        }
+    }
+
+    @Test
+    fun aNomodulePathIsSkippedWhereModulesExist(): Promise<Unit> = running {
         var created = 0
-        var finished = false
 
-        loadjs(
-            "nomodule!/legacy.js",
-            unsafeJso<LoadOptions> {
-                before = { _, _ -> created++; true }
-                success = { finished = true }
-            },
-        )
+        // Chromium has module support, so the pair's other half applies: no element, and the call
+        // returns as if the file had loaded.
+        Loadjs("nomodule!/ktjs/legacy.js", before = { _, _ -> created++; true })
 
-        // Chromium has module support, so upstream answers immediately and never touches the DOM.
-        assertTrue(finished, "a skipped path still counts as satisfied")
         assertEquals(0, created, "no element for a path this browser is not supposed to load")
     }
 
     @Test
-    fun theBundleIdFormRegistersTheBundleAndResetForgetsIt() {
-        loadjs.reset()
+    fun aStylesheetLoadsWithTheCssPrefix(): Promise<Unit> = running {
+        var link: HTMLLinkElement? = null
 
-        loadjs("/ktjs/never-fetched.js", BUNDLE_DEFINED, unsafeJso<LoadOptions> { before = { _, _ -> false } })
+        Loadjs(
+            "css!data:text/css,:root{--ktjs-loadjs:1}",
+            before = { _, element -> link = element.unsafeCast<HTMLLinkElement>(); true },
+        )
 
-        assertTrue(loadjs.isDefined(BUNDLE_DEFINED), "handing a bundle id to loadjs defines it")
-        assertFalse(loadjs.isDefined("ktjs-loadjs-undefined"), "an unknown id is not defined")
-
-        loadjs.reset()
-        assertFalse(loadjs.isDefined(BUNDLE_DEFINED), "reset forgets every bundle")
+        assertNotNull(assertNotNull(link).sheet, "the browser did not parse the stylesheet")
+        link.remove()
     }
 
     @Test
-    fun doneSatisfiesEachBundleAndReadyWantsAllOfThem() {
-        var ran = false
+    fun anImageLoadsWithTheImagePrefix(): Promise<Unit> = running {
+        var image: HTMLImageElement? = null
 
-        loadjs.ready(arrayOf(BUNDLE_ONE, BUNDLE_TWO)) { ran = true }
-        loadjs.done(BUNDLE_ONE)
-        assertFalse(ran, "the callback must wait for the second bundle")
+        Loadjs("img!$PIXEL_GIF", before = { _, element -> image = element.unsafeCast<HTMLImageElement>(); true })
 
-        loadjs.done(BUNDLE_TWO)
-        assertTrue(ran, "done satisfies the bundle the callback was waiting for")
+        assertTrue(assertNotNull(image).naturalWidth > 0, "the browser did not decode the image")
+        image.remove()
     }
 
-    @Test
-    fun readyReturnsTheModuleSoCallsChain() {
-        assertSame(loadjs, loadjs.ready(BUNDLE_ONE) {}, "a single bundle id chains")
-        assertSame(loadjs, loadjs.ready(arrayOf(BUNDLE_ONE, BUNDLE_TWO)) {}, "a list chains")
-        assertSame(loadjs, loadjs.ready(BUNDLE_ONE, unsafeJso<ReadyOptions> {}), "the options form chains")
-    }
+    /* ---- retries ---- */
 
     @Test
-    fun readyNamesTheBundlesThatNeverLoaded(): Promise<Unit> {
-        val reported = Promise<Array<String>> { resolve, _ ->
-            loadjs.ready(
-                arrayOf(BUNDLE_DONE, BUNDLE_FAILING),
-                unsafeJso<ReadyOptions> {
-                    success = { error("one bundle cannot load, so this must report an error") }
-                    error = { depsNotFound -> resolve(depsNotFound) }
-                },
-            )
-            loadjs.done(BUNDLE_DONE)
-            loadjs(unloadablePath(), BUNDLE_FAILING)
-        }
-
-        return reported.then { depsNotFound -> assertEquals(listOf(BUNDLE_FAILING), depsNotFound.toList()) }
-    }
-
-    @Test
-    fun thePromiseOverloadResolvesOnceTheFilesLoad(): Promise<Unit> {
-        val url = scriptUrl("document.title='ktjs-promise'")
-
-        return loadjs(url, promiseOptions {})
-            .then { assertEquals("ktjs-promise", document.title, "the promise resolved before the script ran") }
-    }
-
-    @Test
-    fun thePromiseOverloadRejectsWithThePathsThatFailed(): Promise<Unit> {
+    fun numRetriesRepeatsTheAttemptBeforeFailing(): Promise<Unit> = running {
+        var attempts = 0
         val missing = unloadablePath()
 
-        return loadjs(missing, BUNDLE_PROMISE, promiseOptions { numRetries = 1.0 }).then(
-            onFulfilled = { error("a path that cannot load must reject the promise") },
-            onRejected = { rejection ->
-                assertEquals(listOf(missing), unsafeCast<Array<String>>(rejection).toList())
-            },
+        val failure = assertIs<LoadFailedException>(
+            failureOf { Loadjs(missing, numRetries = 2, before = { _, _ -> attempts++; null }) },
         )
+
+        assertEquals(missing, failure.path)
+        assertEquals(3, attempts, "numRetries = 2 means two retries, so three attempts")
     }
+
+    /* ---- the bundle registry ---- */
+
+    @Test
+    fun bundleHandsOutOneObjectPerId() {
+        val bundle = Loadjs.bundle(BUNDLE_ONE)
+
+        assertSame(bundle, Loadjs.bundle(BUNDLE_ONE), "the same id must return the same bundle")
+        assertFalse(bundle.isDefined, "asking for a bundle does not define it")
+    }
+
+    @Test
+    fun aBundleIdCannotBeHandedToTheLoaderTwice(): Promise<Unit> = running {
+        // A failing load still defines the id before it throws.
+        failureOf { Loadjs(unloadablePath(), bundleId = BUNDLE_DEFINED) }
+
+        val thrown = failureOf { Loadjs(unloadablePath("second.js"), bundleId = BUNDLE_DEFINED) }
+
+        assertIs<BundleAlreadyDefinedException>(thrown)
+    }
+
+    @Test
+    fun isDefinedAnswersForWhatTheLoaderSaw(): Promise<Unit> = running {
+        assertFalse(Loadjs.isDefined(BUNDLE_DEFINED), "nothing has been handed over yet")
+
+        failureOf { Loadjs(unloadablePath(), bundleId = BUNDLE_DEFINED) }
+
+        assertTrue(Loadjs.isDefined(BUNDLE_DEFINED), "handing a bundle id to the loader defines it")
+        assertFalse(Loadjs.isDefined("ktjs-undefined"), "an unknown id is not defined")
+    }
+
+    @Test
+    fun readyReturnsAtOnceForABundleDoneEarlier(): Promise<Unit> = running {
+        Loadjs.bundle(BUNDLE_DONE).done()
+
+        Loadjs.bundle(BUNDLE_DONE).ready() // answers from the cached result instead of suspending
+    }
+
+    @Test
+    fun readyWaitsUntilDonePublishesTheBundle(): Promise<Unit> = running {
+        var resumed = false
+
+        startAndLeaveRunning { Loadjs.bundle(BUNDLE_ONE).ready(); resumed = true }
+        assertFalse(resumed, "ready returned before the bundle was done")
+
+        Loadjs.bundle(BUNDLE_ONE).done()
+        testScheduler.runCurrent()
+
+        assertTrue(resumed, "done did not resume the waiting call")
+    }
+
+    @Test
+    fun readyMadeBeforeTheLoadIsResumedByIt(): Promise<Unit> = running {
+        var resumed = false
+
+        // `ready` on an id nothing has loaded yet: the entry exists, its load has not started.
+        startAndLeaveRunning { Loadjs.bundle(BUNDLE_ONE).ready(); resumed = true }
+        assertFalse(resumed)
+
+        Loadjs(scriptUrl("void 0"), bundleId = BUNDLE_ONE)
+        testScheduler.runCurrent() // the waiter was resumed onto the test dispatcher
+
+        assertTrue(resumed, "the load did not finish the bundle an earlier ready was waiting on")
+    }
+
+    @Test
+    fun readyReportsTheFailureItsLoadHad(): Promise<Unit> = running {
+        val missing = unloadablePath("bundle.js")
+        failureOf { Loadjs(missing, bundleId = BUNDLE_FAILING) }
+
+        val failure = assertIs<LoadFailedException>(failureOf { Loadjs.bundle(BUNDLE_FAILING).ready() })
+
+        assertEquals(missing, failure.path, "ready reports the load's own failure")
+    }
+
+    @Test
+    fun resetForgetsTheIdsAndTheirResults(): Promise<Unit> = running {
+        failureOf { Loadjs(unloadablePath(), bundleId = BUNDLE_DEFINED) }
+        assertTrue(Loadjs.isDefined(BUNDLE_DEFINED))
+
+        Loadjs.reset()
+
+        assertFalse(Loadjs.isDefined(BUNDLE_DEFINED), "reset forgets every id")
+
+        // The id is free again — this does not throw `BundleAlreadyDefinedException` — and the fresh
+        // failure is its own, so the cached one went with it.
+        val again = unloadablePath("again.js")
+        val failure = assertIs<LoadFailedException>(failureOf { Loadjs(again, bundleId = BUNDLE_DEFINED) })
+        assertEquals(again, failure.path)
+    }
+
+    /* ---- helpers ---- */
 
     /**
-     * Runs one load and reports what upstream said about it, whichever callback it used.
-     *
-     * The `error` and `success` fields of one [LoadOptions] object both resolve the same promise, so a
-     * wrong callback fails an assertion instead of hanging the suite.
+     * A case as a coroutine: `runTest` gives the case virtual time and a `backgroundScope`, and on
+     * Kotlin/JS it returns coroutines-test's own promise type — the same object the test DSL takes
+     * under its stdlib name, so the cast happens here once instead of in every case.
      */
-    private fun loadAndReport(
-        paths: String,
-        bundleId: String? = null,
-        configure: LoadOptions.() -> Unit = {},
-    ): Promise<Outcome> = report(configure) { options ->
-        if (bundleId == null) loadjs(paths, options) else loadjs(paths, bundleId, options)
+    private fun running(block: suspend TestScope.() -> Unit): Promise<Unit> =
+        runTest(testBody = block).unsafeCast<Promise<Unit>>()
+
+    /**
+     * Starts a load and leaves it running: for the calls whose element `before` keeps out of the
+     * document, which therefore never return. `backgroundScope` is cancelled when the test ends, so a
+     * suspended call is not a leak.
+     */
+    private fun TestScope.startAndLeaveRunning(block: suspend () -> Unit) {
+        backgroundScope.launch(start = CoroutineStart.UNDISPATCHED) { block() }
     }
 
-    /** The list branch of the same helper. */
-    private fun loadAndReport(
-        paths: Array<String>,
-        bundleId: String? = null,
-        configure: LoadOptions.() -> Unit = {},
-    ): Promise<Outcome> = report(configure) { options ->
-        if (bundleId == null) loadjs(paths, options) else loadjs(paths, bundleId, options)
-    }
-
-    private fun report(configure: LoadOptions.() -> Unit, call: (LoadOptions) -> Unit): Promise<Outcome> =
-        Promise { resolve, _ ->
-            val options = unsafeJso<LoadOptions> {
-                success = { resolve(Outcome(succeeded = true)) }
-                error = { pathsNotFound -> resolve(Outcome(succeeded = false, failedPaths = pathsNotFound.toList())) }
-            }
-            options.configure()
-            call(options)
+    /** What a suspending call threw, so a `runTest` body can assert on a failure without a helper. */
+    private suspend fun failureOf(block: suspend () -> Unit): Throwable {
+        var thrown: Throwable? = null
+        try {
+            block()
+        } catch (failure: Throwable) {
+            thrown = failure
         }
-
-    /** What upstream reported for one load. */
-    private class Outcome(val succeeded: Boolean, val failedPaths: List<String> = emptyList())
+        return thrown ?: error("the call was expected to fail and returned instead")
+    }
 
     /**
      * A `data:` URL holding a real script: something the browser genuinely fetches and runs, without a
-     * server behind it. The body must not contain `?` or `#` — upstream cuts the URL at those.
+     * server behind it. The body must not contain `?` or `#` — the loader cuts the path at those.
      */
     private fun scriptUrl(body: String): String = "data:text/javascript,$body"
 
@@ -284,16 +382,14 @@ class LoadjsTest {
 
     private val head: HTMLElement get() = document.head
 
-    private val body: HTMLElement get() = document.body
-
     private companion object {
-        const val BUNDLE_LIST = "ktjs-loadjs-list"
-        const val BUNDLE_RETRIES = "ktjs-loadjs-retries"
         const val BUNDLE_DEFINED = "ktjs-loadjs-defined"
         const val BUNDLE_ONE = "ktjs-loadjs-one"
-        const val BUNDLE_TWO = "ktjs-loadjs-two"
         const val BUNDLE_DONE = "ktjs-loadjs-done"
         const val BUNDLE_FAILING = "ktjs-loadjs-failing"
-        const val BUNDLE_PROMISE = "ktjs-loadjs-promise"
+
+        /** A 1×1 transparent GIF; `img!` makes the browser fetch and decode it. */
+        const val PIXEL_GIF =
+            "data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw=="
     }
 }

@@ -24,7 +24,7 @@ val versionSuffix = rootProject.extra["versionSuffix"] as String
 @Suppress("UNCHECKED_CAST")
 val npmVersions = rootProject.extra["npmVersions"] as Map<String, String>
 
-version = "0.1.0$versionSuffix"
+version = "0.2.0$versionSuffix"
 description =
     "Generic Kotlin/JS DOM helpers: custom-element base class, shadow-root styles, typed inline styles."
 
@@ -51,8 +51,8 @@ kotlin {
     sourceSets {
         jsMain.dependencies {
             // The attribute layer, element helpers and the custom-element base live in
-            // `ktjs-wrapper-kit` so wrapper libraries can use them without pulling emotion/loadjs.
-            // `api`: this module is meant to hand out the whole DOM API to page code.
+            // `ktjs-wrapper-kit` so wrapper libraries can use them without pulling emotion's
+            // serializer. `api`: this module is meant to hand out the whole DOM API to page code.
             api(project(":ktjs-wrapper-kit"))
             // `api`: the public surface exposes kotlin-browser types (`HTMLElement`, `Element`, …)
             // and kotlin-csstype's `Properties`, the typed view of an element's inline style.
@@ -63,12 +63,19 @@ kotlin {
             // neither type is in the public API.
             implementation(npm("@emotion/serialize", npmVersions.getValue("@emotion/serialize")))
             implementation(npm("stylis", npmVersions.getValue("stylis")))
-            // The `dom.loadjs` package wraps this loader; it ships UMD only (`dist/loadjs.umd.js`),
-            // which is why the declaration binds to the module's default export.
-            implementation(npm("loadjs", npmVersions.getValue("loadjs")))
+            // `dom.loadjs` is written in Kotlin — no npm package, nothing to bind: the upstream
+            // source is ~320 lines of stable ES5, so the loader is owned here instead of resolved.
+            //
+            // `dom.loadjs` is `suspend`, and a page awaits it from `launch { Loadjs(…) }`; the module
+            // itself uses `coroutineScope`/`async` for the list form. `api` so the coroutines library
+            // comes with the module instead of being a line every consumer has to add. kotlin-browser
+            // only declares it `implementation`, hence the explicit coordinate.
+            api("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
         }
         jsTest.dependencies {
             implementation(kotlin("test"))
+            // The loader suspends, so its cases are written as `runTest { … }`.
+            implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
         }
     }
 }

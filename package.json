@@ -17,7 +17,6 @@
   "dependencies": {
     "@docusaurus/theme-mermaid": "3.10.2",
     "@emotion/serialize": "1.3.3",
-    "loadjs": "4.3.0",
     "stylis": "4.4.0"
   }
 }

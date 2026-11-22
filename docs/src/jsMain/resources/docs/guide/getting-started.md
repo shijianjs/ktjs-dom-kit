@@ -16,12 +16,12 @@ This repository publishes three artifacts. Most projects want one of them:
 
 Dependencies point one way: `ktjs-dom-kit` re-exports `ktjs-wrapper-kit`, and `ktjs-demo-kit` re-exports
 both. A project that only describes npm components can depend on `ktjs-wrapper-kit` alone and stay clear
-of the emotion/stylis/loadjs side of the DOM kit.
+of the emotion/stylis side of the DOM kit.
 
 ```mermaid
 flowchart LR
   W["ktjs-wrapper-kit<br/>typed attributes for an npm element"]
-  D["ktjs-dom-kit<br/>element · webcomponent · attribute · css<br/>(also ships emotion · stylis · loadjs)"]
+  D["ktjs-dom-kit<br/>element · webcomponent · attribute · css<br/>(also ships emotion · stylis)"]
   M["ktjs-demo-kit<br/>site layout · router · i18n · blocks"]
   W -->|"re-exported by"| D
   D -->|"re-exported by"| M
@@ -37,7 +37,7 @@ kotlin {
     }
     sourceSets {
         jsMain.dependencies {
-            implementation("io.github.shijianjs:ktjs-dom-kit:0.1.0")
+            implementation("io.github.shijianjs:ktjs-dom-kit:0.2.0")
         }
     }
 }

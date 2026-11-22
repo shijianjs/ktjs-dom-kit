@@ -21,20 +21,24 @@
 模块、以 Maven 构件命名，构建按 `ktjs-` 前缀自动收集发布、Dokka 与版本报表。派生自
 [`shijianjs/ktjs-wrapper-template`](https://github.com/shijianjs/ktjs-wrapper-template)，通用约定保持同步。
 
-- `ktjs-dom-kit`：发布模块，本仓库的第一个库。它不包装 npm 包，版本是手写的语义版本 `0.1.0`（见
+- `ktjs-dom-kit`：发布模块，本仓库的第一个库。它不包装 npm 包，版本是手写的语义版本 `0.2.0`（见
   `semanticModules`）。内容：**页面侧**那一半（`cssSheet { … }` 经 `@emotion/serialize` + `stylis`、
-  `loadjs` 封装），加上**写自定义元素**那一半（`dom.webcomponent` 的 `CustomElementAdapter` 与 shadow
+  `dom.loadjs`——从上游 `loadjs` 翻译成 Kotlin 的加载器，不再解析 npm 包），加上**写自定义元素**那一半
+  （`dom.webcomponent` 的 `CustomElementAdapter` 与 shadow
   root、`dom.element` 的 `createElement` / `invoke` / `unaryPlus` 与 `inlineStyle`、`dom.webcomponent.attr`
   里的 `attr` 委托与 `AttributeChange`）。包按关注点分：`dom.css`（只剩 `cssSheet`，语法糖全在
   `dom.css.dsl`：伪类、at-rule、渐变、`@supports`、以及拼选择器的 `CssSelector` 引擎）、
   `dom.loadjs`、`dom.element`、`dom.webcomponent`（`attr` 委托是它的子包：只给自定义元素作者用，对外的
   公开面基本就是 `attr`）。
   它用 `api(project(":ktjs-wrapper-kit"))` 把 wrapper 那一半也交给页面代码，所以对外 API 仍是完整的一份。
+  `dom.loadjs` 的 `invoke` 两个形式都是 `suspend`（单路径，或一个路径列表并发跑完再返回），模块因此 `api` 依赖
+  `kotlinx-coroutines-core`（`kotlin-browser` 只把它声明成 `implementation`，不会传给消费方）：页面写
+  `launch { Loadjs(…) }` 时不用自己再加一行。
 - `ktjs-wrapper-kit`：发布模块，**只放「操作别人的元素」那一层**，也是各 wrapper 库（`ktjs-vaadin`、
   `ktjs-iconify`、`ktjs-echarts` …）唯一该依赖的 DOM 库。内容就是 `dom.attribute` 里对 wrapper 有用的
   部分：`Attribute`、`TokenListAttribute`、`JsonAttribute`、`AttributeCodec` 与 `dom.attribute.types`、
   `AttributeWatch`。它**只依赖 `kotlin-browser`**（无 npm、无 csstype），这正是拆分的理由：只要
-  `Card.headerAttr` 的消费方不该被拖进 emotion 与 loadjs。包名与拆分前逐字相同，所以是「构件拆分」
+  `Card.headerAttr` 的消费方不该被拖进 emotion 与 stylis。包名与拆分前逐字相同，所以是「构件拆分」
   不是「API 改名」。
   - **两个 attribute 包的分工**（名字相近，别混）：`dom.attribute` = 操作**别人的**元素（wrapper 侧，
     只有 `Attribute` 家族与 codec，纯读写的值对象）；`dom.webcomponent.attr` = 给**自己写的**自定义元素
@@ -213,7 +217,14 @@ wrapper 的目标是让上游 npm 包暴露的公开 API 在 Kotlin/JS 侧都能
 
 - DOM 元素：`web.html.HTMLElement`
 - 全局 document：`web.dom.document`
-- 创建元素：`document.createElement(<Project>TagName.xxx)`，无需 `unsafeCast`
+- 创建元素：优先用本仓库的 DSL——`HtmlTagName.xxx { … }`（`dom.element` 里 `TagName<T>.invoke` /
+  `createElement` 的扩展），块里就是类型化的 `T`；`document.createElement(<Project>TagName.xxx)` 只在需要
+  传别的 `Document`、或调用点已经叫 `createElement` 时用，两种写法都不需要 `unsafeCast`。
+- 事件类型：常量在 `web.events` 的 `Event.Companion` 扩展上（`import web.events.LOAD` 后用 `Event.LOAD`、
+  `Event.ERROR`…），不要手写 `EventType<Event>("load")`。
+- 监听：`addEventListener(type, callback: EventHandler, options)` 是 **internal** 成员，公开的是
+  `web.events.addEventListener` 扩展；签名里 `options` 在最后，所以 handler 只能按位置传
+  （`element.addEventListener(Event.LOAD, EventHandler { … })`），尾随 lambda 会被当成 `options`。
 - 所有自定义元素标签名集中在根包的单个对象里，每个元素一个
   `inline val xxx: TagName<XxxElement>`；不要在组件包里各自声明 `XxxTagName`，同一标签名只能有一处声明。
 
@@ -235,14 +246,15 @@ Gradle 9 / JDK 25。升级时注意 2.0 的插件 ID 是 `dev.detekt`，规则�
 - `@JsModule` 声明必须按 ESM 语义书写：`@file:JsModule` 的顶层函数/类会生成具名导入，安全；但顶层
   `external val` 配 `@JsName` 会生成 default import，对只有具名导出的包必须写成 `@JsModule` +
   `external object` + 具名属性。
-- **可调用的模块导出（导出的是函数对象，属性挂在同一个函数上，如 `loadjs`）分两半写**：把 `operator fun
+- **可调用的模块导出（导出的是函数对象，属性挂在同一个函数上）分两半写**：把 `operator fun
   invoke` 声明在 `external interface` 上**不会**编译成调用——Kotlin/JS 生成的是 `obj.invoke(...)`
   属性查找，运行时 `TypeError: ….invoke is not a function`（2026-11 在 Kotlin 2.4.21 + es2015 上实测）。
-  正确写法：成员留在接口上（`@JsName("default") external val loadjs: Loadjs`），调用声明成
+  正确写法：成员留在接口上（`@JsName("default") external val x: X`），调用声明成
   `internal external fun`（同样 `@JsName("default")`；参数用 `Any?` 配 `definedExternally` 默认值原样
   透传，省略的参数才会是 `undefined` 而不是 `null`），对外的可调用性由**扩展** `operator fun
-  Loadjs.invoke(...)` 提供，调用点照旧写 `loadjs(...)`。接口上不要再留 `invoke` 成员：成员优先于扩展，
-  会又退回属性查找。
+  X.invoke(...)` 提供，调用点照旧写 `x(...)`。接口上不要再留 `invoke` 成员：成员优先于扩展，
+  会又退回属性查找。`dom.loadjs` 以前就是这样绑的，但上游只有 320 行稳定 ES5，已改成 Kotlin 实现 ——
+  新遇到这种形状的包时照此处理，不值得为它留一个 npm 依赖。
 - 同一个 `@JsName("default")` 只保留**一份**声明：声明两份时编译器只给其中一份混淆后的别名
   （`default_0`），另一份引用成裸 `default`（保留字），webpack 直接报
   `Module parse failed: Unexpected token`。函数对象那种「成员 + 调用」的拆分正好落在两份声明里，所以调用
@@ -303,7 +315,11 @@ Gradle 9 / JDK 25。升级时注意 2.0 的插件 ID 是 `dev.detekt`，规则�
    自己的说明，避免反复讨论。常见放弃项：视觉/截图测试、shadow DOM 结构快照、依赖私有成员（`_foo`、`$`）
    的内部测试、上游模板语法专用的入口（如 Lit 指令）、需要真实键鼠序列（`sendKeys`、指针拖拽）或真实
    文件上传的用例。
-5. **异步用例**：Kotlin/JS 的 `@Test` 函数直接返回 `Promise<Unit>`，不要 sleep，也不要引入协程测试库。
+5. **异步用例**：Kotlin/JS 的 `@Test` 函数直接返回 `Promise<Unit>`，不要 sleep。
+   `suspend` API 用已声明的 `kotlinx-coroutines-test` 测：用例体是 `runTest { … }`，再由测试文件里的
+   `running` helper 交给 DSL（`runTest` 在 JS 上返回它自己的 promise 类型，helper 里一次
+   `unsafeCast<Promise<Unit>>` 转成 DSL 认的那个）。永不返回的调用放 `backgroundScope`（测试结束自动
+   取消），断言异常用 `try { … } catch` + `assertIs`（`assertFailsWith` 是阻塞式的，等不到协程里的抛出）。
 6. **测试里的 DOM 访问走类型安全 API**：优先用 kotlin-browser 的 `web.dom` 类型（`element.shadowRoot`、
    `querySelector`、`getAttribute`、`textContent`）和测试辅助里的 `shadowQuery` / `shadowQueryAll` /
    `shadowQueryNode` / `query` / `queryAll`，不要在 `js(...)` 里手写 DOM 查询——测试代码同样受编译期检查，
@@ -562,7 +578,7 @@ registry 是全局的，将来真要 `npm publish` 某个包时得显式 `--regi
   不该卡住合并。
 - `.github/dependabot.yml` 覆盖 `gradle`、`npm`（根目录 `package.json`）和 `github-actions` 三个生态。
   npm 版本由 Dependabot 改 `package.json`，Gradle 自动读取，不再手工改 `npm(...)`。`upstream` 分组里列
-  着本仓库用到的 npm 包（目前是 `@emotion/serialize`、`stylis`、`loadjs`），加新库时按它的包替换/追加。
+  着本仓库用到的 npm 包（目前是 `@emotion/serialize`、`stylis`），加新库时按它的包替换/追加。
 - Gradle wrapper 固定在 `9.4.1`，并在 Dependabot 里忽略 `gradle-wrapper`：IntelliJ IDEA 2026.2.3
   同步 Gradle 9.8.x 项目时会报 `ExternalSystemPartialResolutionException`（消息为空），回退到 9.4.1
   即恢复正常。等 IDEA 修复后再删除这条 ignore 并升级。
