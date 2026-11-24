@@ -152,14 +152,22 @@ class DemoLayout : CustomElementAdapter() {
     /**
      * Links are a menu, not a row of anchors: the site's own pages, the API reference and the
      * repository are three destinations of the same kind.
+     *
+     * `tertiary` as well, and for the same reason on all three menus: an app layout's menu bar is a
+     * bar, and a filled button belongs on a bar — on a white card three filled buttons read as blocks
+     * dropped into the title line. A tertiary keeps the label and the dropdown chevron and drops the
+     * container, which is what a nav bar's secondary actions look like in the systems this shell is
+     * drawn after. The theme is declared on the menu bar, not on its buttons: the bar hands its own
+     * theme down to each button it creates.
      */
-    private val docsMenu: MenuBarElement = createMenuBar { addTheme(MenuBarVariants.dropdownIndicators) }
+    private val docsMenu: MenuBarElement =
+        createMenuBar { addTheme(MenuBarVariants.dropdownIndicators, MenuBarVariants.tertiary) }
 
     /** One entry per [Lang]; the label of a language is always that language's own name. */
-    private val languageMenu: MenuBarElement = createMenuBar { addTheme(MenuBarVariants.dropdownIndicators) }
+    private val languageMenu: MenuBarElement = createMenuBar { addTheme(MenuBarVariants.dropdownIndicators, MenuBarVariants.tertiary) }
 
     /** Light / dark / follow-the-browser. */
-    private val themeMenu: MenuBarElement = createMenuBar { addTheme(MenuBarVariants.dropdownIndicators) }
+    private val themeMenu: MenuBarElement = createMenuBar { addTheme(MenuBarVariants.dropdownIndicators, MenuBarVariants.tertiary) }
 
     /**
      * The whole left column is one `vaadin-side-nav`, the component Vaadin builds for a drawer:
@@ -167,7 +175,8 @@ class DemoLayout : CustomElementAdapter() {
      * `slot="children"` items.
      *
      * It carries the drawer's card class as well: the column itself stays transparent, so the nav *is*
-     * the surface the reader sees, inset by the column's padding and scrolling inside it.
+     * the surface the reader sees — inset by the column's padding, and the thing that scrolls when the
+     * catalogue is longer than the window.
      */
     private val sideNav = createSideNav().apply { classList.add(LAYOUT_CARD, LAYOUT_DRAWER) }
 

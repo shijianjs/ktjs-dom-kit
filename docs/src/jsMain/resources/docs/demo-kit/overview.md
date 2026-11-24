@@ -51,12 +51,12 @@ no border, one gutter (8px) in from the window edge and one gap (8px) from its n
 ```mermaid
 flowchart TB
   H["ktjs-demo-layout<br/>the canvas"] --> A["vaadin-app-layout"]
-  A --> NP["::part(navbar)<br/>padding = the gutter, 56px band"]
-  NP --> NC["layout__topbar<br/>= the navbar card (40)"]
-  A --> DP["::part(drawer)<br/>padding = the gutter"]
+  A --> NP["::part(navbar)<br/>padding 6 / 8, 56px band"]
+  NP --> NC["layout__topbar<br/>= the navbar card (44)"]
+  A --> DP["::part(drawer)<br/>padding = the gutter, overflow: clip"]
   DP --> DC["vaadin-side-nav<br/>= the drawer card"]
-  A --> CP["::part(content)<br/>padding = gutter + gap"]
-  CP --> CC["the content card"] --> P["the page<br/>= the card's scroller"]
+  A --> CP["::part(content)<br/>padding = gutter + gap, overflow: clip"]
+  CP --> CC["the content card"] --> P["the page<br/>= what the card scrolls"]
 ```
 
 Geometry is still the app layout's: the navbar is fixed, its measured height is the content's top
@@ -66,18 +66,18 @@ rules hold that shape, and each is there because the obvious alternative breaks:
 | Rule | Why not the obvious alternative |
 | --- | --- |
 | The gutter and the gap are padding on the app layout's `::part()`s | A margin on the fixed navbar is outside the box the component measures, so the content below would start **under** the bar. A margin on the only child of a scrolling column adds to its scrollable area — a permanent scrollbar of exactly that height |
-| The navbar's `::part()` has no `min-height`, and the toggle is 40px | The base style's 56px minimum is *inside* the bar, so with a gutter of our own the band would be 56 + 16. The gutter is part of the 56 instead: no minimum height, and the toggle — the tallest thing in the bar — sets the row |
-| The page scrolls inside the content card's padding; the card itself does not scroll | A scrollbar is painted at the scroll container's own edge. On the card that edge is a square strip across its rounded corner; one step in, at the padding box, the scrollbar starts below the corner arc and the surface stays whole |
+| The navbar's `::part()` has no `min-height`, and its row is the controls' own 44px | The base style's 56px minimum is *inside* the bar, so with a gutter of our own the band would be 56 + 16. The gutter is part of the 56 instead: no minimum height, and the band is 6 + 44 + 6. The row cannot be 40 — a menu-bar button is 40px in its own box but 44 with its margins, and a shorter container clips it |
+| Each card is the scroll viewport; each column is `overflow: clip` | A card that grows with its page scrolls its own top edge — and its rounded corners — out of view. And a column left at `auto` paints a second bar the moment its child overflows (a drawer list longer than the window): that bar is the platform's, square and opaque, three pixels to the right of the card's own |
 | The bar and the columns are transparent, and their hairline borders are cleared | The Lumo theme for the app layout paints them and sets safe-area padding from inside the component's own tree. Its `--vaadin-app-layout-navbar-*` custom properties would be the natural knob, but the theme overrides them — a `::part()` rule is the only thing that outranks it |
 
 Those `::part()` rules are also why the sheet builds its selectors as
 `compound(tag(APP_LAYOUT), pseudo(pseudoElement("part"), ident("navbar")))` instead of a string: the part
 name is a value with a type, and a selector that stops matching fails the build rather than the layout.
 
-Both cards that scroll get a thin scrollbar of their own (`::-webkit-scrollbar`: a 10px transparent
-track and an inset pill thumb), so the platform's classic bar — opaque, square, arrowed — never lands on
-a rounded corner. The content card does not depend on it: the page's own scroll viewport already sits
-inside the card's padding.
+Both cards that scroll get a thin scrollbar of their own (`::-webkit-scrollbar`: a 10px strip whose track
+paints nothing and whose thumb is a 4px pill), so the platform's classic bar — opaque, square, arrowed —
+never lands on a rounded corner. The track is inset by a card radius at both ends, which is a margin on
+the scrollbar itself in Blink: even at either scroll limit the pill stops inside the corner arcs.
 
 ## Wiring a site
 

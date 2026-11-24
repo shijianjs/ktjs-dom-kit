@@ -160,9 +160,10 @@ class ScreenshotTest(private val browser: Browser) {
      * between neighbours — and a navbar band that is still 56px tall, the height a Vaadin app layout
      * gives it, so the cards cost the page no more than the gutter on each side.
      *
-     * The numbers are the sheet's own ([8] gutter, [8] gap, 16px radius), restated on purpose: a
-     * screenshot shows that the layout *looks* right but not that a card is 8px from an edge on one
-     * side and 16px on the other, and that is the mistake a redesign makes.
+     * The numbers are the sheet's own ([8] gutter, [8] gap, 16px radius, a 6px inset inside the
+     * navbar's band), restated on purpose: a screenshot shows that the layout *looks* right but not that
+     * a card is 8px from an edge on one side and 16px on the other, and that is the mistake a redesign
+     * makes.
      */
     private fun assertShellIsCards(page: Page) {
         val state = page.locator("ktjs-demo-layout").first().evaluate(
@@ -195,15 +196,8 @@ class ScreenshotTest(private val browser: Browser) {
                 topbar: measure('.layout__topbar'),
                 drawer: measure('.layout__drawer'),
                 content: measure('.layout__content'),
-                page: content.firstElementChild ? {
-                  overflowY: getComputedStyle(content.firstElementChild).overflowY,
-                  insetLeft: Math.round(
-                    content.firstElementChild.getBoundingClientRect().left - content.getBoundingClientRect().left,
-                  ),
-                  insetRight: Math.round(
-                    content.getBoundingClientRect().right - content.firstElementChild.getBoundingClientRect().right,
-                  ),
-                } : null,
+                drawerColumn: getComputedStyle(app.shadowRoot.querySelector('[part~="drawer"]')).overflowY,
+                contentColumn: getComputedStyle(app.shadowRoot.querySelector('[part~="content"]')).overflowY,
               };
             }
             """.trimIndent(),
@@ -241,7 +235,7 @@ class ScreenshotTest(private val browser: Browser) {
         // gutter in from the sides it has to itself.
         assertEquals(8, (navbar["x"] as Number).toInt(), "the navbar is one gutter from the left")
         assertEquals(8, (navbar["right"] as Number).toInt(), "the navbar is one gutter from the right")
-        assertEquals(8, (navbar["y"] as Number).toInt(), "the navbar is one gutter from the top")
+        assertEquals(6, (navbar["y"] as Number).toInt(), "the navbar is one vertical inset from the top")
         assertEquals(8, (drawerCard["x"] as Number).toInt(), "the drawer is one gutter from the left")
         assertEquals(8, (drawerCard["bottom"] as Number).toInt(), "the drawer is one gutter from the bottom")
         assertEquals(8, (contentCard["right"] as Number).toInt(), "the content column is one gutter from the right")
@@ -251,23 +245,20 @@ class ScreenshotTest(private val browser: Browser) {
         // other. The content column's left padding is that gap, so the two boxes are what has to show it.
         val underTheBar =
             (drawerCard["y"] as Number).toInt() - ((navbar["y"] as Number).toInt() + (navbar["h"] as Number).toInt())
-        assertEquals(8, underTheBar, "the gap under the navbar was ${underTheBar}px, not one gap")
+        assertEquals(6, underTheBar, "the gap under the navbar was ${underTheBar}px, not one gap")
         val betweenTheColumns =
             (contentCard["x"] as Number).toInt() - ((drawerCard["x"] as Number).toInt() + (drawerCard["w"] as Number).toInt())
         assertEquals(8, betweenTheColumns, "the gap between the columns was ${betweenTheColumns}px, not one gap")
 
-        // The page scrolls inside the card's padding instead of the card scrolling itself: a scrollbar
-        // painted on the card's own edge lies across its rounded corner.
+        // Each card is its own scroll viewport and its column is never one: a column left at `auto`
+        // paints a second bar beside the card's own as soon as it thinks its child overflows.
+        assertEquals("auto", contentCard["overflowY"], "the content card is the scroll viewport")
+        assertEquals("auto", drawerCard["overflowY"], "the drawer card is the scroll viewport")
+        assertEquals("clip", state["drawerColumn"], "the drawer column must never scroll")
+        assertEquals("clip", state["contentColumn"], "the content column must never scroll")
+        // The vertical budget: the band plus one gutter is all the chrome the page pays for.
         val innerWidthValue = (state["inner"] as List<*>)[0] as Number
         val innerHeightValue = (state["inner"] as List<*>)[1] as Number
-        @Suppress("UNCHECKED_CAST")
-        val inner = state["page"] as Map<*, *>
-        assertEquals("visible", contentCard["overflowY"], "the card itself must not scroll")
-        assertEquals("auto", inner["overflowY"], "the page inside must scroll")
-        // The page is inside the card's 16px padding on both sides, so its scrollbar cannot reach the arc.
-        assertEquals(16, (inner["insetLeft"] as Number).toInt(), "the page starts at the card's padding")
-        assertEquals(16, (inner["insetRight"] as Number).toInt(), "the page ends at the card's padding")
-        // The vertical budget: the band plus one gutter is all the chrome the page pays for.
         assertEquals(
             (innerHeightValue.toInt() - 56 - 8),
             (contentCard["h"] as Number).toInt(),

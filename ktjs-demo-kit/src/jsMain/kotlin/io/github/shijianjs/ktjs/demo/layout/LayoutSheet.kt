@@ -3,8 +3,6 @@ package io.github.shijianjs.ktjs.demo.layout
 import io.github.shijianjs.ktjs.demo.style.Palette
 import io.github.shijianjs.ktjs.dom.css.cssSheet
 import io.github.shijianjs.ktjs.dom.css.dsl.CssSelector
-import io.github.shijianjs.ktjs.dom.css.dsl.Selectors
-import io.github.shijianjs.ktjs.dom.css.dsl.child
 import io.github.shijianjs.ktjs.dom.css.dsl.className
 import io.github.shijianjs.ktjs.dom.css.dsl.colorStop
 import io.github.shijianjs.ktjs.dom.css.dsl.compound
@@ -33,6 +31,7 @@ import web.cssom.Length
 import web.cssom.LineStyle
 import web.cssom.Margin
 import web.cssom.None
+import web.cssom.Overflow
 import web.cssom.Padding
 import web.cssom.PropertyName
 import web.cssom.WhiteSpace
@@ -166,10 +165,13 @@ private val CONTENT_PART: CssSelector =
  * margin here either: the margin of the only child of a scrolling column adds to the scrollable area,
  * so the column would show a scrollbar of exactly that height.
  *
- * What scrolls inside the content card is the *page*, one step in at the card's padding box: a
- * scrollbar sits on the edge of whatever scrolls it, and on the card's own edge it would be a square
- * strip across the rounded corner. The drawer scrolls its side nav, and both get a thin transparent
- * scrollbar of their own so the platform's classic bar never lands on a corner either.
+ * Each card is the *only* scroll container. The columns are `overflow: clip`, never `auto`: with
+ * `auto` a column that thinks its child overflows — a long drawer, mostly — paints a second bar a few
+ * pixels to the right of the card's own, and that bar is the platform's, square and opaque.
+ *
+ * A card's scrollbar is the thin pill described at [CARD_THUMB]: its track paints nothing and is inset
+ * by a corner radius at both ends, so the rounded corner stays whole whether the card is at either
+ * scroll limit.
  *
  * Colours are Lumo custom properties (see [Palette]), so the light/dark switch at the document level
  * repaints every tree without a `[data-theme]` selector.
@@ -287,11 +289,11 @@ val LAYOUT_SHEET: CSSStyleSheet = cssSheet {
         marginLeft = 8.px
     }
 
-    // The navbar's card: the bar spans the window and its padding is the gutter, so this row *is* the
-    // surface, inset by that padding. No block padding — the row's own height (the toggle's 40px) is
-    // what fills the bar, which is how the bar stays the 56px every Vaadin navbar is. Its height is
-    // what the app layout measures to place the columns below it, so no margin may stand in for the
-    // inset.
+    // The navbar's card: the bar spans the window and its padding is the inset, so this row *is* the
+    // surface, inset by that padding. No block padding — the row's own height (the 44px the toggle and
+    // the menu bars are) is what fills the bar, which is how the bar stays the 56px every Vaadin navbar
+    // is. Its height is what the app layout measures to place the columns below it, so no margin may
+    // stand in for the inset.
     LAYOUT_TOPBAR {
         width = 100.pct
         paddingInline = 10.px
@@ -307,23 +309,14 @@ val LAYOUT_SHEET: CSSStyleSheet = cssSheet {
         padding = 4.px
     }
 
-    // The content's card: the page's sheet, fixed to the column, and the page scrolls *inside its padding*
-    // — not the card itself. The card is a rounded surface, and a scrollbar painted on the card's own
-    // edge is a square strip laid across the top-right corner, which is what turns a card into a panel
-    // with a cut corner. One step in, at the padding box, the scrollbar starts below the corner arc.
+    // The content's card: the page's sheet, fixed to the column and scrolling the page inside it.
     // `--vaadin-vertical-layout-padding` is the `padding` variant's own knob, so the variant stays in
     // charge of the padding — it is only told how much a card insets its content (16px: the page brings
     // its own rhythm, and 24 was white space charged twice).
     LAYOUT_CONTENT {
         height = 100.pct
-        set(CustomPropertyName<Length>("--vaadin-vertical-layout-padding"), 16.px)
-    }
-
-    // The page is the content card's scroller, and it is the column's only child, so one rule covers
-    // every page: fill the card's content box and scroll whatever runs past it.
-    (className(LAYOUT_CONTENT) child Selectors.universal) {
-        height = 100.pct
         overflow = Auto.auto
+        set(CustomPropertyName<Length>("--vaadin-vertical-layout-padding"), 16.px)
     }
 
     // The cards are their own scroll viewports, and the platform's classic scrollbar would be painted
@@ -337,6 +330,9 @@ val LAYOUT_SHEET: CSSStyleSheet = cssSheet {
 
     CARD_SCROLLBAR_TRACK {
         backgroundColor = Color.transparent
+        // A margin on the track *is* a margin on the scrollbar in Blink: the thumb starts and ends one
+        // card radius in, so it never reaches the corner arcs even when the card is scrolled to an end.
+        marginBlock = CARD_RADIUS
     }
 
     CARD_SCROLLBAR_THUMB {
@@ -357,8 +353,13 @@ val LAYOUT_SHEET: CSSStyleSheet = cssSheet {
         // The base style gives the bar `min-height: 56px` and Lumo pads it with the safe area; both are
         // *inside* the box, so with a gutter of our own the bar would be 56 + 16. The gutter is part of
         // the 56 instead: no minimum height, and the bar is exactly as tall as the row it holds.
+        //
+        // 6px down the sides against 8px across: the row is 44 — the height of the toggle and of the
+        // menu bars, which are Lumo's own medium size and can be neither taller nor shorter without
+        // clipping the buttons inside them — so 56 = 6 + 44 + 6 is the only split that keeps both the
+        // band and the controls at their own numbers.
         minHeight = 0.px
-        padding = Padding(GUTTER, GUTTER, GUTTER, GUTTER)
+        padding = Padding(6.px, GUTTER, 6.px, GUTTER)
         backgroundColor = Color.transparent
         backgroundImage = None.none
         borderBottomStyle = None.none
@@ -373,29 +374,29 @@ val LAYOUT_SHEET: CSSStyleSheet = cssSheet {
         // goes with the bar's: the cards are separated by canvas, not by lines.
         backgroundColor = Color.transparent
         borderInlineEndWidth = 0.px
+        // `clip`, not `hidden`: the column must never be a scroll container at all. `hidden` still
+        // leaves it scrollable programmatically and — in Blink — able to report an overflow it does not
+        // own, which is what painted the second bar beside the card's own.
+        overflow = Overflow.clip
     }
 
     // The content column's own gutter on all three sides it owns: the left one is the gap to the drawer
-    // when it is open and the window margin when it is collapsed, and one value does both.
+    // when it is open and the window margin when it is collapsed, and one value does both. Clipped for
+    // the same reason as the drawer's.
     CONTENT_PART {
         padding = Padding(0.px, GUTTER, GUTTER, GAP)
+        overflow = Overflow.clip
     }
 
-    // The toggle is a 44px icon-button box around a 21px glyph: Lumo's own 9px padding and 8px margin
-    // around it read as a blank gap between the toggle and the wordmark, on top of the layout's gap.
-    // Both are dropped here; the inset comes from [LAYOUT_TOPBAR], the separation from the layout gap.
-    //
-    // 40 instead of 44 as well: the toggle is the tallest thing in the bar, so its box is what decides
-    // the navbar's height. At 44 the bar cannot be 56 (gutter + 44 + gutter) without eating the gutter;
-    // at 40 the bar is exactly 56 and the toggle keeps a 40px square target, which is the button size
-    // Lumo gives a bare icon button anyway.
+    // The toggle is an icon-button box around a 21px glyph: Lumo's own 9px padding and 8px margin around
+    // it read as a blank gap between the toggle and the wordmark, on top of the layout's gap. Both are
+    // dropped here; the inset comes from [LAYOUT_TOPBAR], the separation from the layout gap. Its size
+    // stays Lumo's 44: it is what the bar's 44px row is measured from.
     LAYOUT_TOGGLE {
         marginInlineStart = 0.px
         marginInlineEnd = 0.px
         paddingInlineStart = 0.px
         paddingInlineEnd = 0.px
-        height = 40.px
-        width = 40.px
     }
 
     // The left cluster may be narrower than the title plus the full breadcrumb trail; letting it
