@@ -26,6 +26,27 @@ internal val LAYOUT_VERSION: ClassName = ClassName("layout__version")
 internal val LAYOUT_TOPBAR: ClassName = ClassName("layout__topbar")
 
 /**
+ * The card look the shell's three regions share: surface, corner radius, edge and shadow.
+ *
+ * One class for all three on purpose — the shell is *one* card design used three times. Each region
+ * still carries its own class for what a card differs in (its insets, whether it scrolls), and a
+ * fourth variant of the look would have to justify itself before it earned a second class.
+ */
+internal val LAYOUT_CARD: ClassName = ClassName("layout__card")
+
+/**
+ * The drawer column's card: the whole side nav. It fills the column and scrolls its items inside
+ * itself, so the rounded top edge stays put while a long navigation scrolls.
+ */
+internal val LAYOUT_DRAWER: ClassName = ClassName("layout__drawer")
+
+/**
+ * The content column's card: the page's sheet. Like the drawer it fills its column and scrolls the
+ * page inside, which is what keeps the card's shape while the page runs past the viewport.
+ */
+internal val LAYOUT_CONTENT: ClassName = ClassName("layout__content")
+
+/**
  * The drawer toggle: the component's own margin/padding are dropped so its glyph sits at the bar's
  * inset instead of inside a 44px box with blanks on both sides.
  */

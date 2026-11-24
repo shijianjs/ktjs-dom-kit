@@ -40,6 +40,34 @@ flowchart TB
 | `…ktjs.demo.page` | [`DemoPage`](./pages.md) 与区块：`paragraph`、`heading`、`anchor`、`codeText`、`bulletList`、`row`、`col`、`exampleBox`、`sectionBlock`、`Readout` |
 | `…ktjs.demo.style` | `Theme` / `ThemeMode`（亮色 / 暗色 / 跟随浏览器）、`Palette`（站点上色用的 Lumo 自定义属性）、`RESET`（共享 reset 表） |
 
+## 外壳是三张卡片，不是三个分区
+
+布局不用分割线切窗口。窗口是一块中性的画布（`Palette.page`），三个区域各自是浮在上面的**卡片**：白底、
+圆角、一条细边加一层柔和投影，离窗口边缘一个 16px 的 gutter，离邻居一个 12px 的 gap。
+
+```mermaid
+flowchart TB
+  H["ktjs-demo-layout<br/>画布"] --> A["vaadin-app-layout"]
+  A --> NP["::part(navbar)<br/>内边距 = gutter"]
+  NP --> NC["layout__topbar<br/>= 导航栏卡片"]
+  A --> DP["::part(drawer)<br/>内边距 = gutter + gap"]
+  DP --> DC["vaadin-side-nav<br/>= 抽屉卡片"]
+  A --> CP["::part(content)<br/>内边距 = gutter"]
+  CP --> CC["内容列<br/>= 内容卡片"]
+```
+
+几何仍然是 app layout 的：导航栏固定、它的实测高度就是内容区的上偏移，抽屉的宽度就是内容区左侧的内缩量，
+动的只是*表面*。撑住这个形状的是三条规则，每一条都是因为「显而易见的做法」会坏：
+
+| 规则 | 为什么不能换一种做法 |
+| --- | --- |
+| gutter 与 gap 是 app layout 各 `::part()` 上的内边距 | 给固定的导航栏加 margin，它落在组件测量的盒子之外，下面的内容就会**压到**导航栏底下；给滚动列唯一的子元素加 margin，它会算进可滚动区域 —— 于是永久多出一条正好这么高的滚动条 |
+| 卡片是 `height: 100%`，滚动发生在卡片内部 | 随页面长高的卡片，第一次滚动就把自己圆角的上边缘滚出视野；而「卡片就是视口」时，卡片保持形状、滚的是内容 |
+| 导航栏与两列都是透明的，各自的细线边框被清掉 | app layout 的 Lumo 主题在组件自己那棵树里给它们上色、并把内边距设成 safe-area。组件本来就有的 `--vaadin-app-layout-navbar-*` 自定义属性看似是天然开关，但主题会覆盖它 —— 只有 `::part()` 规则能压过 |
+
+最后一条也是样式表用 `compound(tag(APP_LAYOUT), pseudo(pseudoElement("part"), ident("navbar")))`
+拼选择器、而不是贴字符串的原因：部件名是带类型的值，选择器哪天不再匹配，是构建失败，不是布局错位。
+
 ## 接一个站点
 
 演示站的 `main` 永远三步：建状态、定义标签、挂配置。

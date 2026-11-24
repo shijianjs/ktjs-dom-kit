@@ -42,6 +42,37 @@ flowchart TB
 | `…ktjs.demo.page` | [`DemoPage`](./pages.md) and the blocks: `paragraph`, `heading`, `anchor`, `codeText`, `bulletList`, `row`, `col`, `exampleBox`, `sectionBlock`, `Readout` |
 | `…ktjs.demo.style` | `Theme` / `ThemeMode` (light / dark / follow-the-browser), `Palette` (the Lumo custom properties the site paints with) and `RESET`, the shared reset sheet |
 
+## The shell is three cards, not three regions
+
+The frame does not split the window with lines. The window is a neutral canvas (`Palette.page`) and each
+of the three regions is a **card** floating on it — a white, rounded surface with a hairline and a soft
+shadow, one gutter (16px) in from the window edge and one gap (12px) from its neighbours.
+
+```mermaid
+flowchart TB
+  H["ktjs-demo-layout<br/>the canvas"] --> A["vaadin-app-layout"]
+  A --> NP["::part(navbar)<br/>padding = the gutter"]
+  NP --> NC["layout__topbar<br/>= the navbar card"]
+  A --> DP["::part(drawer)<br/>padding = gutter + gap"]
+  DP --> DC["vaadin-side-nav<br/>= the drawer card"]
+  A --> CP["::part(content)<br/>padding = gutter"]
+  CP --> CC["the content column<br/>= the content card"]
+```
+
+Geometry is still the app layout's: the navbar is fixed, its measured height is the content's top
+offset, and the drawer's width is the content's inset from the left. Only the *surface* moved. Three
+rules hold that shape, and each is there because the obvious alternative breaks:
+
+| Rule | Why not the obvious alternative |
+| --- | --- |
+| The gutter and the gap are padding on the app layout's `::part()`s | A margin on the fixed navbar is outside the box the component measures, so the content below would start **under** the bar. A margin on the only child of a scrolling column adds to its scrollable area — a permanent scrollbar of exactly that height |
+| The cards are `height: 100%` and scroll inside themselves | A card that grows with its page scrolls its own rounded top edge out of view on the first scroll; a card that *is* the viewport keeps its shape and scrolls its content |
+| The bar and the columns are transparent, and their hairline borders are cleared | The Lumo theme for the app layout paints them and sets safe-area padding from inside the component's own tree. Its `--vaadin-app-layout-navbar-*` custom properties would be the natural knob, but the theme overrides them — a `::part()` rule is the only thing that outranks it |
+
+That last row is also why the sheet builds its selectors as
+`compound(tag(APP_LAYOUT), pseudo(pseudoElement("part"), ident("navbar")))` instead of a string: the part
+name is a value with a type, and a selector that stops matching fails the build rather than the layout.
+
 ## Wiring a site
 
 A demo's `main` is the same three steps every time: create the state, define the tag, mount the config.

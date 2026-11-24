@@ -133,21 +133,106 @@ class ScreenshotTest(private val browser: Browser) {
         assertTrue(pageScroll <= 1, "the window must not scroll; overflow was $pageScroll px")
     }
 
-    /** A navigation column that fits its items shows no scrollbar, not an empty track. */
+    /**
+     * A navigation card that fits its items shows no scrollbar, not an empty track.
+     *
+     * The card is what scrolls now, not the column around it: the column holds the gutter and the card
+     * fills it, so it can never overflow — measuring it would assert nothing.
+     */
     private fun assertDrawerHasNoScrollbar(page: Page) {
-        val state = page.locator("ktjs-demo-layout vaadin-app-layout").first().evaluate(
+        val state = page.locator("ktjs-demo-layout .layout__drawer").first().evaluate(
             """
-            (layout) => {
-              const drawer = layout.shadowRoot.querySelector('[part="drawer"]');
+            (card) => {
               return {
-                overflow: drawer.scrollHeight - drawer.clientHeight,
-                overflowY: getComputedStyle(drawer).overflowY,
+                overflow: card.scrollHeight - card.clientHeight,
+                overflowY: getComputedStyle(card).overflowY,
               };
             }
             """.trimIndent(),
         ) as Map<*, *>
-        assertTrue((state["overflow"] as Number).toInt() <= 1, "the drawer scrolled by ${state["overflow"]} px")
-        assertEquals("auto", state["overflowY"], "the drawer must scroll on demand, not always")
+        assertTrue((state["overflow"] as Number).toInt() <= 1, "the drawer card scrolled by ${state["overflow"]} px")
+        assertEquals("auto", state["overflowY"], "the drawer card must scroll on demand, not always")
+    }
+
+    /**
+     * The shell is three cards on a canvas, and this is the geometry that says so: one white surface per
+     * region, the same radius on all three, the same gutter to the window edges and the same gap between
+     * neighbours.
+     *
+     * The numbers are the sheet's own ([16] gutter, [12] gap, 20px radius), restated on purpose: a
+     * screenshot shows that the layout *looks* right but not that a card is 8px from an edge on one side
+     * and 16px on the other, and that is the mistake a redesign makes.
+     */
+    private fun assertShellIsCards(page: Page) {
+        val state = page.locator("ktjs-demo-layout").first().evaluate(
+            """
+            (layout) => {
+              const measure = (selector) => {
+                const node = layout.shadowRoot.querySelector(selector);
+                const box = node.getBoundingClientRect();
+                return {
+                  x: Math.round(box.left),
+                  y: Math.round(box.top),
+                  w: Math.round(box.width),
+                  h: Math.round(box.height),
+                  right: Math.round(innerWidth - box.right),
+                  bottom: Math.round(innerHeight - box.bottom),
+                  background: getComputedStyle(node).backgroundColor,
+                  radius: getComputedStyle(node).borderTopLeftRadius,
+                };
+              };
+              return {
+                canvas: getComputedStyle(layout).backgroundColor,
+                topbar: measure('.layout__topbar'),
+                drawer: measure('.layout__drawer'),
+                content: measure('.layout__content'),
+              };
+            }
+            """.trimIndent(),
+        ) as Map<*, *>
+
+        @Suppress("UNCHECKED_CAST")
+        val navbar = state["topbar"] as Map<*, *>
+
+        @Suppress("UNCHECKED_CAST")
+        val drawerCard = state["drawer"] as Map<*, *>
+
+        @Suppress("UNCHECKED_CAST")
+        val contentCard = state["content"] as Map<*, *>
+
+        // One surface design, three times: white, the card radius, and never a sliver.
+        listOf("the navbar" to navbar, "the drawer" to drawerCard, "the content column" to contentCard)
+            .forEach { (name, card) ->
+                assertEquals("rgb(255, 255, 255)", card["background"], "$name is a white card")
+                assertEquals("20px", card["radius"], "$name shares the card radius")
+                assertTrue((card["w"] as Number).toInt() > 200, "$name is wide enough to be a card")
+                assertTrue((card["h"] as Number).toInt() > 40, "$name is tall enough to be a card")
+            }
+
+        // The canvas is a step below the cards, or the cards are not floating on anything.
+        assertTrue(
+            state["canvas"] != navbar["background"],
+            "the page canvas must differ from the card surface, both were ${state["canvas"]}",
+        )
+
+        // The window's edges: the bar is one gutter in from all three it touches, and each column is one
+        // gutter in from the sides it has to itself.
+        assertEquals(16, (navbar["x"] as Number).toInt(), "the navbar is one gutter from the left")
+        assertEquals(16, (navbar["right"] as Number).toInt(), "the navbar is one gutter from the right")
+        assertEquals(16, (navbar["y"] as Number).toInt(), "the navbar is one gutter from the top")
+        assertEquals(16, (drawerCard["x"] as Number).toInt(), "the drawer is one gutter from the left")
+        assertEquals(16, (drawerCard["bottom"] as Number).toInt(), "the drawer is one gutter from the bottom")
+        assertEquals(16, (contentCard["right"] as Number).toInt(), "the content column is one gutter from the right")
+        assertEquals(16, (contentCard["bottom"] as Number).toInt(), "the content column is one gutter from the bottom")
+
+        // And the gaps: the bar does not touch the row under it, and the two columns do not touch each
+        // other. The drawer's right padding is that gap, so the two boxes are what has to show it.
+        val underTheBar =
+            (drawerCard["y"] as Number).toInt() - ((navbar["y"] as Number).toInt() + (navbar["h"] as Number).toInt())
+        assertTrue(underTheBar in 11..13, "the gap under the navbar was ${underTheBar}px, not one gap")
+        val betweenTheColumns =
+            (contentCard["x"] as Number).toInt() - ((drawerCard["x"] as Number).toInt() + (drawerCard["w"] as Number).toInt())
+        assertTrue(betweenTheColumns in 11..13, "the gap between the columns was ${betweenTheColumns}px, not one gap")
     }
 
     @Test
@@ -158,6 +243,7 @@ class ScreenshotTest(private val browser: Browser) {
         assertNoHorizontalOverflow(page)
         assertOneScreen(page)
         assertDrawerHasNoScrollbar(page)
+        assertShellIsCards(page)
         // The side nav paints the item carrying its `current` state attribute; exactly one must carry it.
         assertEquals(
             1,

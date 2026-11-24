@@ -105,10 +105,10 @@ object Blocks {
     /**
      * One example box: a Vaadin card, with an optional caption above the content.
      *
-     * The `outlined` variant draws the hairline and the surface stays the page background, which is
-     * what both Ant Design and Vaadin's own samples do: an example reads as a cut-out on the page
-     * instead of another grey block on a grey page. Both come from the component — no border, radius
-     * or padding of this site's own is added here.
+     * The `outlined` variant draws the hairline and the surface stays [Palette.background] — the card the
+     * example sits on — which is what both Ant Design and Vaadin's own samples do: an example reads as a
+     * cut-out on the page instead of another grey block on a grey page. Both come from the component — no
+     * border, radius or padding of this site's own is added here.
      */
     fun exampleBox(caption: String? = null, vararg children: Node): CardElement {
         val card = createCard()

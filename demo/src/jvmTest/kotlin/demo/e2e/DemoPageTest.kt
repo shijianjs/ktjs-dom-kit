@@ -131,16 +131,18 @@ class DemoPageTest(private val browser: Browser) {
     }
 
     /**
-     * The toggle and the wordmark read as one left cluster: the toggle sits at the bar's inset (the
-     * component's own 8px margins and 44px box would otherwise push the mark a layout gap further away),
-     * and the mark keeps a small gap from the title instead of touching it.
+     * The toggle and the wordmark read as one left cluster: the toggle sits at the card's inner inset —
+     * it used to sit at the bar's, and the card it now sits on has an inset of its own, `LAYOUT_SHEET`'s
+     * [12]px padding behind the surface's hairline — and the mark keeps a small gap from the title instead
+     * of touching it.
      *
      * Lumo's `drawer-toggle` is a 44px icon box with `margin: 0 var(--lumo-space-s)`; kept as shipped it
      * leaves ~35px of blank between the hamburger glyph and the logo, which reads as the bar having an
-     * empty slot rather than as the toggle belonging to the wordmark.
+     * empty slot rather than as the toggle belonging to the wordmark. The layout drops those margins, so
+     * what is left is the card's own inset.
      */
     @Test
-    fun `the drawer toggle hugs the bar inset and the mark`() {
+    fun `the drawer toggle hugs the card inset and the mark`() {
         val page = open("")
 
         val gaps = page.evaluate(
@@ -152,9 +154,11 @@ class DemoPageTest(private val browser: Browser) {
               const toggle = nav.querySelector('vaadin-drawer-toggle');
               const logo = nav.querySelector('.layout__logo');
               const title = nav.querySelector('.layout__title');
+              const style = getComputedStyle(nav);
               return {
                 toggle: [box(toggle).x, box(toggle).width],
                 glyph: [box(toggle.shadowRoot.querySelector("[part='icon']")).x],
+                cardInset: box(nav).x + parseFloat(style.borderLeftWidth) + parseFloat(style.paddingLeft),
                 toggleToLogo: box(logo).x - (box(toggle).x + box(toggle).width),
                 logoToTitle: box(title).x - (box(logo).x + box(logo).width),
               };
@@ -166,7 +170,11 @@ class DemoPageTest(private val browser: Browser) {
             (gaps[key] as List<*>).map { (it as Number).toDouble() }
 
         val toggle = pair("toggle")
-        assertTrue(toggle[0] in 4.0..12.0, "the toggle starts at ${toggle[0]}px, expected the bar inset")
+        val cardInset = (gaps["cardInset"] as Number).toDouble()
+        assertTrue(
+            kotlin.math.abs(toggle[0] - cardInset) <= 1.0,
+            "the toggle starts at ${toggle[0]}px, expected the card's inset at ${cardInset}px",
+        )
         // One layout gap, not the gap plus the component's own margins (which measured 24px before).
         val toggleToLogo = (gaps["toggleToLogo"] as Number).toDouble()
         assertTrue(toggleToLogo in 8.0..17.0, "toggle to mark is ${toggleToLogo}px, expected one layout gap")
