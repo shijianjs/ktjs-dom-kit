@@ -45,33 +45,39 @@ flowchart TB
 ## The shell is three cards, not three regions
 
 The frame does not split the window with lines. The window is a neutral canvas (`Palette.page`) and each
-of the three regions is a **card** floating on it — a white, rounded surface with a hairline and a soft
-shadow, one gutter (16px) in from the window edge and one gap (12px) from its neighbours.
+of the three regions is a **card** floating on it — a white, rounded (16px) surface with a soft shadow and
+no border, one gutter (8px) in from the window edge and one gap (8px) from its neighbours.
 
 ```mermaid
 flowchart TB
   H["ktjs-demo-layout<br/>the canvas"] --> A["vaadin-app-layout"]
-  A --> NP["::part(navbar)<br/>padding = the gutter"]
-  NP --> NC["layout__topbar<br/>= the navbar card"]
-  A --> DP["::part(drawer)<br/>padding = gutter + gap"]
+  A --> NP["::part(navbar)<br/>padding = the gutter, 56px band"]
+  NP --> NC["layout__topbar<br/>= the navbar card (40)"]
+  A --> DP["::part(drawer)<br/>padding = the gutter"]
   DP --> DC["vaadin-side-nav<br/>= the drawer card"]
-  A --> CP["::part(content)<br/>padding = gutter"]
-  CP --> CC["the content column<br/>= the content card"]
+  A --> CP["::part(content)<br/>padding = gutter + gap"]
+  CP --> CC["the content card"] --> P["the page<br/>= the card's scroller"]
 ```
 
 Geometry is still the app layout's: the navbar is fixed, its measured height is the content's top
-offset, and the drawer's width is the content's inset from the left. Only the *surface* moved. Three
+offset, and the drawer's width is the content's inset from the left. Only the *surface* moved. Four
 rules hold that shape, and each is there because the obvious alternative breaks:
 
 | Rule | Why not the obvious alternative |
 | --- | --- |
 | The gutter and the gap are padding on the app layout's `::part()`s | A margin on the fixed navbar is outside the box the component measures, so the content below would start **under** the bar. A margin on the only child of a scrolling column adds to its scrollable area — a permanent scrollbar of exactly that height |
-| The cards are `height: 100%` and scroll inside themselves | A card that grows with its page scrolls its own rounded top edge out of view on the first scroll; a card that *is* the viewport keeps its shape and scrolls its content |
+| The navbar's `::part()` has no `min-height`, and the toggle is 40px | The base style's 56px minimum is *inside* the bar, so with a gutter of our own the band would be 56 + 16. The gutter is part of the 56 instead: no minimum height, and the toggle — the tallest thing in the bar — sets the row |
+| The page scrolls inside the content card's padding; the card itself does not scroll | A scrollbar is painted at the scroll container's own edge. On the card that edge is a square strip across its rounded corner; one step in, at the padding box, the scrollbar starts below the corner arc and the surface stays whole |
 | The bar and the columns are transparent, and their hairline borders are cleared | The Lumo theme for the app layout paints them and sets safe-area padding from inside the component's own tree. Its `--vaadin-app-layout-navbar-*` custom properties would be the natural knob, but the theme overrides them — a `::part()` rule is the only thing that outranks it |
 
-That last row is also why the sheet builds its selectors as
+Those `::part()` rules are also why the sheet builds its selectors as
 `compound(tag(APP_LAYOUT), pseudo(pseudoElement("part"), ident("navbar")))` instead of a string: the part
 name is a value with a type, and a selector that stops matching fails the build rather than the layout.
+
+Both cards that scroll get a thin scrollbar of their own (`::-webkit-scrollbar`: a 10px transparent
+track and an inset pill thumb), so the platform's classic bar — opaque, square, arrowed — never lands on
+a rounded corner. The content card does not depend on it: the page's own scroll viewport already sits
+inside the card's padding.
 
 ## Wiring a site
 

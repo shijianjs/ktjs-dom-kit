@@ -70,11 +70,11 @@ import web.window.window
  * `<ktjs-demo-layout>`: the site frame, built from Vaadin's app layout.
  *
  * The layout owns the geometry that a hand-rolled layout always gets wrong: the navbar spans the whole
- * width on top, the drawer sits under it and scrolls on its own, and the content column scrolls inside
- * the layout — so the page never grows a second scrollbar next to the navigation, and no panel has to
- * fake a sticky position. What the three regions *are* — a card on the page's canvas, the gutter around
- * it, the gap to its neighbour, the width of the drawer — is [LAYOUT_SHEET]'s decision, not a style this
- * class puts on an element.
+ * width on top, the drawer sits under it, and the page scrolls inside the content card — so the window
+ * never grows a second scrollbar next to the navigation, and no panel has to fake a sticky position.
+ * What the three regions *are* — a card on the page's canvas, the gutter around it, the gap to its
+ * neighbour, the width of the drawer — is [LAYOUT_SHEET]'s decision, not a style this class puts on an
+ * element.
  *
  * Navigation swaps the single child of the content column and keeps the built pages cached, so state
  * inside a page (typed input, selected rows, opened panels) survives a trip to another page and back.
@@ -173,8 +173,8 @@ class DemoLayout : CustomElementAdapter() {
 
     /**
      * The content column: the page's surface. Like the drawer it is the card, and the column around it
-     * is only the gutter — the app layout supplies the scrolling *box*, the card supplies the sheet the
-     * reader sees ([LAYOUT_SHEET]).
+     * is only the gutter — the app layout supplies the column, the card supplies the sheet the reader
+     * sees, and the page inside the card is what scrolls ([LAYOUT_SHEET]).
      */
     private val content: VerticalLayoutElement = createVerticalLayout {
         setTheme(VerticalLayoutVariants.padding, VerticalLayoutVariants.spacing)

@@ -3,12 +3,16 @@ package io.github.shijianjs.ktjs.demo.layout
 import io.github.shijianjs.ktjs.demo.style.Palette
 import io.github.shijianjs.ktjs.dom.css.cssSheet
 import io.github.shijianjs.ktjs.dom.css.dsl.CssSelector
+import io.github.shijianjs.ktjs.dom.css.dsl.Selectors
+import io.github.shijianjs.ktjs.dom.css.dsl.child
+import io.github.shijianjs.ktjs.dom.css.dsl.className
 import io.github.shijianjs.ktjs.dom.css.dsl.colorStop
 import io.github.shijianjs.ktjs.dom.css.dsl.compound
 import io.github.shijianjs.ktjs.dom.css.dsl.invoke
 import io.github.shijianjs.ktjs.dom.css.dsl.or
 import io.github.shijianjs.ktjs.dom.css.dsl.pseudo
 import io.github.shijianjs.ktjs.dom.css.dsl.pseudoElement
+import io.github.shijianjs.ktjs.dom.css.dsl.selectorList
 import io.github.shijianjs.ktjs.dom.css.dsl.supports
 import io.github.shijianjs.ktjs.dom.css.dsl.supportsDeclaration
 import io.github.shijianjs.ktjs.dom.css.dsl.tag
@@ -50,35 +54,66 @@ import web.html.HTMLElement
 /**
  * The space between the window edge and a card.
  *
- * One value on all four sides: a card that is 16px from one edge and 12px from another reads as a
- * mistake rather than as a layout, and the fact that two of these insets belong to a fixed bar and two
- * to a scrolling column is the shell's business, not the reader's.
+ * One value on all four sides, and deliberately small: a shell spends this space twice per axis, so a
+ * "comfortable" 16px here costs the content 32px of height on a 914px window. 8 is the point where the
+ * cards still read as floating and the page keeps nearly the area it had before they existed.
  */
-private val GUTTER: Length = 16.px
+private val GUTTER: Length = 8.px
 
-/** The space between two cards. Smaller than a gutter, so the three surfaces still read as one group. */
-private val GAP: Length = 12.px
+/** The space between two cards — the same step as [GUTTER], so the shell is one grid and not two. */
+private val GAP: Length = 8.px
 
 /**
  * A card's corner radius — bigger than any control's, because a card is a surface and not a control.
  *
  * Deliberately not `--lumo-border-radius-l`: that token also rounds dialogs, fields and buttons, and
- * 20px on a 32px control turns it into a pill.
+ * 16px on a 32px control turns it into a pill.
  */
-private val CARD_RADIUS: Length = 20.px
+private val CARD_RADIUS: Length = 16.px
 
 /**
- * A card's edge: a hairline, so the surface keeps a boundary where the shadow has faded — on the light
- * canvas the shadow alone is nearly invisible at the card's top edge, and in the dark theme the two
- * colours are only one step apart.
+ * A card's shadow — now the only thing that separates it from the canvas, since the hairline is gone.
+ *
+ * Lumo's 20 % shade is a *translucent* dark in both themes, so one value works for both without a
+ * `light-dark()` pair of its own.
  */
-private val CARD_EDGE: Color = Color("light-dark(rgba(23, 32, 44, .08), rgba(255, 255, 255, .07))")
+private val CARD_SHADOW: Color = `var`(CustomPropertyName<Color>("--lumo-shade-20pct"), rgb(207, 214, 224))
 
 /**
- * A card's shadow colour: Lumo's 20 % shade, which is a *translucent* dark in both themes, so one value
- * works for both without a `light-dark()` pair of its own.
+ * A card's scrollbar thumb: Lumo's 30 % contrast, translucent in both themes like the shadow.
+ *
+ * The cards are their own scroll viewports, so the platform's classic scrollbar would be painted on
+ * top of the surface — a square, opaque strip over the rounded corner on the right. The three rules
+ * below replace it with a thin, inset pill on a transparent track, which is the one way to keep both
+ * the card's shape and a visible scroll affordance.
  */
-private val CARD_SHADOW: Color = `var`(CustomPropertyName<Color>("--lumo-shade-20pct"), rgb(226, 230, 236))
+private val CARD_THUMB: Color = `var`(CustomPropertyName<Color>("--lumo-contrast-30pct"), rgb(151, 158, 168))
+
+/** The width of a card's own scrollbar: thin enough to read as part of the card's inset. */
+private val SCROLLBAR_WIDTH: Length = 10.px
+
+/**
+ * One part of a card's scrollbar — `::-webkit-scrollbar`, `…-track`, `…-thumb` — on both cards.
+ *
+ * A selector list rather than a rule nested in each card's block: the two cards scroll for the same
+ * reason and must look the same while doing it, and a part of a scrollbar cannot be reached with the
+ * `pseudo { }` helper because that attaches to a single parent rule.
+ */
+private fun cardScrollbarPart(name: String): CssSelector = selectorList(
+    compound(className(LAYOUT_DRAWER), pseudo(pseudoElement("-webkit-scrollbar$name"))),
+    compound(className(LAYOUT_CONTENT), pseudo(pseudoElement("-webkit-scrollbar$name"))),
+)
+
+
+/**
+ * The parts of the card scrollbar, resolved once: the track is invisible and the thumb is the only
+ * thing painted, so the card's rounded corner is never covered by a track.
+ */
+private val CARD_SCROLLBAR: CssSelector = cardScrollbarPart("")
+
+private val CARD_SCROLLBAR_TRACK: CssSelector = cardScrollbarPart("-track")
+
+private val CARD_SCROLLBAR_THUMB: CssSelector = cardScrollbarPart("-thumb")
 
 /**
  * `vaadin-app-layout` as a selector target, for the three `::part()` rules below.
@@ -118,17 +153,23 @@ private val CONTENT_PART: CssSelector =
  * top offset, and the drawer's width is the content's inset from the left. What moves is where the
  * *surface* is painted:
  *
- * - the navbar bar keeps no background of its own. Its padding is the gutter, so the card is the row
- *   we own ([LAYOUT_TOPBAR]), inset by the bar. A margin on the fixed bar would be outside the box the
- *   component measures, and the content below would start under it.
+ * - the navbar bar keeps no background of its own and no minimum height. Its padding is the gutter
+ *   *inside* the 56px a Vaadin navbar is, so the card is the row we own ([LAYOUT_TOPBAR]) and the cards
+ *   cost the page two gutters of height, nothing more. A margin on the fixed bar would be outside the
+ *   box the component measures, and the content below would start under it.
  * - the drawer and content columns are `::part()`s of the app layout. Their padding is the gutter and
  *   the gap; the card is the element inside them ([LAYOUT_DRAWER], [LAYOUT_CONTENT]).
  *
- * Both cards are `height: 100%` and scroll *inside* themselves rather than growing into the column: a
- * card that grows with its page scrolls its own top edge — and its rounded corners — out of view on the
- * first scroll, while a card that is the viewport keeps its shape and scrolls its content. Padding
- * cannot be replaced by a margin here either: the margin of the only child of a scrolling column adds
- * to the scrollable area, so the column would show a scrollbar of exactly that height.
+ * Both cards are `height: 100%` rather than growing into the column: a card that grows with its page
+ * scrolls its own top edge — and its rounded corners — out of view on the first scroll, while a card
+ * that is the viewport keeps its shape and scrolls what is inside it. Padding cannot be replaced by a
+ * margin here either: the margin of the only child of a scrolling column adds to the scrollable area,
+ * so the column would show a scrollbar of exactly that height.
+ *
+ * What scrolls inside the content card is the *page*, one step in at the card's padding box: a
+ * scrollbar sits on the edge of whatever scrolls it, and on the card's own edge it would be a square
+ * strip across the rounded corner. The drawer scrolls its side nav, and both get a thin transparent
+ * scrollbar of their own so the platform's classic bar never lands on a corner either.
  *
  * Colours are Lumo custom properties (see [Palette]), so the light/dark switch at the document level
  * repaints every tree without a `[data-theme]` selector.
@@ -171,16 +212,16 @@ val LAYOUT_SHEET: CSSStyleSheet = cssSheet {
 
     LumoUtility.JustifyContent.BETWEEN { justifyContent = JustifyContent.spaceBetween }
 
-    // One card, three regions: the same surface, radius, edge and shadow. A bar that rounds differently
-    // from the surface below it reads as two designs meeting, not as one shell.
+    // One card, three regions: the same surface, radius and shadow. A bar that rounds differently
+    // from the surface below it reads as two designs meeting, not as one shell. No border: the
+    // surface against the canvas is enough separation, and a 1px line drawn around a rounded card
+    // turns it back into a box — the shadow is what lifts it, and it stays a shadow, not a band.
     LAYOUT_CARD {
         backgroundColor = Palette.background
         borderRadius = CARD_RADIUS
-        border = Border(1.px, LineStyle.solid, CARD_EDGE)
-        // One shadow only: a wide, soft drop with a negative spread, so the card lifts off the canvas
-        // without a visible dark band under its edge. `--lumo-shade-*` is translucent in both themes,
-        // which is what makes it a shadow in the light one and merely a darkening in the dark one.
-        boxShadow = BoxShadow(0.px, 12.px, 32.px, -16.px, CARD_SHADOW)
+        // One shadow only (cssom's `boxShadow` takes a single `BoxShadow`): short and soft, a surface
+        // resting on the canvas rather than a raised button.
+        boxShadow = BoxShadow(0.px, 2.px, 10.px, -3.px, CARD_SHADOW)
     }
 
     // The title and its version tag live in the navbar. Sizes follow the app-layout examples:
@@ -247,71 +288,114 @@ val LAYOUT_SHEET: CSSStyleSheet = cssSheet {
     }
 
     // The navbar's card: the bar spans the window and its padding is the gutter, so this row *is* the
-    // surface, inset by that padding. Its height is the bar's own height — which is exactly what the
-    // app layout measures to place the columns below it, so no margin may stand in for its inset.
+    // surface, inset by that padding. No block padding — the row's own height (the toggle's 40px) is
+    // what fills the bar, which is how the bar stays the 56px every Vaadin navbar is. Its height is
+    // what the app layout measures to place the columns below it, so no margin may stand in for the
+    // inset.
     LAYOUT_TOPBAR {
         width = 100.pct
-        // A card has an inner inset of its own: the toggle and the actions must not touch the rounded
-        // edge. `--vaadin-padding-block-container` (6px) would read as a hairline; 8/12 is the same
-        // rhythm the button next to it uses.
-        paddingBlock = 8.px
-        paddingInline = 12.px
+        paddingInline = 10.px
     }
 
     // The drawer's card: the whole side nav, filling the drawer column instead of floating as tall as
-    // its items. The padding keeps the item highlights off the rounded edge; the component's own
-    // `--vaadin-side-nav-item-padding` still insets the glyphs inside the highlight.
+    // its items. 4px keeps the item highlights off the rounded edge without spending a row of height on
+    // nothing; the component's own `--vaadin-side-nav-item-padding` still insets the glyphs inside the
+    // highlight.
     LAYOUT_DRAWER {
         height = 100.pct
         overflow = Auto.auto
-        padding = 8.px
+        padding = 4.px
     }
 
-    // The content's card: the page's sheet, fixed to the column and scrolling the page inside it.
+    // The content's card: the page's sheet, fixed to the column, and the page scrolls *inside its padding*
+    // — not the card itself. The card is a rounded surface, and a scrollbar painted on the card's own
+    // edge is a square strip laid across the top-right corner, which is what turns a card into a panel
+    // with a cut corner. One step in, at the padding box, the scrollbar starts below the corner arc.
     // `--vaadin-vertical-layout-padding` is the `padding` variant's own knob, so the variant stays in
-    // charge of the padding — it is only told how much a card insets its content (24px, not the
-    // variant's 12px: the page's title line sits right at the top edge of the card).
+    // charge of the padding — it is only told how much a card insets its content (16px: the page brings
+    // its own rhythm, and 24 was white space charged twice).
     LAYOUT_CONTENT {
         height = 100.pct
-        overflow = Auto.auto
-        set(CustomPropertyName<Length>("--vaadin-vertical-layout-padding"), 24.px)
+        set(CustomPropertyName<Length>("--vaadin-vertical-layout-padding"), 16.px)
     }
 
-    // The bar is a strip, not a surface. Its padding is the gutter around the card and its bottom padding
-    // is the gap to the columns; its own paint, its bottom hairline and the page-level tint all go, because
-    // the card carries them now. `background-image` is cleared as well as the colour: with
-    // `primary-section="navbar"` the Lumo theme paints a `contrast-5pct` gradient over the whole bar, which
-    // is exactly the grey-on-grey the cards replace.
+    // The page is the content card's scroller, and it is the column's only child, so one rule covers
+    // every page: fill the card's content box and scroll whatever runs past it.
+    (className(LAYOUT_CONTENT) child Selectors.universal) {
+        height = 100.pct
+        overflow = Auto.auto
+    }
+
+    // The cards are their own scroll viewports, and the platform's classic scrollbar would be painted
+    // on top of the surface as an opaque square strip across the rounded right corner. Ours is a 10px
+    // strip whose track paints nothing (so the card's white and its corner show through) and whose thumb
+    // is a 4px pill inset 3px — a scroll affordance that never touches the corner arc.
+    CARD_SCROLLBAR {
+        width = SCROLLBAR_WIDTH
+        backgroundColor = Color.transparent
+    }
+
+    CARD_SCROLLBAR_TRACK {
+        backgroundColor = Color.transparent
+    }
+
+    CARD_SCROLLBAR_THUMB {
+        backgroundColor = CARD_THUMB
+        borderRadius = 8.px
+        // A transparent border is how a webkit thumb is inset: the pill is what remains of the 10px
+        // strip after `background-clip` cuts the border away.
+        border = Border(3.px, LineStyle.solid, Color.transparent)
+        backgroundClip = BackgroundClip.paddingBox
+    }
+
+    // The bar is a strip, not a surface. Its padding is the gutter around the card, and the same
+    // padding under it is the gap to the columns below; its own paint, its bottom hairline and the
+    // page-level tint all go, because the card carries them now. `background-image` is cleared as well
+    // as the colour: with `primary-section="navbar"` the Lumo theme paints a `contrast-5pct` gradient
+    // over the whole bar, which is exactly the grey-on-grey the cards replace.
     NAVBAR_PART {
-        padding = Padding(GUTTER, GUTTER, GAP, GUTTER)
+        // The base style gives the bar `min-height: 56px` and Lumo pads it with the safe area; both are
+        // *inside* the box, so with a gutter of our own the bar would be 56 + 16. The gutter is part of
+        // the 56 instead: no minimum height, and the bar is exactly as tall as the row it holds.
+        minHeight = 0.px
+        padding = Padding(GUTTER, GUTTER, GUTTER, GUTTER)
         backgroundColor = Color.transparent
         backgroundImage = None.none
         borderBottomStyle = None.none
     }
 
-    // The two columns' gutters. The right padding of the drawer is the *gap* to the content card: the
-    // content column starts at the drawer column's right edge (that is the app layout's own offset), so
-    // the separation between the two cards belongs to the card on the left.
+    // The drawer's gutter: the window edge on the left, the bottom edge under it, and nothing on the
+    // right — the gap to the content card belongs to the content column instead (next rule), so that
+    // it is still there when the drawer is collapsed and the column becomes the first one.
     DRAWER_PART {
-        padding = Padding(0.px, GAP, GUTTER, GUTTER)
+        padding = Padding(0.px, 0.px, GUTTER, GUTTER)
         // The column is transparent — the card is the surface — and its `contrast-10pct` end hairline
         // goes with the bar's: the cards are separated by canvas, not by lines.
         backgroundColor = Color.transparent
         borderInlineEndWidth = 0.px
     }
 
+    // The content column's own gutter on all three sides it owns: the left one is the gap to the drawer
+    // when it is open and the window margin when it is collapsed, and one value does both.
     CONTENT_PART {
-        padding = Padding(0.px, GUTTER, GUTTER, 0.px)
+        padding = Padding(0.px, GUTTER, GUTTER, GAP)
     }
 
-    // The toggle is a 36px icon-button box around a 21px glyph: Lumo's own 9px padding and 8px margin
+    // The toggle is a 44px icon-button box around a 21px glyph: Lumo's own 9px padding and 8px margin
     // around it read as a blank gap between the toggle and the wordmark, on top of the layout's gap.
     // Both are dropped here; the inset comes from [LAYOUT_TOPBAR], the separation from the layout gap.
+    //
+    // 40 instead of 44 as well: the toggle is the tallest thing in the bar, so its box is what decides
+    // the navbar's height. At 44 the bar cannot be 56 (gutter + 44 + gutter) without eating the gutter;
+    // at 40 the bar is exactly 56 and the toggle keeps a 40px square target, which is the button size
+    // Lumo gives a bare icon button anyway.
     LAYOUT_TOGGLE {
         marginInlineStart = 0.px
         marginInlineEnd = 0.px
         paddingInlineStart = 0.px
         paddingInlineEnd = 0.px
+        height = 40.px
+        width = 40.px
     }
 
     // The left cluster may be narrower than the title plus the full breadcrumb trail; letting it
