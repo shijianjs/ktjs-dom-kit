@@ -27,7 +27,7 @@
   （`dom.webcomponent` 的 `CustomElementAdapter` 与 shadow
   root、`dom.element` 的 `createElement` / `invoke` / `unaryPlus` 与 `inlineStyle`、`dom.webcomponent.attr`
   里的 `attr` 委托与 `AttributeChange`）。包按关注点分：`dom.css`（只剩 `cssSheet`，语法糖全在
-  `dom.css.dsl`：伪类、at-rule、渐变、`@supports`、以及拼选择器的 `CssSelector` 引擎）、
+  `dom.css.dsl`：伪类、at-rule、渐变、`@supports`、以及拼选择器的 `Selector` 引擎）、
   `dom.loadjs`、`dom.element`、`dom.webcomponent`（`attr` 委托是它的子包：只给自定义元素作者用，对外的
   公开面基本就是 `attr`）。
   它用 `api(project(":ktjs-wrapper-kit"))` 把 wrapper 那一半也交给页面代码，所以对外 API 仍是完整的一份。
@@ -82,10 +82,10 @@
   - **样式表与 `ClassName` 常量跟着 owner 走**：不要再合成一份 `Sheets.kt` / `Classes.kt`，也不要建 `style/`；
     只有「每棵树都要 adopt」的 reset 与「整站一起变」的调色板可以跨包。
   - **选择器用 `css.dsl` 的引擎拼，不要拼字符串**：`className(ROW) child attributeSelector("aria-current")`、
-    `compound(className(CHIP), className(SELECTED))`、`selectorList(…)` 这类调用产出 `CssSelector` 值，可直接
-    当规则键；`:host` / `*` / `&` 用 `Selectors`。`CssSelector("…")` 只给 CSS 本身无类型的片段当出口（公式、
-    `::part` 名），不是「粘贴整条选择器」的入口。`vararg` 工厂不能接尾随块，先 `val key = compound(…)`
-    再 `key { … }`。
+    `compound(className(CHIP), className(SELECTED))`、`selectorList(…)` 这类调用产出 `web.cssom.Selector` 值，
+    它本身就是规则键的类型，可直接当键；`:host` / `*` / `&` 用 `Selectors`。`Selector("…")` 只给 CSS 本身无类型的
+    片段当出口（公式、`::part` 名），不是「粘贴整条选择器」的入口。`vararg` 工厂不能接尾随块，先
+    `val key = compound(…)` 再 `key { … }`。
   - **属性名走目录，不走字符串**：HTML 属性一律 `attributeSelector(HtmlAttributes.disabled)` /
     `attributeSelector(HtmlAttributes.type, "text")`（`web.cssom.HtmlAttributes` 的 210 个常量，带值时把值当第二个
     实参）；字符串形式只剩目录外的名字——ARIA（`aria-current`）、`data-*`、项目自造的。`tag(…)` 只收 `TagName`、

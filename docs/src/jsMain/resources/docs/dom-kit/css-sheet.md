@@ -127,6 +127,7 @@ What the wrappers already provide (look for these in the IDE before writing your
 | `RuleBuilder.@media / @container / @font-face / @view-transition` | `kotlin-csstype`'s `RuleBuilder.kt` | at-rule blocks; `@media(query)` takes a `MediaQuery` |
 | `AtRules.media / supports / layer / page / scope / …` | `web.cssom.AtRules` | every at-rule keyword (`@JsValue("@media")`, …) |
 | `MediaQuery.and / or / not` | `web.cssom.MediaQuery.kt` | combining conditions |
+| `Selector("…")`, `Selector.invoke { … }` | `web.cssom.Selector.kt`, `RuleBuilder.kt` | a selector as a value — and as a rule key, since that is the type the rules object is keyed by |
 | `MediaType.screen / print / all` | `web.cssom.atrule.MediaType` | media types |
 | `maxWidth / minWidth / width / height / orientation / prefersColorScheme / prefersReducedMotion / …` | `web.cssom.atrule/*.fun.kt` | media features (a whole directory, about 30 of them) |
 | `var / env / rgb / many / array / important / linearGradient / stop / Content() / NamedColor / PropertyName / translatex` | `web.cssom`'s `*.functions.kt`, `*.ext.kt`, `*.fun.kt` | values and functions |
@@ -140,9 +141,10 @@ every HTML attribute name is a constant of `web.cssom.HtmlAttributes`.
 
 ### Selectors you build: `compound` + combinators
 
-`css/dsl/CssSelector.kt` is an expression engine for selectors: every node kind is a factory, the
-combinators are infix functions, and the result is a `CssSelector` — a value you can hold in a field,
-pass to a function, and finally use as a rule key.
+`css/dsl/Composition.kt` is an expression engine for selectors: every node kind is a factory, the
+combinators are infix functions, and the result is `web.cssom.Selector` — cssom's own opaque selector,
+the same type `csstype.RuleBuilder` keys a rule with. It is a value you can hold in a field, pass to a
+function, and finally use as a rule key, with no conversion in between.
 
 ```kotlin
 private val ROW = ClassName("row")
@@ -166,7 +168,7 @@ flowchart TB
   CP --> CMP[".row.is-selected"]
   CMP --> CH["child (infix)"]
   L["className(LABEL) → .label"] --> CH
-  CH --> OUT[".row.is-selected > .label<br/>a CssSelector value"]
+  CH --> OUT[".row.is-selected > .label<br/>a web.cssom.Selector value"]
   OUT --> KEY["used as a rule key:<br/>cssSheet { selected { … } }"]
 ```
 | Node kind | Factory |
@@ -197,7 +199,7 @@ matches.
 
 What the engine deliberately does not do:
 
-- **No parsing.** `CssSelector(text)` takes whatever it is handed, for the one piece CSS does not type.
+- **No parsing.** `Selector(text)` takes whatever it is handed, for the one piece CSS does not type.
   It is not an entry point for a pasted selector — that is the string this API exists to replace.
 - **No escaping of identifiers.** A class name that contains a space or a quote is a bug at the call
   site, not something to hide.
@@ -252,7 +254,7 @@ into the call sites. Add the missing piece to this module's `css.dsl` package in
 | typed `@supports` conditions | `css/dsl/Supports.kt` | `SupportsQuery` + `supportsDeclaration(PropertyName<T>, T)` + `and`/`or`/`not`, modelled after `web.cssom.MediaQuery` |
 | an `@supports` block (the only at-rule helper that was missing) | `css/dsl/AtRules.kt` | `supports(query) { … }`, with the keyword from `AtRules.supports` |
 | pseudo-class / pseudo-element constants and combined states | `css/dsl/Pseudos.kt` | `Pseudos.hover` / `pseudo(…)` / `pseudos(…)` (64 constants) |
-| building selectors out of parts | `css/dsl/CssSelector.kt` | `compound(…)`, `selectorList(…)`, `className` / `tag` / `attributeSelector` / `pseudo`, the combinators |
+| building selectors out of parts | `css/dsl/Composition.kt` | `compound(…)`, `selectorList(…)`, `className` / `tag` / `attributeSelector` / `pseudo`, the combinators |
 
 Two gaps cssom does *not* leave: `pointer-events: none` was a local constant for a while, but cssom
 already types it as `web.cssom.None.none` (`None : NoneType`, and `NoneType` is a supertype of

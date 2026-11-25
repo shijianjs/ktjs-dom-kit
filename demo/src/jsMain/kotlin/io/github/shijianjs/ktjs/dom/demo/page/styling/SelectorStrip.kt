@@ -3,12 +3,10 @@ package io.github.shijianjs.ktjs.dom.demo.page.styling
 import io.github.shijianjs.ktjs.demo.style.Palette
 import io.github.shijianjs.ktjs.demo.style.RESET
 import io.github.shijianjs.ktjs.dom.css.cssSheet
-import io.github.shijianjs.ktjs.dom.css.dsl.CssSelector
 import io.github.shijianjs.ktjs.dom.css.dsl.attributeSelector
 import io.github.shijianjs.ktjs.dom.css.dsl.child
 import io.github.shijianjs.ktjs.dom.css.dsl.className
 import io.github.shijianjs.ktjs.dom.css.dsl.compound
-import io.github.shijianjs.ktjs.dom.css.dsl.invoke
 import io.github.shijianjs.ktjs.dom.element.invoke
 import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementAdapter
 import io.github.shijianjs.ktjs.dom.webcomponent.attachStyledShadow
@@ -18,6 +16,7 @@ import web.cssom.CSSStyleSheet
 import web.cssom.Display
 import web.cssom.LineStyle
 import web.cssom.Padding
+import web.cssom.Selector
 import web.cssom.integer
 import web.cssom.px
 import web.html.HTMLSpanElement
@@ -60,9 +59,9 @@ class SelectorStrip : CustomElementAdapter() {
         private val SELECTED: ClassName = ClassName("is-selected")
         private val ROW: ClassName = ClassName("selector-strip__row")
         /** `.selector-chip.is-selected` — one element carrying both classes. */
-        private val SELECTED_CHIP: CssSelector = compound(className(CHIP), className(SELECTED))
+        private val SELECTED_CHIP: Selector = compound(className(CHIP), className(SELECTED))
         /** `.selector-strip__row > [aria-current]` — the selected chip, seen from the row. */
-        private val CURRENT_CHIP_IN_ROW: CssSelector = className(ROW) child attributeSelector("aria-current")
+        private val CURRENT_CHIP_IN_ROW: Selector = className(ROW) child attributeSelector("aria-current")
 
         /**
          * The rule keys are values that were built, not pasted strings.

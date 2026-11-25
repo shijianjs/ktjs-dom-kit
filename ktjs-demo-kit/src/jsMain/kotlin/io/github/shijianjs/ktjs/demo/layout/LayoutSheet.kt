@@ -2,11 +2,9 @@ package io.github.shijianjs.ktjs.demo.layout
 
 import io.github.shijianjs.ktjs.demo.style.Palette
 import io.github.shijianjs.ktjs.dom.css.cssSheet
-import io.github.shijianjs.ktjs.dom.css.dsl.CssSelector
 import io.github.shijianjs.ktjs.dom.css.dsl.className
 import io.github.shijianjs.ktjs.dom.css.dsl.colorStop
 import io.github.shijianjs.ktjs.dom.css.dsl.compound
-import io.github.shijianjs.ktjs.dom.css.dsl.invoke
 import io.github.shijianjs.ktjs.dom.css.dsl.or
 import io.github.shijianjs.ktjs.dom.css.dsl.pseudo
 import io.github.shijianjs.ktjs.dom.css.dsl.pseudoElement
@@ -34,6 +32,7 @@ import web.cssom.None
 import web.cssom.Overflow
 import web.cssom.Padding
 import web.cssom.PropertyName
+import web.cssom.Selector
 import web.cssom.WhiteSpace
 import web.cssom.deg
 import web.cssom.em
@@ -98,7 +97,7 @@ private val SCROLLBAR_WIDTH: Length = 10.px
  * reason and must look the same while doing it, and a part of a scrollbar cannot be reached with the
  * `pseudo { }` helper because that attaches to a single parent rule.
  */
-private fun cardScrollbarPart(name: String): CssSelector = selectorList(
+private fun cardScrollbarPart(name: String): Selector = selectorList(
     compound(className(LAYOUT_DRAWER), pseudo(pseudoElement("-webkit-scrollbar$name"))),
     compound(className(LAYOUT_CONTENT), pseudo(pseudoElement("-webkit-scrollbar$name"))),
 )
@@ -108,11 +107,11 @@ private fun cardScrollbarPart(name: String): CssSelector = selectorList(
  * The parts of the card scrollbar, resolved once: the track is invisible and the thumb is the only
  * thing painted, so the card's rounded corner is never covered by a track.
  */
-private val CARD_SCROLLBAR: CssSelector = cardScrollbarPart("")
+private val CARD_SCROLLBAR: Selector = cardScrollbarPart("")
 
-private val CARD_SCROLLBAR_TRACK: CssSelector = cardScrollbarPart("-track")
+private val CARD_SCROLLBAR_TRACK: Selector = cardScrollbarPart("-track")
 
-private val CARD_SCROLLBAR_THUMB: CssSelector = cardScrollbarPart("-thumb")
+private val CARD_SCROLLBAR_THUMB: Selector = cardScrollbarPart("-thumb")
 
 /**
  * `vaadin-app-layout` as a selector target, for the three `::part()` rules below.
@@ -125,15 +124,15 @@ private val CARD_SCROLLBAR_THUMB: CssSelector = cardScrollbarPart("-thumb")
 private val APP_LAYOUT: TagName<HTMLElement> = TagName("vaadin-app-layout")
 
 /** `vaadin-app-layout::part(navbar)` — the fixed bar, seen from outside the component. */
-private val NAVBAR_PART: CssSelector =
+private val NAVBAR_PART: Selector =
     compound(tag(APP_LAYOUT), pseudo(pseudoElement("part"), ident("navbar")))
 
 /** `vaadin-app-layout::part(drawer)` — the drawer column, seen from outside the component. */
-private val DRAWER_PART: CssSelector =
+private val DRAWER_PART: Selector =
     compound(tag(APP_LAYOUT), pseudo(pseudoElement("part"), ident("drawer")))
 
 /** `vaadin-app-layout::part(content)` — the content column, seen from outside the component. */
-private val CONTENT_PART: CssSelector =
+private val CONTENT_PART: Selector =
     compound(tag(APP_LAYOUT), pseudo(pseudoElement("part"), ident("content")))
 
 /**

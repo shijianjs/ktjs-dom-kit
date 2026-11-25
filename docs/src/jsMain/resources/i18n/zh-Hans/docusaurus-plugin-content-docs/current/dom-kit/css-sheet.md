@@ -113,6 +113,7 @@ supports(
 | `RuleBuilder.@media / @container / @font-face / @view-transition` | `kotlin-csstype/.../RuleBuilder.kt` | at-rule 块，`@media(query)` 收 `MediaQuery` |
 | `AtRules.media / supports / layer / page / scope / …` | `web.cssom.AtRules` | 所有 at-rule 关键字常量（`@JsValue("@media")` 等） |
 | `MediaQuery.and / or / not` | `web.cssom.MediaQuery.kt` | 组合条件 |
+| `Selector("…")`、`Selector.invoke { … }` | `web.cssom.Selector.kt`、`RuleBuilder.kt` | 选择器当值用；它本身就是规则键的类型，中间不用转换 |
 | `MediaType.screen / print / all` | `web.cssom.atrule.MediaType` | 媒体类型 |
 | `maxWidth / minWidth / width / height / orientation / prefersColorScheme / prefersReducedMotion / …` | `web.cssom.atrule/*.fun.kt` | 媒体特性（一整个目录，约 30 个） |
 | `var / env / rgb / many / array / important / linearGradient / stop / Content() / NamedColor / PropertyName / translatex` | `web.cssom` 的 `*.functions.kt`、`*.ext.kt`、`*.fun.kt` | 取值与函数 |
@@ -124,8 +125,9 @@ token——`An+B` 公式、`::part` 的名字、语言标签，它们走各自�
 
 ### 拼接选择器：`compound` + 组合器
 
-`css/dsl/CssSelector.kt` 是一个选择器表达式引擎：每种节点一个工厂，组合器是 infix 函数，产出的 `CssSelector`
-是一个值——能存字段、能传函数、最后才当规则键。
+`css/dsl/Composition.kt` 是一个选择器表达式引擎：每种节点一个工厂，组合器是 infix 函数，产出的是
+`web.cssom.Selector`——cssom 自己的那个不透明选择器，也正是 `csstype.RuleBuilder` 用来当规则键的类型。
+它是个值：能存字段、能传函数，最后直接当规则键，中间不需要任何转换。
 
 ```kotlin
 private val ROW = ClassName("row")
@@ -149,7 +151,7 @@ flowchart TB
   CP --> CMP[".row.is-selected"]
   CMP --> CH["child（中缀）"]
   L["className(LABEL) → .label"] --> CH
-  CH --> OUT[".row.is-selected > .label<br/>一个 CssSelector 值"]
+  CH --> OUT[".row.is-selected > .label<br/>一个 web.cssom.Selector 值"]
   OUT --> KEY["当作规则键：<br/>cssSheet { selected { … } }"]
 ```
 
@@ -177,7 +179,7 @@ flowchart TB
 
 引擎刻意不做的三件事：
 
-- **不解析**。`CssSelector(text)` 只接收交给它的那一段文本，给 CSS 没有类型的地方用；它不是「粘贴整条选择器」
+- **不解析**。`Selector(text)` 只接收交给它的那一段文本，给 CSS 没有类型的地方用；它不是「粘贴整条选择器」
   的入口——那条字符串正是这套 API 要替代的东西。
 - **不转义标识符**。class 名里带空格或引号是调用点的 bug，不靠静默转义掩盖。
 - **渲染后不再重排**。组合器按 CSS 的写法带空格（`.row > .label`），stylis 在样式表里会压成 `.row>.label`，
@@ -226,7 +228,7 @@ cssom 没有应用级属性名的常量，字符串在这里出现一次；具�
 | `@supports` 条件类型 | `css/dsl/Supports.kt` | `SupportsQuery` + `supportsDeclaration(PropertyName<T>, T)` + `and/or/not`，照 `web.cssom.MediaQuery` 的形态 |
 | `@supports` 块（唯一缺的 at-rule helper） | `css/dsl/AtRules.kt` | `supports(query) { … }`，关键字取 `AtRules.supports` |
 | 伪类/伪元素常量 + 组合态 | `css/dsl/Pseudos.kt` | `Pseudos.hover` / `pseudo(…)` / `pseudos(…)`（64 个常量） |
-| 用零件拼选择器 | `css/dsl/CssSelector.kt` | `compound(…)`、`selectorList(…)`、`className` / `tag` / `attributeSelector` / `pseudo`、各个组合器 |
+| 用零件拼选择器 | `css/dsl/Composition.kt` | `compound(…)`、`selectorList(…)`、`className` / `tag` / `attributeSelector` / `pseudo`、各个组合器 |
 
 有两处 cssom **其实已经覆盖**，不要再自造：`pointer-events: none` 一度在这里当过常量，但 cssom 生成的是
 `web.cssom.None.none`（`None : NoneType`，而 `NoneType` 是 `PointerEvents` 的父类型，直接赋给属性即可）。

@@ -8,6 +8,7 @@ import web.cssom.ClassName
 import web.cssom.Display
 import web.cssom.HtmlAttributes
 import web.cssom.Margin
+import web.cssom.Selector
 import web.cssom.ident
 import web.cssom.px
 import web.dom.TagName
@@ -15,10 +16,10 @@ import web.html.HtmlTagName
 
 /**
  * A selector is a value: every test here compares the text it renders, because the text is exactly
- * what stylis receives. The last two tests go through `cssSheet`, which is how a selector is actually
- * used — a key, not a string that happens to look like one.
+ * what stylis receives. One test goes through `cssSheet`, which is how a selector is actually used —
+ * a key, not a string that happens to look like one.
  */
-class CssSelectorTest {
+class CompositionTest {
     private val ROW: ClassName = ClassName("row")
     private val SELECTED: ClassName = ClassName("is-selected")
     private val LABEL: ClassName = ClassName("label")
@@ -151,9 +152,12 @@ class CssSelectorTest {
     }
 
     @Test
-    fun asSelectorIsTheCssomValueTheRulesUse() {
-        val built = className(ROW) child className(LABEL)
+    fun aBuiltSelectorIsTheCssomSelectorType() {
+        // No conversion between "a selector built from parts" and "a rule key": both are
+        // `web.cssom.Selector`, the type the rules object is keyed by. The annotation is the assertion,
+        // so the test fails to compile if the DSL ever grows a value type of its own again.
+        val built: Selector = className(ROW) child className(LABEL)
         // Combinators render with the spaces CSS writes; stylis compacts them inside a sheet.
-        assertEquals(".row > .label", "${built.asSelector()}")
+        assertEquals(".row > .label", "$built")
     }
 }

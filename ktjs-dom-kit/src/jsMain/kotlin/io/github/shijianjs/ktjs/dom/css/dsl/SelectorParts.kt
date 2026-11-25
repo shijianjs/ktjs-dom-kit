@@ -3,6 +3,7 @@ package io.github.shijianjs.ktjs.dom.css.dsl
 import web.cssom.ClassName
 import web.cssom.HtmlAttributes
 import web.cssom.Ident
+import web.cssom.Selector
 import web.dom.TagName
 
 /**
@@ -14,13 +15,13 @@ import web.dom.TagName
  */
 
 /** `vaadin-button` — a type selector. The name has to be a [TagName], not a string. */
-fun tag(tagName: TagName<*>): CssSelector = CssSelector("$tagName")
+fun tag(tagName: TagName<*>): Selector = Selector("$tagName")
 
 /** `.card` — a class selector; pass the constant the sheet and the DOM both use. */
-fun className(className: ClassName): CssSelector = CssSelector(".$className")
+fun className(className: ClassName): Selector = Selector(".$className")
 
 /** `#main` — an id selector. */
-fun id(value: String): CssSelector = CssSelector("#$value")
+fun id(value: String): Selector = Selector("#$value")
 
 /**
  * `[disabled]` — an attribute selector for a name the generated catalogue knows
@@ -29,7 +30,7 @@ fun id(value: String): CssSelector = CssSelector("#$value")
  * The catalogue value already carries the brackets (`HtmlAttributes.type` is `"[type]"`), so this
  * form is the bare presence test and nothing is re-derived.
  */
-fun attributeSelector(name: HtmlAttributes): CssSelector = CssSelector("$name")
+fun attributeSelector(name: HtmlAttributes): Selector = Selector("$name")
 
 /**
  * `[type="text"]` — the same catalogue entry, with a value.
@@ -43,7 +44,7 @@ fun attributeSelector(
     operator: AttributeOperator = AttributeOperator.equals,
     quote: Boolean = true,
     caseFlag: AttributeCase? = null,
-): CssSelector = attributeSelector(
+): Selector = attributeSelector(
     name = "$name".removeSurrounding("[", "]"),
     value = value,
     operator = operator,
@@ -69,11 +70,11 @@ fun attributeSelector(
     operator: AttributeOperator = AttributeOperator.equals,
     quote: Boolean = true,
     caseFlag: AttributeCase? = null,
-): CssSelector {
-    if (value == null) return CssSelector("[$name]")
+): Selector {
+    if (value == null) return Selector("[$name]")
     val rendered = if (quote) "\"${escapeQuoted(value)}\"" else value
     val flag = caseFlag?.let { " ${it.token}" }.orEmpty()
-    return CssSelector("[$name${operator.token}$rendered$flag]")
+    return Selector("[$name${operator.token}$rendered$flag]")
 }
 
 /**
@@ -85,28 +86,28 @@ fun attributeSelector(
  * site — CSS fixes the kind per name.
  *
  * Two forms take an argument: an [Ident] for the bare token CSS does not type — the `label` of
- * `::part(label)`, the `2n+1` of `:nth-child(2n+1)` — and a [CssSelector] for what it does —
+ * `::part(label)`, the `2n+1` of `:nth-child(2n+1)` — and a [Selector] for what it does —
  * `:not(.is-hidden)`, `:is(.a, .b)`, `:host([collapsed])`.
  */
-fun pseudo(pseudo: Pseudo): CssSelector = CssSelector("$pseudo")
+fun pseudo(pseudo: Pseudo): Selector = Selector("$pseudo")
 
 fun pseudo(
     pseudo: Pseudo,
     argument: Ident,
-): CssSelector = CssSelector("$pseudo($argument)")
+): Selector = Selector("$pseudo($argument)")
 
 fun pseudo(
     pseudo: Pseudo,
-    argument: CssSelector,
-): CssSelector = CssSelector("$pseudo($argument)")
+    argument: Selector,
+): Selector = Selector("$pseudo($argument)")
 
 /** The selectors that are a single token and have no factory of their own. */
 object Selectors {
     /** `*` — every element. */
-    val universal: CssSelector = CssSelector("*")
+    val universal: Selector = Selector("*")
 
     /** `&` — the nesting selector, for building rule keys that stay attached to their parent. */
-    val nesting: CssSelector = CssSelector("&")
+    val nesting: Selector = Selector("&")
 }
 
 /** The six attribute comparison operators; `token` is what CSS spells, escaped where it starts with `$`. */
