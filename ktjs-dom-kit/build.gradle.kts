@@ -56,8 +56,8 @@ kotlin {
             api(project(":ktjs-wrapper-kit"))
             // `api`: the public surface exposes kotlin-browser types (`HTMLElement`, `Element`, …)
             // and kotlin-csstype's `Properties`, the typed view of an element's inline style.
-            api("org.jetbrains.kotlin-wrappers:kotlin-browser:2026.11.2")
-            api("org.jetbrains.kotlin-wrappers:kotlin-csstype:2026.11.2-3.2.3")
+            api(libs.kotlin.browser)
+            api(libs.kotlin.csstype)
             // `cssSheet` serializes csstype rules with emotion's own text pipeline: serializeStyles
             // writes declarations, stylis resolves the nested selectors. `implementation` since
             // neither type is in the public API.
@@ -70,12 +70,12 @@ kotlin {
             // itself uses `coroutineScope`/`async` for the list form. `api` so the coroutines library
             // comes with the module instead of being a line every consumer has to add. kotlin-browser
             // only declares it `implementation`, hence the explicit coordinate.
-            api("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
+            api(libs.kotlinx.coroutines.core)
         }
         jsTest.dependencies {
             implementation(kotlin("test"))
             // The loader suspends, so its cases are written as `runTest { … }`.
-            implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
+            implementation(libs.kotlinx.coroutines.test)
         }
     }
 }

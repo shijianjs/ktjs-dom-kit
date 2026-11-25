@@ -6,14 +6,20 @@ import org.gradle.api.publish.PublishingExtension
 import org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsRootPlugin
 import org.jetbrains.kotlin.gradle.targets.js.npm.NpmExtension
 
+// Plugin versions come from `gradle/libs.versions.toml`, like every artifact version in this build.
+// `apply false`: the modules apply what they need; Dokka and the publishing plugin are wired here.
+//
+// Modules apply these by id *without* a version (`kotlin("multiplatform")`, `kotlin("jvm")`,
+// `id("com.google.devtools.ksp")`): this block already puts them on the build classpath, and asking
+// for a version twice is an error ("already on the classpath with an unknown version").
 plugins {
-    kotlin("multiplatform") version "2.4.21" apply false
-    id("com.vanniktech.maven.publish") version "0.37.0" apply false
-    id("dev.detekt") version "2.0.0-alpha.6" apply false
-    id("org.jetbrains.dokka") version "2.3.0"
+    alias(libs.plugins.kotlin.multiplatform) apply false
+    alias(libs.plugins.maven.publish) apply false
+    alias(libs.plugins.detekt) apply false
+    alias(libs.plugins.dokka)
     // Runs the `ktjs-dom-kit-ksp` processor over a module's Kotlin sources. `apply false`: only the
     // module that declares `by attr` (and the test probe that mirrors it) applies it.
-    id("com.google.devtools.ksp") version "2.3.14" apply false
+    alias(libs.plugins.ksp) apply false
 }
 
 // A working tree is never a release. Every module derives the version of its *next* release, which
@@ -84,8 +90,10 @@ extra["wrapperRevisions"] = wrapperRevisions
 // Keep a single webpack instance across the npm workspace: npm otherwise installs a second copy
 // for source-map-loader's peer dependency, and the test bundle fails with
 // "The 'compilation' argument must be an instance of Compilation".
+val webpackVersion = libs.versions.webpack.get()
+
 plugins.withType<NodeJsRootPlugin> {
-    extensions.getByType(NpmExtension::class.java).override("webpack", "5.108.1")
+    extensions.getByType(NpmExtension::class.java).override("webpack", webpackVersion)
 }
 
 // The public API must use kotlin-browser's web.* types. Kotlin/JS's own org.w3c.dom.* and

@@ -55,7 +55,7 @@ kotlin {
         jsMain.dependencies {
             // `api`: the public surface is expressed in kotlin-browser's types (`HTMLElement`).
             // No kotlin-csstype and no npm package: this is the graph a wrapper library inherits.
-            api("org.jetbrains.kotlin-wrappers:kotlin-browser:2026.11.2")
+            api(libs.kotlin.browser)
         }
         jsTest.dependencies {
             implementation(kotlin("test"))

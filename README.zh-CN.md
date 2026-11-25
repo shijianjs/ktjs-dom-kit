@@ -65,10 +65,12 @@ wrapper 的规则 `{上游 npm 版本}-kt.{修订号}`：上游版本只在根 [
 ./gradlew kotlinUpgradePackageLock
 ```
 
-`docs` 模块同样是 Kotlin/JS 项目。三个 ktjs-docusaurus 版本都写在 `gradle.properties` 里：wrapper klib、
-Gradle 插件、以及首页分区用到的工具箱——那个项目的每个模块各自带 `-kt.N` 修订号。写 SNAPSHOT 时从
-`mavenLocal` 解析。工具箱的浏览器那一半不是独立的 Maven 产物，而是 kit klib 里的资源，由
-`extractKitBundle` 解到站点的 `static/ktjs-client/`。
+`docs` 模块同样是 Kotlin/JS 项目。三个 ktjs-docusaurus 版本都写在
+[`gradle/libs.versions.toml`](gradle/libs.versions.toml) 里：wrapper klib、Gradle 插件、以及首页分区用到
+的工具箱——那个项目的每个模块各自带 `-kt.N` 修订号。这个文件也是所有 Gradle 侧版本的唯一去处（Kotlin、
+各插件、kotlin-wrappers、测试栈），统一由生成的 `libs` 访问器读取。写 SNAPSHOT 时从 `mavenLocal` 解析。
+工具箱的浏览器那一半不是独立的 Maven 产物，而是 kit klib 里的资源，由 `extractKitBundle` 解到站点的
+`static/ktjs-client/`。
 
 ## 发布
 

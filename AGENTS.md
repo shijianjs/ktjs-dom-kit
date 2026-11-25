@@ -55,10 +55,10 @@
 - `docs`：文档站，也是 Pages 的主体。它同样是 Kotlin/JS 模块——站点配置与侧边栏是 Kotlin、页面是
   Markdown，由 [ktjs-docusaurus](https://github.com/shijianjs/ktjs-docusaurus) 的 Gradle 插件组装并调用
   Docusaurus CLI。`pagesSite` 把它放在 Pages **根目录**、API 在 `/api/`：`baseUrl`（`/ktjs-dom-kit/`）
-  和导航里的那个跳转都由 `Config.kt` 顶部的常量推出来，改布局要一起改。不发布、也不进 Dokka。版本在
-  `gradle.properties`：`ktjs-docusaurus.version` 是 wrapper klib 的，
-  `ktjs-docusaurus-gradle-plugin.version` 是插件的，`ktjs-docusaurus-kit.version` 是工具箱的（那个项目每个
-  模块各有 `-kt.N` 修订号）；写 SNAPSHOT 时从 `mavenLocal` 解析。首页的 `<ktjs-hero>` / `<ktjs-features>` /
+  和导航里的那个跳转都由 `Config.kt` 顶部的常量推出来，改布局要一起改。不发布、也不进 Dokka。三个版本
+  都在 [`gradle/libs.versions.toml`](gradle/libs.versions.toml) 的 `[versions]`：`ktjs-docusaurus` 是
+  wrapper klib 的、`ktjs-docusaurus-gradle-plugin` 是插件的、`ktjs-docusaurus-kit` 是工具箱的（那个项目
+  每个模块各有 `-kt.N` 修订号）；写 SNAPSHOT 时从 `mavenLocal` 解析。首页的 `<ktjs-hero>` / `<ktjs-features>` /
   `<ktjs-next-steps>` 来自工具箱：浏览器那一半不是独立 Maven 产物，而是 kit klib 里的
   `ktjs-client/ktjs-docusaurus-kit-browser.js`，`docs/build.gradle.kts` 用 `extractKitBundle` 从 klib
   解出来交给插件放到 `static/ktjs-client/`，再由 `ClientModule.kt` 在 hydrate 之后按 locale 的
@@ -235,9 +235,9 @@ kotlin-browser 项目就无法直接使用。
 `src`，根目录 `detekt.yml` 禁止 `org.w3c.dom.*` 与 `kotlinx.browser.*`。新增模块无需单独配置。该规则
 只拦截 import，代码里直接写全限定名（如 `kotlinx.browser.window`）不会被发现。
 
-Detekt 版本固定为 `2.0.0-alpha.6`：1.23.8 在 JDK 25 下直接失败，而 2.0 alpha 明确支持 Kotlin 2.4 /
-Gradle 9 / JDK 25。升级时注意 2.0 的插件 ID 是 `dev.detekt`，规则配置项也已改名
-（如 `imports` → `forbiddenImports`）。
+Detekt 版本固定为 `2.0.0-alpha.6`（`gradle/libs.versions.toml` 的 `detekt` 键）：1.23.8 在 JDK 25 下
+直接失败，而 2.0 alpha 明确支持 Kotlin 2.4 / Gradle 9 / JDK 25。升级时注意 2.0 的插件 ID 是 `dev.detekt`，
+规则配置项也已改名（如 `imports` → `forbiddenImports`）。
 
 ## Kotlin/JS 模块格式与测试运行时
 
@@ -477,6 +477,25 @@ bundle，而消费方打包时本来就会摇树，保留 public API 没有额�
 判断信号：`build/compileSync/js/main/productionLibrary/kotlin/<模块>.mjs` 只有一百多字节，而源码里有
 非 external 的实现代码。注意 executable 消费方不受影响——依赖 klib 的代码会被打进它的单文件 bundle。
 ## 版本约定
+
+**Gradle 侧的一切版本只有一处：根目录 [`gradle/libs.versions.toml`](gradle/libs.versions.toml)。** Kotlin、
+KSP、Dokka、Detekt、`com.vanniktech.maven.publish`、kotlin-wrappers、协程、测试栈（Playwright / JUnit /
+Hutool）、ktjs-docusaurus 三件套与兄弟 wrapper 的 SNAPSHOT 都在它的 `[versions]` 里；构建脚本用
+生成的 `libs` 访问器引用（`libs.kotlin.browser`、`libs.plugins.detekt`、`libs.versions.webpack.get()`），
+**不要在脚本里写版本号**。`libs.versions.kotlinWrappers` 这类共享键按「一起发版的一组」组织：csstype
+在自己的上游版本后缀上独立演进，所以单独一个键。
+
+两条与它配合的规则：
+
+- 根 `build.gradle.kts` 的 `plugins {}` 是唯一声明插件版本的地方（`alias(libs.plugins.x) apply false`）；
+  子模块按 id 应用、不带版本（`kotlin("multiplatform")`、`kotlin("jvm")`、`id("com.google.devtools.ksp")`）。
+  给已经在 classpath 上的插件再带版本会直接失败（"already on the classpath with an unknown version"）。
+- 只有 `docs` 用到的 `io.github.shijianjs.ktjs.docusaurus` 不在根脚本里声明，它在模块里 `alias(...)`，
+  版本因此直接来自目录。
+
+`gradle.properties` **不再放版本**，只剩 Gradle/Kotlin 的运行设置（`kotlin.js.yarn`、daemon 堆）。
+仍然留在目录之外的两份数据是刻意的：`package.json` 的 npm 版本（Dependabot 读它）、
+`wrapper-revisions.properties` 的 `-kt.N` 修订号（不是任何构件的版本）——下面几段解释它们的推导规则。
 
 每个子模块独立版本。包装 npm 包的模块格式为 `{上游 npm 版本}-kt.{修订号}`：上游 npm 版本只在根目录
 `package.json` 的 `dependencies` 中声明，每个模块的修订号在根目录 `wrapper-revisions.properties` 中维护。

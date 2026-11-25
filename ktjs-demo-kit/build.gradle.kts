@@ -36,18 +36,18 @@ kotlin {
             // `api`: the public surface exposes kotlin-browser types and the vaadin wrappers' element
             // classes, so consumers write against them without an extra dependency line.
             api(project(":ktjs-dom-kit"))
-            api("org.jetbrains.kotlin-wrappers:kotlin-browser:2026.11.2")
+            api(libs.kotlin.browser)
             // The unreleased wrapper revision that adds `lumoutility.LumoUtility` and the typed
             // `theme` variants. Versions here stay SNAPSHOT until the release batch: every module is
             // published to mavenLocal and consumed from there, so nothing reaches Central before the
             // user signs off on the whole migration.
-            api("io.github.shijianjs:ktjs-vaadin-web-components:25.3.5-kt.8-SNAPSHOT")
+            api(libs.ktjs.vaadin.web.components)
             // Icons in the sidebar are `<iconify-icon>` elements. The type never leaves this module
             // (the catalog only carries icon-name strings), so a plain implementation is enough.
-            implementation("io.github.shijianjs:ktjs-iconify-icon:3.0.5-kt.6-SNAPSHOT")
+            implementation(libs.ktjs.iconify.icon)
             // Menu items are plain JS objects (`js.objects.unsafeJso`), which live in kotlin-wrappers'
             // `kotlin-js` module; the old standalone `plain-objects` artifact stops at Kotlin 2.2.
-            implementation("org.jetbrains.kotlin-wrappers:kotlin-js:2026.11.2")
+            implementation(libs.kotlin.js)
         }
         jsTest.dependencies {
             implementation(kotlin("test"))

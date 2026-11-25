@@ -1,0 +1,90 @@
+# The single place where Gradle-side versions live. Module scripts reference these through the
+# generated `libs` accessor (`libs.kotlin.browser`, `libs.plugins.detekt`, `libs.versions.kotlin`),
+# so a version is written down exactly once.
+#
+# Two neighbouring files deliberately stay outside this catalog, because they are not "a version of
+# something this build declares":
+#
+# - `package.json`: the npm packages the wrappers bind to. Dependabot reads it directly, and the
+#   modules derive their own version from it (`{npm version}-kt.{revision}`).
+# - `wrapper-revisions.properties`: the per-module `-kt.N` revision, not a version of any artifact.
+#
+# Lockstep groups keep one version key: everything from `org.jetbrains.kotlin-wrappers` shares
+# `kotlinWrappers` unless it appends its own upstream version (csstype does).
+
+[versions]
+# Kotlin toolchain and the Gradle plugins that build this repository.
+kotlin = "2.4.21"
+ksp = "2.3.14"
+dokka = "2.3.0"
+detekt = "2.0.0-alpha.6"
+maven-publish = "0.37.0"
+
+# JetBrains' Kotlin/JS type wrappers.
+kotlin-wrappers = "2026.11.2"
+kotlin-wrappers-csstype = "2026.11.2-3.2.3"
+
+coroutines = "1.11.0"
+kotlinpoet = "2.4.0"
+
+# Test stack: the browser suites, the Playwright end-to-end demo suite and its static server.
+playwright = "1.61.0"
+junit = "6.1.3"
+hutool = "5.8.48"
+
+# ktjs-docusaurus builds the documentation site; every module there carries its own `-kt.N`
+# revision, so the plugin, the wrapper klib and the kit are three independent versions. A
+# `-SNAPSHOT` resolves from `mavenLocal` (see `settings.gradle.kts`); released versions come from
+# Maven Central.
+ktjs-docusaurus = "3.10.2-kt.2-SNAPSHOT"
+ktjs-docusaurus-gradle-plugin = "3.10.2-kt.1-SNAPSHOT"
+ktjs-docusaurus-kit = "0.1.0-SNAPSHOT"
+
+# Sibling wrappers the demo kit is built from. SNAPSHOT until the release batch: the demo runs
+# against the working tree of those repositories, published to `mavenLocal`.
+ktjs-vaadin-web-components = "25.3.5-kt.8-SNAPSHOT"
+ktjs-iconify-icon = "3.0.5-kt.6-SNAPSHOT"
+
+# npm versions Gradle has to know about (the npm dependency list itself is `package.json`):
+# `@docusaurus/theme-mermaid` has to stay on the wrapper's `@docusaurus/*` line, and the npm
+# workspace shares a single webpack.
+docusaurus = "3.10.2"
+webpack = "5.108.1"
+
+[libraries]
+kotlin-browser = { module = "org.jetbrains.kotlin-wrappers:kotlin-browser", version.ref = "kotlin-wrappers" }
+kotlin-csstype = { module = "org.jetbrains.kotlin-wrappers:kotlin-csstype", version.ref = "kotlin-wrappers-csstype" }
+kotlin-js = { module = "org.jetbrains.kotlin-wrappers:kotlin-js", version.ref = "kotlin-wrappers" }
+
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
+kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
+
+ksp-symbol-processing-api = { module = "com.google.devtools.ksp:symbol-processing-api", version.ref = "ksp" }
+kotlinpoet = { module = "com.squareup:kotlinpoet", version.ref = "kotlinpoet" }
+kotlinpoet-ksp = { module = "com.squareup:kotlinpoet-ksp", version.ref = "kotlinpoet" }
+
+playwright = { module = "com.microsoft.playwright:playwright", version.ref = "playwright" }
+hutool-all = { module = "cn.hutool:hutool-all", version.ref = "hutool" }
+junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit" }
+junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher", version.ref = "junit" }
+
+ktjs-docusaurus = { module = "io.github.shijianjs:ktjs-docusaurus", version.ref = "ktjs-docusaurus" }
+ktjs-docusaurus-kit = { module = "io.github.shijianjs:ktjs-docusaurus-kit", version.ref = "ktjs-docusaurus-kit" }
+# The kit's browser half is a klib *resource*, not a type anyone compiles against, so it is
+# resolved with `@klib` from the `-js` coordinate; that suffix cannot be expressed here.
+ktjs-docusaurus-kit-js = { module = "io.github.shijianjs:ktjs-docusaurus-kit-js", version.ref = "ktjs-docusaurus-kit" }
+
+ktjs-vaadin-web-components = { module = "io.github.shijianjs:ktjs-vaadin-web-components", version.ref = "ktjs-vaadin-web-components" }
+ktjs-iconify-icon = { module = "io.github.shijianjs:ktjs-iconify-icon", version.ref = "ktjs-iconify-icon" }
+
+[plugins]
+# The Kotlin Gradle plugin is declared once, in the root build (`apply false`). JVM modules apply
+# `kotlin("jvm")` by id without a version, so no alias is defined for it here.
+kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+# Same for KSP: applied by id in the modules, declared once in the root build.
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
+detekt = { id = "dev.detekt", version.ref = "detekt" }
+maven-publish = { id = "com.vanniktech.maven.publish", version.ref = "maven-publish" }
+# Applied only by `docs`, with `alias(...)`: nothing else in the build declares it.
+ktjs-docusaurus = { id = "io.github.shijianjs.ktjs.docusaurus", version.ref = "ktjs-docusaurus-gradle-plugin" }
