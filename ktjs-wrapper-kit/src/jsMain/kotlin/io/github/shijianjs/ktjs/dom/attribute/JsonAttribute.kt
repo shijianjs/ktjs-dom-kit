@@ -1,6 +1,7 @@
 package io.github.shijianjs.ktjs.dom.attribute
 
 import js.reflect.unsafeCast
+import kotlin.js.JSON
 import web.html.HTMLElement
 
 /**
@@ -9,9 +10,9 @@ import web.html.HTMLElement
  *
  * Wrapper components that take a list or a configuration object cannot spell it as a scalar: Vaadin's
  * LCD-style components (`items`, `selected-items`, a chart's `option`, an upload's `files`) all read
- * a JSON attribute. This is the typed door to that text — serialization is the browser's own `JSON`,
- * not a Kotlin serialization library, so a value that came out of a wrapper (`Array<MenuBarItem>`)
- * goes in and comes back out unchanged.
+ * a JSON attribute. This is the typed door to that text — serialization is the browser's own `JSON`
+ * ([kotlin.js.JSON] from the stdlib), not a Kotlin serialization library, so a value that came out of
+ * a wrapper (`Array<MenuBarItem>`) goes in and comes back out unchanged.
  *
  * ```kotlin
  * val MenuBarElement.itemsJson: JsonAttribute get() = jsonAttribute("items")
@@ -61,7 +62,7 @@ class JsonAttribute(
     }
 
     private fun parse(text: String): JsAny? = try {
-        JSON.parse(text)
+        JSON.parse<JsAny>(text)
     } catch (_: Throwable) {
         null
     }
@@ -69,14 +70,3 @@ class JsonAttribute(
 
 /** This element's JSON attribute [name]; see [JsonAttribute]. */
 fun HTMLElement.jsonAttribute(name: String): JsonAttribute = JsonAttribute(this, name)
-
-/**
- * The browser's `JSON`, as the two calls an attribute needs.
- *
- * `kotlin-browser` does not wrap it, and a local declaration here keeps the dependency at
- * `kotlin-stdlib` instead of pulling a serialization library for two functions.
- */
-private external object JSON {
-    fun stringify(value: JsAny?): String
-    fun parse(text: String): JsAny
-}
