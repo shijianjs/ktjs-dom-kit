@@ -19,6 +19,7 @@ import web.html.HTMLHeadingElement
 import web.html.HTMLParagraphElement
 import web.html.HTMLElement
 import web.html.HtmlTagName
+import web.url.URL
 
 /**
  * The frame of one page — title, summary, the links row and the [body] the page fills with sections.
@@ -130,7 +131,7 @@ open class DemoPage : CustomElementAdapter(), Page {
 
     companion object : DemoPageDefaultReference() {
         /** `new URL(value, base).href`: the browser's own resolver, so a relative path stays correct. */
-        private val resolveUrl: (String, String) -> String = js("(value, base) => new URL(value, base).href")
+        private val resolveUrl: (String, String) -> String = { value, base -> URL(value, base).href }
 
         /**
          * Re-points `:root` at `:host` in one rule.

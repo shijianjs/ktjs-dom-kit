@@ -2,6 +2,7 @@ package io.github.shijianjs.ktjs.dom.webcomponent
 
 import io.github.shijianjs.ktjs.dom.attribute.AttributeCodec
 import io.github.shijianjs.ktjs.dom.webcomponent.attr.toAttributeName
+import js.reflect.Reflect
 import kotlin.js.JsAny
 import web.html.HTMLElement
 
@@ -29,16 +30,17 @@ internal object ElementAttributesRegistry {
  * The class object of this element — `X.prototype.constructor` — which is the same object
  * `X::class.js` hands to the reference, and therefore the key the table above is filed under.
  *
- * `Object.getPrototypeOf` rather than `this.constructor` on purpose: the latter is a property lookup
- * that a page could shadow on the instance, while the prototype of a custom element is the class's.
+ * `Reflect.getPrototypeOf` rather than `this.constructor` on purpose: the latter is a property
+ * lookup that a page could shadow on the instance, while the prototype of a custom element is the
+ * class's.
  *
  * An instance of a subclassed element reports the subclass, whose generated table already contains
  * what its base declared — the processor writes the two lists merged, because the browser reads
  * `observedAttributes` per defined tag and knows nothing of the Kotlin-side inheritance.
  */
 internal fun HTMLElement.elementClass(): JsAny? {
-    val prototype: dynamic = js("Object.getPrototypeOf")(this)
-    return prototype.constructor as JsAny?
+    val prototype: JsAny = Reflect.getPrototypeOf(this) ?: return null
+    return Reflect.get(prototype, "constructor")
 }
 
 /** The attribute [property] stands for: the class's table first, kebab case when there is none. */

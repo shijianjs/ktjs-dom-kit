@@ -1,5 +1,6 @@
 package io.github.shijianjs.ktjs.dom.webcomponent
 
+import js.reflect.Reflect
 import kotlin.js.js
 
 /**
@@ -37,13 +38,12 @@ fun stripBridgesFrom(klass: dynamic) {
     var prototype: dynamic = klass.prototype
     while (prototype != null && prototype !== htmlPrototype) {
         deleteBridges(prototype)
-        prototype = js("Object.getPrototypeOf")(prototype)
+        prototype = Reflect.getPrototypeOf(prototype)
     }
 }
 
 private fun deleteBridges(prototype: dynamic) {
-    val deleteProperty: dynamic = js("Reflect.deleteProperty")
     for (name in bridgeNames) {
-        deleteProperty(prototype, name)
+        Reflect.deleteProperty(prototype, name)
     }
 }
