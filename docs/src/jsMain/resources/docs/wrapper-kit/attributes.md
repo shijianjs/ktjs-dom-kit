@@ -69,15 +69,15 @@ custom accessor: `HTMLElement` inherits `ARIAMixin`, so every element already ca
 
 ```kotlin
 import web.aria.AriaHidden
-import web.aria.`true` as ariaTrue
+import web.aria.`true`
 
-icon.ariaHidden = AriaHidden.ariaTrue        // aria-hidden="true"
+icon.ariaHidden = AriaHidden.`true`        // aria-hidden="true"
 ```
 
-The `true` / `false` members are companion extensions with those names on every ARIA union, so they
-have to be aliased on import; the receiver then decides which union is meant. Keep `setAttribute`
-only for the ARIA relationships that have no string property (`aria-controls`,
-`aria-labelledby`).
+The `true` / `false` members are companion extensions declared under that name on every ARIA union,
+so importing the extension is enough — the receiver decides which union is meant, and no alias is
+needed. Keep `setAttribute` only for the ARIA relationships that have no string property
+(`aria-controls`, `aria-labelledby`).
 
 ### Literal attributes
 

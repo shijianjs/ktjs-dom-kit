@@ -66,14 +66,14 @@ String?`、`ariaExpanded`、`ariaPressed`、`ariaCurrent`、`ariaLive` 和 `role
 
 ```kotlin
 import web.aria.AriaHidden
-import web.aria.`true` as ariaTrue
+import web.aria.`true`
 
-icon.ariaHidden = AriaHidden.ariaTrue        // aria-hidden="true"
+icon.ariaHidden = AriaHidden.`true`        // aria-hidden="true"
 ```
 
-`true` / `false` 是每个 ARIA 并集都声明一个的 Companion 扩展属性，同名，所以导入时必须起别名，
-再由接收者决定是哪一种并集。只有那些没有字符串属性的 ARIA 关系（`aria-controls`、
-`aria-labelledby`）才继续用 `setAttribute`。
+`true` / `false` 是每个 ARIA 并集都声明一个的 Companion 扩展属性，同名，导入这个扩展名就够了，
+由接收者决定是哪一种并集，不需要起别名。只有那些没有字符串属性的 ARIA 关系
+（`aria-controls`、`aria-labelledby`）才继续用 `setAttribute`。
 
 ### 字面量属性
 

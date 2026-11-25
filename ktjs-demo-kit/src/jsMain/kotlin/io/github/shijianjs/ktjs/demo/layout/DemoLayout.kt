@@ -50,8 +50,8 @@ import js.objects.unsafeJso
 import js.reflect.unsafeCast
 import web.aria.AriaHidden
 import web.aria.AriaRole
-import web.aria.`true` as ariaTrue
-import web.aria.link as ariaLink
+import web.aria.`true`
+import web.aria.link
 import web.cssom.Color
 import web.cssom.integer
 import web.cssom.px
@@ -303,7 +303,7 @@ class DemoLayout : CustomElementAdapter() {
             // so it goes through the typed attribute instead of a bare `setAttribute("true")`.
             this.src = src
             this.alt = ""
-            ariaHidden = AriaHidden.ariaTrue
+            ariaHidden = AriaHidden.`true`
         }
         siteLink.insertBefore(logo, siteTitle)
     }
@@ -360,7 +360,7 @@ class DemoLayout : CustomElementAdapter() {
         item.append(label)
         item.dataset["route"] = entry.id
         if (nested) item.slot = "children"
-        item.role = AriaRole.ariaLink
+        item.role = AriaRole.link
         item.tabIndex = 0
         item.clickEvent.addHandler { navigate(entry.id) }
         navItems[entry.id] = item

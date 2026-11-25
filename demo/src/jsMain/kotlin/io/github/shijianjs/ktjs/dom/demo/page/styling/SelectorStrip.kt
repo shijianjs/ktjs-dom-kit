@@ -11,7 +11,7 @@ import io.github.shijianjs.ktjs.dom.element.invoke
 import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementAdapter
 import io.github.shijianjs.ktjs.dom.webcomponent.attachStyledShadow
 import web.aria.AriaCurrent
-import web.aria.`true` as ariaTrue
+import web.aria.`true`
 import web.cssom.Border
 import web.cssom.ClassName
 import web.cssom.CSSStyleSheet
@@ -44,7 +44,7 @@ class SelectorStrip : CustomElementAdapter() {
 
     init {
         chips[1].classList.add(SELECTED)
-        chips[1].ariaCurrent = AriaCurrent.ariaTrue
+        chips[1].ariaCurrent = AriaCurrent.`true`
         row.append(*chips.toTypedArray())
         attachStyledShadow(RESET, STRIP_SHEET).append(row)
     }
