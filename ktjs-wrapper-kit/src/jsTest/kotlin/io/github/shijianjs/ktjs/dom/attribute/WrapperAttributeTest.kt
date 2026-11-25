@@ -159,4 +159,46 @@ class WrapperAttributeTest {
         assertEquals(listOf("b"), tokens.values)
         assertEquals("b", tokens.raw)
     }
+
+    @Test
+    fun ariaHiddenSpellsItsValueInsteadOfUsingPresence() {
+        val node = element()
+        val hidden = node.ariaHiddenAttr
+
+        assertFalse(hidden.value)
+        assertFalse(hidden.present)
+
+        hidden.value = true
+        assertEquals("true", node.getAttribute("aria-hidden"))
+
+        // The whole point: `false` is a spelled value, not a removal — and the attribute stays
+        // present, unlike a boolean attribute.
+        hidden.value = false
+        assertEquals("false", node.getAttribute("aria-hidden"))
+        assertTrue(hidden.present)
+        assertFalse(hidden.value)
+
+        hidden.clear()
+        assertNull(node.getAttribute("aria-hidden"))
+    }
+
+    @Test
+    fun ariaHiddenReadsTextFromOutside() {
+        val node = element()
+        node.setAttribute("aria-hidden", "TRUE")
+        assertTrue(node.ariaHiddenAttr.value)
+
+        node.setAttribute("aria-hidden", "false")
+        assertFalse(node.ariaHiddenAttr.value)
+
+        // An invalid value is "not hidden", which is what a browser does with it.
+        node.setAttribute("aria-hidden", "yes")
+        assertFalse(node.ariaHiddenAttr.value)
+
+        // Absent and `false` differ only by presence, which `valueOrNull` keeps.
+        node.removeAttribute("aria-hidden")
+        assertNull(node.ariaHiddenAttr.valueOrNull)
+        node.setAttribute("aria-hidden", "false")
+        assertEquals(false, node.ariaHiddenAttr.valueOrNull)
+    }
 }

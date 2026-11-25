@@ -4,7 +4,7 @@ import io.github.shijianjs.ktjs.demo.style.Palette
 import io.github.shijianjs.ktjs.dom.element.inlineStyle
 import io.github.shijianjs.ktjs.dom.element.invoke
 import io.github.shijianjs.ktjs.dom.element.unaryPlus
-import io.github.shijianjs.ktjs.iconify.createIconifyIcon
+import io.github.shijianjs.ktjs.iconify.createDecorativeIcon
 import io.github.shijianjs.ktjs.vaadin.card.CardElement
 import io.github.shijianjs.ktjs.vaadin.card.CardVariants
 import io.github.shijianjs.ktjs.vaadin.card.createCard
@@ -136,12 +136,12 @@ object Blocks {
      *
      * The element type stays inside this module: pages get a node they can append, not the icon set.
      * Size is `font-size` — the element renders an `<svg width="1em">`, which `width`/`height` would
-     * only stretch — and `noobserver` keeps the glyph rendered wherever it is scrolled or folded away.
+     * only stretch. The aria/observer presets come from [createDecorativeIcon]: this icon repeats
+     * the heading next to it, so it stays out of the accessibility tree, and its glyph must survive
+     * being scrolled or folded away.
      */
     fun icon(name: String, size: Int = 18): HTMLElement =
-        createIconifyIcon(name) {
-            setAttribute("aria-hidden", "true")
-            setAttribute("noobserver", "")
+        createDecorativeIcon(name) {
             inlineStyle.apply { fontSize = size.px }
         }
 }

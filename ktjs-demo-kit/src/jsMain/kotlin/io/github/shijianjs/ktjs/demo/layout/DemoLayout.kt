@@ -24,7 +24,8 @@ import io.github.shijianjs.ktjs.dom.element.inlineStyle
 import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementAdapter
 import io.github.shijianjs.ktjs.dom.webcomponent.attachStyledShadow
 import io.github.shijianjs.ktjs.iconify.IconifyIconElement
-import io.github.shijianjs.ktjs.iconify.createIconifyIcon
+import io.github.shijianjs.ktjs.dom.attribute.ariaHiddenAttr
+import io.github.shijianjs.ktjs.iconify.createDecorativeIcon
 import io.github.shijianjs.ktjs.vaadin.applayout.AppLayoutPrimarySections
 import io.github.shijianjs.ktjs.vaadin.applayout.createAppLayout
 import io.github.shijianjs.ktjs.vaadin.applayout.createDrawerToggle
@@ -295,9 +296,11 @@ class DemoLayout : CustomElementAdapter() {
         val src = config.logoSrc ?: return
         val logo = HtmlTagName.img {
             classList.add(LAYOUT_LOGO)
-            setAttribute("src", src)
-            setAttribute("alt", "")
-            setAttribute("aria-hidden", "true")
+            // `src` / `alt` are the element's own reflected properties; `aria-hidden` is ARIA text,
+            // so it goes through the typed attribute instead of a bare `setAttribute("true")`.
+            this.src = src
+            this.alt = ""
+            ariaHiddenAttr.value = true
         }
         siteLink.insertBefore(logo, siteTitle)
     }
@@ -379,11 +382,9 @@ class DemoLayout : CustomElementAdapter() {
      * every icon in this layout lives as long as its owner, so it should stay rendered.
      */
     private fun navIcon(name: String): IconifyIconElement =
-        createIconifyIcon(name) {
-            setAttribute("slot", "prefix")
+        createDecorativeIcon(name) {
+            slot = "prefix"
             classList.add(LAYOUT_NAV_ICON)
-            setAttribute("aria-hidden", "true")
-            setAttribute("noobserver", "")
         }
 
     private fun buildActions() {
@@ -417,14 +418,11 @@ class DemoLayout : CustomElementAdapter() {
     }
 
     private fun menuIcon(name: String): IconifyIconElement =
-        createIconifyIcon(name) {
-            setAttribute("aria-hidden", "true")
+        createDecorativeIcon(name) {
             inlineStyle.apply {
                 fontSize = 18.px
                 marginRight = 8.px
             }
-            // Not for size — see the note above [navIcon].
-            setAttribute("noobserver", "")
         }
 
     /**
