@@ -59,20 +59,25 @@ fun HTMLElement.jsonAttribute(name: String): JsonAttribute
 fun HTMLElement.observeAttribute(name: String, onChange: (String?) -> Unit): AttributeWatch
 ```
 
-### ARIA flags
+### ARIA flags are properties, not attributes
 
-ARIA values are text, not HTML presence flags: `aria-hidden="false"` hides nothing and is still a
-*present* attribute, so `booleanAttribute` is the wrong tool there (and `hidden` is the separate
-HTML attribute that really does work by presence). The kit therefore ships a codec that always
-spells the value:
+ARIA values are text rather than HTML presence flags, so `booleanAttribute` cannot express them —
+`aria-hidden="false"` hides nothing yet is still a *present* attribute. That does **not** call for a
+custom accessor: `HTMLElement` inherits `ARIAMixin`, so every element already carries
+`ariaHidden: AriaHidden?`, `ariaLabel: String?`, `ariaExpanded`, `ariaPressed`, `ariaCurrent`,
+`ariaLive` and `role`. Write them as properties:
 
 ```kotlin
-val HTMLElement.ariaHiddenAttr: Attribute<Boolean>   // writes "true" / "false", absent reads false
+import web.aria.AriaHidden
+import web.aria.`true` as ariaTrue
+
+icon.ariaHidden = AriaHidden.ariaTrue        // aria-hidden="true"
 ```
 
-Use it wherever an icon or a decorative element has to be skipped by assistive readers; keep writing
-the attribute by hand only for the ARIA relationships that have no property (`aria-controls`,
-`aria-labelledby`), and prefer the reflected `aria…` properties for everything else.
+The `true` / `false` members are companion extensions with those names on every ARIA union, so they
+have to be aliased on import; the receiver then decides which union is meant. Keep `setAttribute`
+only for the ARIA relationships that have no string property (`aria-controls`,
+`aria-labelledby`).
 
 ### Literal attributes
 

@@ -57,18 +57,23 @@ fun HTMLElement.jsonAttribute(name: String): JsonAttribute
 fun HTMLElement.observeAttribute(name: String, onChange: (String?) -> Unit): AttributeWatch
 ```
 
-### ARIA 开关
+### ARIA 开关是属性，不是 attribute
 
-ARIA 的值是文本，不是 HTML 的「存在即生效」：`aria-hidden="false"` 什么都隐藏不了，但 attribute
-依然**存在**，所以这里用 `booleanAttribute` 是错的（`hidden` 才是真正按存在性生效的 HTML attribute）。
-kit 因此带了一个总把取值写清楚的 codec：
+ARIA 的值是文本，不是 HTML 的「存在即生效」，所以 `booleanAttribute` 表达不了它 ——
+`aria-hidden="false"` 什么都隐藏不了，但 attribute 依然**存在**。这也不需要自造访问器：
+`HTMLElement` 继承了 `ARIAMixin`，每个元素本来就有 `ariaHidden: AriaHidden?`、`ariaLabel:
+String?`、`ariaExpanded`、`ariaPressed`、`ariaCurrent`、`ariaLive` 和 `role`，直接当属性写：
 
 ```kotlin
-val HTMLElement.ariaHiddenAttr: Attribute<Boolean>   // 写 "true" / "false"，缺失读作 false
+import web.aria.AriaHidden
+import web.aria.`true` as ariaTrue
+
+icon.ariaHidden = AriaHidden.ariaTrue        // aria-hidden="true"
 ```
 
-图标、装饰性元素要让辅助阅读器跳过时就用它；只有那些没有对应属性的 ARIA 关系
-（`aria-controls`、`aria-labelledby`）才继续手写 attribute，其余一律优先用反射出来的 `aria…` 属性。
+`true` / `false` 是每个 ARIA 并集都声明一个的 Companion 扩展属性，同名，所以导入时必须起别名，
+再由接收者决定是哪一种并集。只有那些没有字符串属性的 ARIA 关系（`aria-controls`、
+`aria-labelledby`）才继续用 `setAttribute`。
 
 ### 字面量属性
 

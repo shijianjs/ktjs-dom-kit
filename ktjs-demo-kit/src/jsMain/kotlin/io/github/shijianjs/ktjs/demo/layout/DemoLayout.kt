@@ -24,7 +24,6 @@ import io.github.shijianjs.ktjs.dom.element.inlineStyle
 import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementAdapter
 import io.github.shijianjs.ktjs.dom.webcomponent.attachStyledShadow
 import io.github.shijianjs.ktjs.iconify.IconifyIconElement
-import io.github.shijianjs.ktjs.dom.attribute.ariaHiddenAttr
 import io.github.shijianjs.ktjs.iconify.createDecorativeIcon
 import io.github.shijianjs.ktjs.vaadin.applayout.AppLayoutPrimarySections
 import io.github.shijianjs.ktjs.vaadin.applayout.createAppLayout
@@ -49,7 +48,9 @@ import io.github.shijianjs.ktjs.vaadin.verticallayout.VerticalLayoutElement
 import io.github.shijianjs.ktjs.vaadin.verticallayout.createVerticalLayout
 import js.objects.unsafeJso
 import js.reflect.unsafeCast
+import web.aria.AriaHidden
 import web.aria.AriaRole
+import web.aria.`true` as ariaTrue
 import web.aria.link as ariaLink
 import web.cssom.Color
 import web.cssom.integer
@@ -302,7 +303,7 @@ class DemoLayout : CustomElementAdapter() {
             // so it goes through the typed attribute instead of a bare `setAttribute("true")`.
             this.src = src
             this.alt = ""
-            ariaHiddenAttr.value = true
+            ariaHidden = AriaHidden.ariaTrue
         }
         siteLink.insertBefore(logo, siteTitle)
     }
