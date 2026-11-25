@@ -51,7 +51,7 @@
     属于 `attr` 的 `AttributeChange`；用完 `disconnect()`）。
 - **它曾经在 ktjs-docusaurus 仓库里**（2026-11-13 搬过来）。现在那个站点通过 Maven 坐标依赖它，不是
   project 依赖：两边各自发布，所以「站点的文档用站点框架写」不构成环。改动 API 后要发版，并在
-  ktjs-docusaurus 的 `gradle.properties` 里把 `ktjs-dom-kit.version` 抬上去。
+  ktjs-docusaurus 的 `gradle/libs.versions.toml` 里把 `ktjs-dom-kit` 抬上去。
 - `docs`：文档站，也是 Pages 的主体。它同样是 Kotlin/JS 模块——站点配置与侧边栏是 Kotlin、页面是
   Markdown，由 [ktjs-docusaurus](https://github.com/shijianjs/ktjs-docusaurus) 的 Gradle 插件组装并调用
   Docusaurus CLI。`pagesSite` 把它放在 Pages **根目录**、API 在 `/api/`：`baseUrl`（`/ktjs-dom-kit/`）
