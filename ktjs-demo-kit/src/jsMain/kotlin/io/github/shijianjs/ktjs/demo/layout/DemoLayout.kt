@@ -49,6 +49,8 @@ import io.github.shijianjs.ktjs.vaadin.verticallayout.VerticalLayoutElement
 import io.github.shijianjs.ktjs.vaadin.verticallayout.createVerticalLayout
 import js.objects.unsafeJso
 import js.reflect.unsafeCast
+import web.aria.AriaRole
+import web.aria.link as ariaLink
 import web.cssom.Color
 import web.cssom.integer
 import web.cssom.px
@@ -136,7 +138,7 @@ class DemoLayout : CustomElementAdapter() {
     private val navbar: HorizontalLayoutElement = createHorizontalLayout {
         addTheme(HorizontalLayoutVariants.spacing)
         classList.add(LAYOUT_TOPBAR, LAYOUT_CARD, LumoUtility.AlignItems.CENTER, LumoUtility.JustifyContent.BETWEEN)
-        setAttribute("slot", "navbar")
+        slot = "navbar"
     }
 
     private val breadcrumbs = createBreadcrumbs()
@@ -225,7 +227,7 @@ class DemoLayout : CustomElementAdapter() {
     init {
         appLayout.primarySection = AppLayoutPrimarySections.navbar
 
-        sideNav.setAttribute("slot", "drawer")
+        sideNav.slot = "drawer"
 
         breadcrumbs.append(crumbGroup, crumbPage)
         navbarStart.append(drawerToggle, siteLink, titleVersion, breadcrumbs)
@@ -356,8 +358,8 @@ class DemoLayout : CustomElementAdapter() {
         (icon ?: entry.icon.takeIf { !nested })?.let { item.append(navIcon(it)) }
         item.append(label)
         item.dataset["route"] = entry.id
-        if (nested) item.setAttribute("slot", "children")
-        item.setAttribute("role", "link")
+        if (nested) item.slot = "children"
+        item.role = AriaRole.ariaLink
         item.tabIndex = 0
         item.clickEvent.addHandler { navigate(entry.id) }
         navItems[entry.id] = item

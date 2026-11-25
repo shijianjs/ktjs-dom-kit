@@ -51,7 +51,7 @@ class LanguageState(
     }
 
     private fun applyDocumentLang() {
-        document.documentElement.setAttribute("lang", current.code)
+        document.documentElement.lang = current.code
     }
 
     private fun readStored(): Lang? =
