@@ -57,6 +57,19 @@ fun HTMLElement.jsonAttribute(name: String): JsonAttribute
 fun HTMLElement.observeAttribute(name: String, onChange: (String?) -> Unit): AttributeWatch
 ```
 
+### ARIA 开关
+
+ARIA 的值是文本，不是 HTML 的「存在即生效」：`aria-hidden="false"` 什么都隐藏不了，但 attribute
+依然**存在**，所以这里用 `booleanAttribute` 是错的（`hidden` 才是真正按存在性生效的 HTML attribute）。
+kit 因此带了一个总把取值写清楚的 codec：
+
+```kotlin
+val HTMLElement.ariaHiddenAttr: Attribute<Boolean>   // 写 "true" / "false"，缺失读作 false
+```
+
+图标、装饰性元素要让辅助阅读器跳过时就用它；只有那些没有对应属性的 ARIA 关系
+（`aria-controls`、`aria-labelledby`）才继续手写 attribute，其余一律优先用反射出来的 `aria…` 属性。
+
 ### 字面量属性
 
 `literalAttribute` 是固定词表的类型化写法 —— `slot="navbar"`、`orientation="horizontal"`、

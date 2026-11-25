@@ -59,6 +59,21 @@ fun HTMLElement.jsonAttribute(name: String): JsonAttribute
 fun HTMLElement.observeAttribute(name: String, onChange: (String?) -> Unit): AttributeWatch
 ```
 
+### ARIA flags
+
+ARIA values are text, not HTML presence flags: `aria-hidden="false"` hides nothing and is still a
+*present* attribute, so `booleanAttribute` is the wrong tool there (and `hidden` is the separate
+HTML attribute that really does work by presence). The kit therefore ships a codec that always
+spells the value:
+
+```kotlin
+val HTMLElement.ariaHiddenAttr: Attribute<Boolean>   // writes "true" / "false", absent reads false
+```
+
+Use it wherever an icon or a decorative element has to be skipped by assistive readers; keep writing
+the attribute by hand only for the ARIA relationships that have no property (`aria-controls`,
+`aria-labelledby`), and prefer the reflected `aria…` properties for everything else.
+
 ### Literal attributes
 
 `literalAttribute` is the typed form of a fixed vocabulary — `slot="navbar"`, `orientation="horizontal"`,
