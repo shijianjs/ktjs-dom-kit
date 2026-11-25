@@ -4,6 +4,7 @@ import io.github.shijianjs.ktjs.demo.style.Palette
 import io.github.shijianjs.ktjs.demo.style.RESET
 import io.github.shijianjs.ktjs.demo.style.Theme
 import io.github.shijianjs.ktjs.demo.style.ThemeMode
+import io.github.shijianjs.ktjs.vaadin.VaadinTagName
 import io.github.shijianjs.ktjs.vaadin.themablemixin.addTheme
 import io.github.shijianjs.ktjs.vaadin.themablemixin.setTheme
 import io.github.shijianjs.ktjs.vaadin.horizontallayout.HorizontalLayoutVariants
@@ -39,6 +40,7 @@ import io.github.shijianjs.ktjs.vaadin.lumoutility.LumoUtility
 import io.github.shijianjs.ktjs.vaadin.menubar.HTMLElementOrString
 import io.github.shijianjs.ktjs.vaadin.menubar.MenuBarElement
 import io.github.shijianjs.ktjs.vaadin.menubar.MenuBarItem
+import io.github.shijianjs.ktjs.vaadin.menubar.MenuBarItemElement
 import io.github.shijianjs.ktjs.vaadin.menubar.SubMenuItem
 import io.github.shijianjs.ktjs.vaadin.menubar.createMenuBar
 import io.github.shijianjs.ktjs.vaadin.sidenav.SideNavItemElement
@@ -57,7 +59,6 @@ import web.cssom.integer
 import web.cssom.px
 import web.dom.clickEvent
 import web.dom.document
-import web.dom.TagName
 import web.events.Event
 import web.events.EventHandler
 import web.events.EventType
@@ -403,11 +404,10 @@ class DemoLayout : CustomElementAdapter() {
      * The inline declarations travel with the element; this is the documented exception for nodes
      * that leave their owner's tree.
      */
-    private fun menuItemNode(action: String, icon: String, label: String, checked: Boolean): HTMLElement {
-        // The tag is held separately: `TagName<HTMLElement>("…") { }` would read as a trailing lambda on
-        // the factory function, not as a call on the tag it returns.
-        val itemTag: TagName<HTMLElement> = TagName("vaadin-menu-bar-item")
-        return itemTag {
+    private fun menuItemNode(action: String, icon: String, label: String, checked: Boolean): MenuBarItemElement {
+        // `VaadinTagName.menuBarItem` is typed — `TagName<MenuBarItemElement>` — so the builder hands
+        // back the wrapper type instead of an `HTMLElement` that had to be created from a string tag.
+        return VaadinTagName.menuBarItem {
             if (action.isNotEmpty()) dataset["action"] = action
             +menuIcon(icon)
             val text = +HtmlTagName.span { textContent = label }
