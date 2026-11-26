@@ -35,6 +35,7 @@ import io.github.shijianjs.ktjs.vaadin.breadcrumbs.createBreadcrumbsItem
 import io.github.shijianjs.ktjs.vaadin.button.ButtonVariants
 import io.github.shijianjs.ktjs.vaadin.horizontallayout.HorizontalLayoutElement
 import io.github.shijianjs.ktjs.vaadin.horizontallayout.createHorizontalLayout
+import io.github.shijianjs.ktjs.vaadin.lumostyles.LumoCustomProperties
 import io.github.shijianjs.ktjs.vaadin.lumostyles.registerLumoIcons
 import io.github.shijianjs.ktjs.vaadin.lumoutility.LumoUtility
 import io.github.shijianjs.ktjs.vaadin.menubar.HTMLElementOrString
@@ -54,9 +55,9 @@ import web.aria.AriaHidden
 import web.aria.AriaRole
 import web.aria.`true`
 import web.aria.link
-import web.cssom.Color
 import web.cssom.integer
 import web.cssom.px
+import web.cssom.`var`
 import web.dom.clickEvent
 import web.dom.document
 import web.events.Event
@@ -414,7 +415,7 @@ class DemoLayout : CustomElementAdapter() {
             if (checked) {
                 text.inlineStyle.apply {
                     fontWeight = integer(600)
-                    color = Color("var(--lumo-primary-text-color)")
+                    color = `var`(LumoCustomProperties.PRIMARY_TEXT_COLOR)
                 }
             }
         }
