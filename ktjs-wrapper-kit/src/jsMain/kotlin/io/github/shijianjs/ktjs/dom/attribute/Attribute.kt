@@ -5,6 +5,8 @@ import io.github.shijianjs.ktjs.dom.attribute.types.DoubleAttributeCodec
 import io.github.shijianjs.ktjs.dom.attribute.types.IntAttributeCodec
 import io.github.shijianjs.ktjs.dom.attribute.types.LiteralAttributeCodec
 import io.github.shijianjs.ktjs.dom.attribute.types.StringAttributeCodec
+import io.github.shijianjs.ktjs.dom.attribute.types.StringTokenCodec
+import io.github.shijianjs.ktjs.dom.attribute.types.TokenCodec
 import web.html.HTMLElement
 
 /**
@@ -135,5 +137,20 @@ fun <T> HTMLElement.attribute(name: String, codec: AttributeCodec<T>): Attribute
 fun <T> HTMLElement.literalAttribute(name: String, values: List<T>, token: (T) -> String): Attribute<T> =
     Attribute(this, name, LiteralAttributeCodec(values, token))
 
-/** This element's space-separated token attribute [name]; see [TokenListAttribute]. */
-fun HTMLElement.tokenListAttribute(name: String): TokenListAttribute = TokenListAttribute(this, name)
+/** This element's space-separated token attribute [name] as plain strings; see [TokenListAttribute]. */
+fun HTMLElement.tokenListAttribute(name: String): TokenListAttribute<String> =
+    TokenListAttribute(this, name, StringTokenCodec)
+
+/**
+ * This element's space-separated token attribute [name] read through [codec] — the typed form of a
+ * token attribute like `theme="primary small"`.
+ *
+ * Same storage, two views: `values` hands back [T]s, `tokens` keeps the raw vocabulary so tokens the
+ * codec does not know (hand written or third-party ones) survive a typed write.
+ *
+ * ```kotlin
+ * button.tokenListAttribute("theme", ThemeVariantTokenCodec).add(ButtonVariants.primary)
+ * ```
+ */
+fun <T> HTMLElement.tokenListAttribute(name: String, codec: TokenCodec<T>): TokenListAttribute<T> =
+    TokenListAttribute(this, name, codec)

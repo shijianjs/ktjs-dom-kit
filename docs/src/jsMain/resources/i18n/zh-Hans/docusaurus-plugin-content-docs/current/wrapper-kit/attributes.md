@@ -52,7 +52,8 @@ fun HTMLElement.intAttribute(name: String): Attribute<Int>                  // �
 fun HTMLElement.doubleAttribute(name: String): Attribute<Double>            // 不可读 → 0.0
 fun <T> HTMLElement.attribute(name: String, codec: AttributeCodec<T>): Attribute<T>
 fun <T> HTMLElement.literalAttribute(name: String, values: List<T>, token: (T) -> String): Attribute<T>
-fun HTMLElement.tokenListAttribute(name: String): TokenListAttribute
+fun HTMLElement.tokenListAttribute(name: String): TokenListAttribute<String>
+fun <T> HTMLElement.tokenListAttribute(name: String, codec: TokenCodec<T>): TokenListAttribute<T>
 fun HTMLElement.jsonAttribute(name: String): JsonAttribute
 fun HTMLElement.observeAttribute(name: String, onChange: (String?) -> Unit): AttributeWatch
 ```
@@ -98,17 +99,38 @@ card.slotName.setOrClear("content")     // slot="content"
 用空格分隔的词表其实是**披着字符串的集合**。把它当列表读，然后增删 token，不要重新拼整串：
 
 ```kotlin
-val ThemePropertyMixin.themeAttr: TokenListAttribute get() = tokenListAttribute("theme")
+val ThemePropertyMixin.themeAttr: TokenListAttribute<String> get() = tokenListAttribute("theme")
 
 button.themeAttr.add("small")
 button.themeAttr.remove("contrast")
 button.themeAttr.toggle("icon")
-button.themeAttr.contains("primary")
+button.themeAttr.contains("small")
 ```
 
 `TokenListAttribute` 让属性文本保持规范（单空格、去重），删掉最后一个 token 就等于移除该属性。与
-`DOMTokenList` 不同的是它不对畸形语法抛异常：格式不对的文本只是不算 token。`ktjs-vaadin` 正是在
-`ThemePropertyMixin` 上声明了同一个访问器，并在它之上实现 `addTheme` / `setTheme` / `removeTheme`。
+`DOMTokenList` 不同的是它不对畸形语法抛异常：格式不对的文本只是不算 token。
+
+已经有自己的词表的 wrapper 不必退回字符串：传一个 `TokenCodec<T>`（一个 token 进、一个 token 出），
+同一个对象就直接处理值。存储始终只有**一份** —— 属性文本；`tokens` 是原始那一侧，`values` 是解码后的：
+
+```kotlin
+object ThemeVariantTokenCodec : TokenCodec<ThemeVariant> {
+    override fun encode(value: ThemeVariant): String = value.name
+    override fun decode(token: String): ThemeVariant = ThemeVariant(token)
+}
+
+val ThemePropertyMixin.themeAttr: TokenListAttribute<ThemeVariant>
+    get() = tokenListAttribute("theme", ThemeVariantTokenCodec)
+
+button.themeAttr.add(ButtonVariants.primary)   // 类型安全：写成它的 token
+button.themeAttr.addTokens("acme-brand")       // codec 不认识的 token 也能加
+button.themeAttr.values                        // [ButtonVariants.primary]
+button.themeAttr.tokens                        // ["primary", "acme-brand"]
+```
+
+codec 解不出来的 token 不会被类型化的 `add` / `remove` / `toggle` 丢掉：它们改写的是原始列表，所以手写
+的和第三方的 token 都能留住。只有整体赋值 `value` 才会替换整个列表。`ktjs-vaadin` 正是在
+`ThemePropertyMixin` 上声明了这个访问器，并在它之上实现 `addTheme` / `setTheme` / `removeTheme`。
 
 ### JSON 属性
 

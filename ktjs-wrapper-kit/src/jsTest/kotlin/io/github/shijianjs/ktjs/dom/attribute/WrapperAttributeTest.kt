@@ -1,5 +1,6 @@
 package io.github.shijianjs.ktjs.dom.attribute
 
+import io.github.shijianjs.ktjs.dom.attribute.types.TokenCodec
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -12,7 +13,15 @@ import web.html.HtmlTagName
 /** An extension property on `HTMLElement` itself — the shape a wrapper type would carry. */
 private val HTMLElement.count: Attribute<Int> get() = intAttribute("data-count")
 
-private val HTMLElement.tags: TokenListAttribute get() = tokenListAttribute("data-tags")
+private val HTMLElement.tags: TokenListAttribute<String> get() = tokenListAttribute("data-tags")
+
+/** A tiny vocabulary, the shape a wrapper library's `XxxVariant` interface has. */
+private enum class Flavor(val token: String) { Sweet("sweet"), Sour("sour") }
+
+private object FlavorTokenCodec : TokenCodec<Flavor> {
+    override fun encode(value: Flavor): String = value.token
+    override fun decode(token: String): Flavor? = Flavor.entries.firstOrNull { it.token == token }
+}
 
 /**
  * The wrapper-facing half of `attr`: an [Attribute] (or [TokenListAttribute]) bound to an element the
@@ -158,5 +167,42 @@ class WrapperAttributeTest {
         node.setAttribute("data-tags", "b")
         assertEquals(listOf("b"), tokens.values)
         assertEquals("b", tokens.raw)
+    }
+
+    @Test
+    fun aTypedTokenListWritesTokensAndKeepsUnknownOnes() {
+        val node = element()
+        val flavors = node.tokenListAttribute("data-flavors", FlavorTokenCodec)
+
+        flavors.add(Flavor.Sweet)
+        assertEquals("sweet", node.getAttribute("data-flavors"))
+        assertEquals(listOf(Flavor.Sweet), flavors.values)
+        assertTrue(flavors.contains(Flavor.Sweet))
+        assertFalse(flavors.contains(Flavor.Sour))
+
+        // a token the codec does not know stays in the text, through a typed write as well
+        node.setAttribute("data-flavors", "sweet hand-written")
+        flavors.add(Flavor.Sour)
+        assertEquals("sweet hand-written sour", node.getAttribute("data-flavors"))
+        assertEquals(listOf(Flavor.Sweet, Flavor.Sour), flavors.values)
+        assertTrue(flavors.containsToken("hand-written"))
+
+        flavors.remove(Flavor.Sweet)
+        assertEquals("hand-written sour", node.getAttribute("data-flavors"))
+    }
+
+    @Test
+    fun assigningTypedValuesReplacesTheWholeList() {
+        val node = element()
+        val flavors = node.tokenListAttribute("data-flavors", FlavorTokenCodec)
+        node.setAttribute("data-flavors", "hand-written")
+
+        flavors.value = listOf(Flavor.Sour)
+        assertEquals("sour", node.getAttribute("data-flavors"))
+        assertEquals(listOf(Flavor.Sour), flavors.values)
+
+        flavors.value = emptyList()
+        assertNull(node.getAttribute("data-flavors"))
+        assertTrue(flavors.tokens.isEmpty())
     }
 }

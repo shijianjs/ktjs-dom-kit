@@ -178,7 +178,7 @@ get their own object, obtained with `element.tokenListAttribute(name)`:
 
 ```kotlin
 // one declaration, next to the elements it describes — the page calls `themeAttr` everywhere
-val ThemePropertyMixin.themeAttr: TokenListAttribute
+val ThemePropertyMixin.themeAttr: TokenListAttribute<String>
     get() = unsafeCast<HTMLElement>().tokenListAttribute("theme")
 
 button.themeAttr.add("primary")            // theme="primary"
@@ -195,6 +195,10 @@ and writes the attribute itself — no in-memory set to keep in sync, no `DOMTok
 odd syntax (a malformed value simply is not a token) — and `values` / `raw` show what the browser
 actually stores. `TokenListAttributeCodec` remains for the `attr` side, where a delegated
 `List<String>` property is what you want.
+
+A wrapper with its own vocabulary passes a `TokenCodec<T>` instead —
+`tokenListAttribute("theme", ThemeVariantTokenCodec)` gives the same object typed, with `values` decoded
+and `tokens` still raw; see [wrapper attributes](../wrapper-kit/attributes.md#token-lists).
 
 ## `AttributeChange`
 

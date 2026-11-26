@@ -36,7 +36,7 @@
   `launch { Loadjs(…) }` 时不用自己再加一行。
 - `ktjs-wrapper-kit`：发布模块，**只放「操作别人的元素」那一层**，也是各 wrapper 库（`ktjs-vaadin`、
   `ktjs-iconify`、`ktjs-echarts` …）唯一该依赖的 DOM 库。内容就是 `dom.attribute` 里对 wrapper 有用的
-  部分：`Attribute`、`TokenListAttribute`、`JsonAttribute`、`AttributeCodec` 与 `dom.attribute.types`、
+  部分：`Attribute`、`TokenListAttribute`、`JsonAttribute`、`AttributeCodec`、`TokenCodec` 与 `dom.attribute.types`、
   `AttributeWatch`。它**只依赖 `kotlin-browser`**（无 npm、无 csstype），这正是拆分的理由：只要
   `Card.headerAttr` 的消费方不该被拖进 emotion 与 stylis。包名与拆分前逐字相同，所以是「构件拆分」
   不是「API 改名」。

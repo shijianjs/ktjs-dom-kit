@@ -27,5 +27,5 @@ import web.html.HTMLElement
  * `ThemePropertyMixin` is a marker without members, so the element behind it is an
  * `unsafeCast<HTMLElement>()` — the same cast upstream's own `ThemeVariants` uses.
  */
-val ThemePropertyMixin.themeAttr: TokenListAttribute
+val ThemePropertyMixin.themeAttr: TokenListAttribute<String>
     get() = unsafeCast<HTMLElement>().tokenListAttribute("theme")

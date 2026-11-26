@@ -164,7 +164,7 @@ val kind: Attribute<ActionKind> get() = attribute("kind", enumAttributeCodec(Act
 
 ```kotlin
 // 属性名字符串只写这一处，页面里统一调 themeAttr
-val ThemePropertyMixin.themeAttr: TokenListAttribute
+val ThemePropertyMixin.themeAttr: TokenListAttribute<String>
     get() = unsafeCast<HTMLElement>().tokenListAttribute("theme")
 
 button.themeAttr.add("primary")            // theme="primary"
@@ -179,6 +179,10 @@ button.themeAttr.clear()                   // 属性被删掉
 `class` 一样。每次调用都直接读写属性本身——没有要在内存里同步的集合，也不会像 `DOMTokenList` 那样对异常语法
 抛错（不合法的片段就只是不算一个词）；`values` / `raw` 表示浏览器里真实存的内容。`TokenListAttributeCodec`
 留给 `attr` 那一侧：那里你要的是被委托的 `List<String>` 属性。
+
+wrapper 自己有词表时传一个 `TokenCodec<T>` 即可——`tokenListAttribute("theme", ThemeVariantTokenCodec)`
+拿到的是带类型的同一个对象，`values` 是解码后的、`tokens` 仍是原始文本；详见
+[wrapper 属性](../wrapper-kit/attributes.md#token-列表)。
 
 ## `AttributeChange`
 

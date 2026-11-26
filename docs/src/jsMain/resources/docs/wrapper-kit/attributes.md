@@ -54,7 +54,8 @@ fun HTMLElement.intAttribute(name: String): Attribute<Int>                  // u
 fun HTMLElement.doubleAttribute(name: String): Attribute<Double>            // unreadable → 0.0
 fun <T> HTMLElement.attribute(name: String, codec: AttributeCodec<T>): Attribute<T>
 fun <T> HTMLElement.literalAttribute(name: String, values: List<T>, token: (T) -> String): Attribute<T>
-fun HTMLElement.tokenListAttribute(name: String): TokenListAttribute
+fun HTMLElement.tokenListAttribute(name: String): TokenListAttribute<String>
+fun <T> HTMLElement.tokenListAttribute(name: String, codec: TokenCodec<T>): TokenListAttribute<T>
 fun HTMLElement.jsonAttribute(name: String): JsonAttribute
 fun HTMLElement.observeAttribute(name: String, onChange: (String?) -> Unit): AttributeWatch
 ```
@@ -104,18 +105,41 @@ Space-separated vocabularies are **sets in disguise**. Read them as a list and a
 instead of rebuilding the string:
 
 ```kotlin
-val ThemePropertyMixin.themeAttr: TokenListAttribute get() = tokenListAttribute("theme")
+val ThemePropertyMixin.themeAttr: TokenListAttribute<String> get() = tokenListAttribute("theme")
 
 button.themeAttr.add("small")
 button.themeAttr.remove("contrast")
 button.themeAttr.toggle("icon")
-button.themeAttr.contains("primary")
+button.themeAttr.contains("small")
 ```
 
 `TokenListAttribute` keeps the attribute text canonical (single spaces, no duplicates) and removing the
 last token removes the attribute. Unlike `DOMTokenList` it throws nothing for odd syntax: a malformed
-value is simply not a token. `ktjs-vaadin` declares exactly this accessor on `ThemePropertyMixin` and
-builds `addTheme` / `setTheme` / `removeTheme` on top of it.
+value is simply not a token.
+
+A wrapper that already has a vocabulary keeps it: hand a `TokenCodec<T>` (one token in, one token out)
+and the same object deals in values instead of strings. There is still **one** storage — the attribute
+text — `tokens` is the raw side, `values` the decoded one:
+
+```kotlin
+object ThemeVariantTokenCodec : TokenCodec<ThemeVariant> {
+    override fun encode(value: ThemeVariant): String = value.name
+    override fun decode(token: String): ThemeVariant = ThemeVariant(token)
+}
+
+val ThemePropertyMixin.themeAttr: TokenListAttribute<ThemeVariant>
+    get() = tokenListAttribute("theme", ThemeVariantTokenCodec)
+
+button.themeAttr.add(ButtonVariants.primary)   // typed: written as its token
+button.themeAttr.addTokens("acme-brand")       // a token the codec does not know
+button.themeAttr.values                        // [ButtonVariants.primary]
+button.themeAttr.tokens                        // ["primary", "acme-brand"]
+```
+
+A token the codec cannot decode is never dropped by a typed `add` / `remove` / `toggle`: those rewrite
+the raw list, so hand-written and third-party tokens survive. Only assigning `value` replaces the whole
+list. `ktjs-vaadin` declares exactly this accessor on `ThemePropertyMixin` and builds `addTheme` /
+`setTheme` / `removeTheme` on top of it.
 
 ### JSON attributes
 
