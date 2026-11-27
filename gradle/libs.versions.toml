@@ -38,7 +38,7 @@ hutool = "5.8.48"
 # Maven Central.
 ktjs-docusaurus = "3.10.2-kt.2-SNAPSHOT"
 ktjs-docusaurus-gradle-plugin = "3.10.2-kt.1-SNAPSHOT"
-ktjs-docusaurus-kit = "0.1.0-SNAPSHOT"
+ktjs-docusaurus-kit = "0.1.0"
 
 # Sibling wrappers the demo kit is built from. SNAPSHOT until the release batch: the demo runs
 # against the working tree of those repositories, published to `mavenLocal`.
