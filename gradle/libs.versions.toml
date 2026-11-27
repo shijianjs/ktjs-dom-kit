@@ -21,8 +21,8 @@ detekt = "2.0.0-alpha.6"
 maven-publish = "0.37.0"
 
 # JetBrains' Kotlin/JS type wrappers.
-kotlin-wrappers = "2026.11.2"
-kotlin-wrappers-csstype = "2026.11.2-3.2.3"
+kotlin-wrappers = "2026.11.4"
+kotlin-wrappers-csstype = "2026.11.4-3.2.4"
 
 coroutines = "1.11.0"
 kotlinpoet = "2.4.0"
