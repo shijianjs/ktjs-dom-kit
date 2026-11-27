@@ -36,7 +36,7 @@ hutool = "5.8.48"
 # revision, so the plugin, the wrapper klib and the kit are three independent versions. A
 # `-SNAPSHOT` resolves from `mavenLocal` (see `settings.gradle.kts`); released versions come from
 # Maven Central.
-ktjs-docusaurus = "3.10.2-kt.2-SNAPSHOT"
+ktjs-docusaurus = "3.10.2-kt.2"
 ktjs-docusaurus-gradle-plugin = "3.10.2-kt.1-SNAPSHOT"
 ktjs-docusaurus-kit = "0.1.0-SNAPSHOT"
 
